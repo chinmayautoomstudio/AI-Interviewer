@@ -1,0 +1,109 @@
+{
+  "name": "Job Description Parser",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "webhook-test/parse-job-description",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "webhook-trigger",
+      "name": "Webhook Trigger",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [240, 300],
+      "webhookId": "jd-parser-webhook"
+    },
+    {
+      "parameters": {
+        "model": "gpt-4o",
+        "messages": {
+          "values": [
+            {
+              "role": "system",
+              "content": "You are an expert job description parser. Extract structured information from job description text and return it in JSON format.\n\nReturn a JSON object with this structure:\n```json\n{\n  \"success\": true,\n  \"data\": {\n    \"title\": \"string\",\n    \"department\": \"string\", \n    \"location\": \"string\",\n    \"employmentType\": \"full-time|part-time|contract|internship\",\n    \"experienceLevel\": \"entry|mid|senior|lead|executive\",\n    \"salaryMin\": number,\n    \"salaryMax\": number,\n    \"currency\": \"INR|USD|EUR|GBP\",\n    \"description\": \"string\",\n    \"requirements\": [\"string\"],\n    \"responsibilities\": [\"string\"],\n    \"skills\": [\"string\"],\n    \"qualifications\": [\"string\"],\n    \"benefits\": [\"string\"],\n    \"companyName\": \"string\",\n    \"workMode\": \"on-site|remote|hybrid\",\n    \"jobCategory\": \"string\",\n    \"contactEmail\": \"string\",\n    \"applicationDeadline\": \"YYYY-MM-DD\"\n  }\n}\n```\n\nParsing Rules:\n1. Extract job title, department, location, employment type, experience level\n2. Parse salary information (handle formats like ₹5,00,000 - ₹8,00,000)\n3. Extract requirements, responsibilities, skills, qualifications, benefits\n4. Identify company name, work mode, job category\n5. Find contact email and application deadline\n6. Clean up formatting and special characters\n7. Use null for missing optional fields\n8. Always return valid JSON\n\nIf parsing fails, return: {\"success\": false, \"error\": \"Error message\"}"
+            },
+            {
+              "role": "user",
+              "content": "Parse this job description:\n\n{{ $json.jobDescription }}"
+            }
+          ]
+        },
+        "options": {
+          "temperature": 0.1,
+          "maxTokens": 2000
+        }
+      },
+      "id": "openai-parser",
+      "name": "AI Parser",
+      "type": "n8n-nodes-base.openAi",
+      "typeVersion": 1,
+      "position": [460, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Parse the AI response\nconst aiResponse = $input.first().json.choices[0].message.content;\n\nlet parsedData;\ntry {\n  // Try to parse the JSON response\n  parsedData = JSON.parse(aiResponse);\n} catch (error) {\n  // If parsing fails, return error\n  return {\n    success: false,\n    error: \"Failed to parse AI response: \" + error.message,\n    rawResponse: aiResponse\n  };\n}\n\n// Validate the response structure\nif (!parsedData.success) {\n  return parsedData;\n}\n\nif (!parsedData.data) {\n  return {\n    success: false,\n    error: \"No data returned from AI parser\"\n  };\n}\n\n// Clean and validate the data\nconst data = parsedData.data;\n\n// Ensure arrays are properly formatted\nconst arrayFields = ['requirements', 'responsibilities', 'skills', 'qualifications', 'benefits'];\narrayFields.forEach(field => {\n  if (data[field] && !Array.isArray(data[field])) {\n    data[field] = [data[field]];\n  } else if (!data[field]) {\n    data[field] = [];\n  }\n});\n\n// Validate required fields\nif (!data.title) {\n  return {\n    success: false,\n    error: \"Job title is required\"\n  };\n}\n\n// Set defaults for missing fields\nif (!data.department) data.department = \"General\";\nif (!data.location) data.location = \"Not specified\";\nif (!data.employmentType) data.employmentType = \"full-time\";\nif (!data.experienceLevel) data.experienceLevel = \"mid\";\nif (!data.currency) data.currency = \"INR\";\nif (!data.workMode) data.workMode = \"on-site\";\nif (!data.jobCategory) data.jobCategory = \"general\";\nif (!data.companyName) data.companyName = \"Not specified\";\n\n// Clean up text fields\nconst textFields = ['title', 'department', 'location', 'description', 'companyName', 'jobCategory', 'contactEmail'];\ntextFields.forEach(field => {\n  if (data[field] && typeof data[field] === 'string') {\n    data[field] = data[field].trim().replace(/\\s+/g, ' ');\n  }\n});\n\n// Clean up array fields\narrayFields.forEach(field => {\n  if (data[field] && Array.isArray(data[field])) {\n    data[field] = data[field]\n      .map(item => typeof item === 'string' ? item.trim().replace(/\\s+/g, ' ') : item)\n      .filter(item => item && item.length > 0);\n  }\n});\n\nreturn {\n  success: true,\n  data: data,\n  timestamp: new Date().toISOString()\n};"
+      },
+      "id": "data-processor",
+      "name": "Data Processor",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [680, 300]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ $json }}"
+      },
+      "id": "webhook-response",
+      "name": "Webhook Response",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [900, 300]
+    }
+  ],
+  "connections": {
+    "Webhook Trigger": {
+      "main": [
+        [
+          {
+            "node": "AI Parser",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Parser": {
+      "main": [
+        [
+          {
+            "node": "Data Processor",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Data Processor": {
+      "main": [
+        [
+          {
+            "node": "Webhook Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": null,
+  "tags": [],
+  "triggerCount": 1,
+  "updatedAt": "2024-01-01T00:00:00.000Z",
+  "versionId": "1"
+}
