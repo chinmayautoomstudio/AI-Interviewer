@@ -1,211 +1,215 @@
-# AI Interviewer Platform
+# 🎤 AI Interviewer Platform
 
-A modern, AI-powered interview platform that automates the recruitment process using live voice conversations with intelligent AI interviewers.
+A comprehensive AI-powered interview platform with voice integration, intelligent resume parsing, and advanced candidate management capabilities.
 
-## 🚀 Features
+## ✨ Features
 
-- **Live AI Voice Interviews** - Real-time voice conversations with AI interviewers
-- **Dynamic Question Generation** - Personalized questions based on job descriptions and candidate profiles
-- **Automated Evaluation** - AI-powered candidate assessment and scoring
-- **Admin Dashboard** - Comprehensive management interface for HR teams
-- **Real-time Analytics** - Live interview monitoring and performance metrics
-- **Secure Authentication** - Role-based access control for admins and candidates
-- **Mobile Responsive** - Works seamlessly across all devices
+### 🎯 **Core Functionality**
+- **AI-Powered Interviews**: Conduct intelligent interviews with customizable AI agents
+- **Voice Integration**: Real-time voice conversations using ElevenLabs TTS/STT
+- **Resume Parsing**: Advanced AI resume analysis with comprehensive candidate profiling
+- **Job Description Parsing**: Intelligent JD analysis and matching
+- **Candidate Management**: Complete candidate lifecycle management
+- **Interview Scheduling**: Automated interview scheduling and management
 
-## 🏗️ Architecture
+### 🚀 **Advanced Features**
+- **Multi-Modal Interviews**: Text and voice interview modes
+- **Real-time Chat**: Live interview conversations with AI agents
+- **Voice Recording**: Audio capture and analysis for interview evaluation
+- **Candidate Authentication**: Secure candidate login and dashboard
+- **Admin Testing Interface**: Comprehensive testing tools for administrators
+- **Voice Configuration**: Customizable AI voice settings and presets
 
-- **Frontend**: React.js with TypeScript
-- **Backend**: Supabase (PostgreSQL with real-time subscriptions)
-- **AI/ML**: n8n workflows with voice agent integration
-- **Audio**: WebRTC for real-time voice communication
-- **Styling**: Tailwind CSS with custom design system
+## 🏗️ **Architecture**
 
-## 📋 Prerequisites
+### **Frontend**
+- **React 19** with TypeScript
+- **Tailwind CSS** for styling
+- **React Router** for navigation
+- **Lucide React** for icons
 
-- Node.js 16+ and npm
-- Supabase account and project
-- n8n instance with configured workflows
-- Modern web browser with WebRTC support
+### **Backend**
+- **Supabase** for database and authentication
+- **n8n** for workflow automation
+- **ElevenLabs** for voice processing
+- **OpenAI/Claude** for AI analysis
 
-## 🛠️ Installation
+### **Database**
+- **PostgreSQL** (via Supabase)
+- **Row Level Security** (RLS)
+- **Real-time subscriptions**
+
+## 🚀 **Quick Start**
+
+### **Prerequisites**
+- Node.js 18+ 
+- npm or yarn
+- Supabase account
+- n8n instance
+- ElevenLabs API key
+
+### **Installation**
 
 1. **Clone the repository**
-   ```bash
-   git clone <repository-url>
-   cd ai-interviewer
-   ```
+```bash
+git clone https://github.com/YOUR_USERNAME/ai-interviewer-platform.git
+cd ai-interviewer-platform
+```
 
 2. **Install dependencies**
-   ```bash
-   npm install
-   ```
-
-3. **Set up environment variables**
-   ```bash
-   cp env.example .env.local
-   ```
-   
-   Update `.env.local` with your configuration:
-   ```env
-   REACT_APP_SUPABASE_URL=https://your-project.supabase.co
-   REACT_APP_SUPABASE_ANON_KEY=your-anon-key
-   REACT_APP_N8N_BASE_URL=https://your-n8n-instance.com
-   REACT_APP_N8N_API_KEY=your-n8n-api-key
-   ```
-
-4. **Set up Supabase database**
-   - Create a new Supabase project
-   - Run the SQL schema from `supabase-schema.sql`
-   - Configure Row Level Security policies
-   - Set up storage buckets for resumes and recordings
-
-5. **Configure n8n workflows**
-   - Set up question generation workflow
-   - Configure live interview workflow
-   - Set up evaluation workflow
-   - Configure webhook endpoints
-
-6. **Start the development server**
-   ```bash
-   npm start
-   ```
-
-## 🗄️ Database Schema
-
-The platform uses the following main tables:
-
-- **admin_users** - Admin user accounts and roles
-- **candidates** - Candidate profiles and information
-- **interviews** - Interview sessions and scheduling
-- **interview_results** - AI evaluation results and scores
-- **job_descriptions** - Job postings and requirements
-- **candidate_sessions** - Temporary candidate access tokens
-- **workflow_status** - n8n workflow execution tracking
-
-## 🔧 Configuration
-
-### Supabase Setup
-
-1. Create a new Supabase project
-2. Run the SQL schema from `supabase-schema.sql`
-3. Configure authentication settings
-4. Set up storage buckets for file uploads
-5. Configure real-time subscriptions
-
-### n8n Workflow Setup
-
-The platform integrates with n8n workflows for:
-
-1. **Question Generation** - Analyzes job descriptions and resumes to generate personalized questions
-2. **Live Interview** - Manages real-time voice conversations with AI
-3. **Evaluation** - Processes interview transcripts and provides scoring
-
-### Environment Variables
-
-| Variable | Description | Required |
-|----------|-------------|----------|
-| `REACT_APP_SUPABASE_URL` | Supabase project URL | Yes |
-| `REACT_APP_SUPABASE_ANON_KEY` | Supabase anonymous key | Yes |
-| `REACT_APP_N8N_BASE_URL` | n8n instance URL | Yes |
-| `REACT_APP_N8N_API_KEY` | n8n API key | Yes |
-
-## 🎯 Usage
-
-### Admin Users
-
-1. **Login** - Access the admin dashboard with your credentials
-2. **Manage Candidates** - Add, edit, and track candidate information
-3. **Schedule Interviews** - Set up interview sessions with candidates
-4. **Monitor Progress** - View real-time interview status and results
-5. **Review Results** - Analyze AI-generated evaluations and scores
-
-### Candidates
-
-1. **Receive Invitation** - Get email with unique interview link
-2. **Audio Setup** - Test microphone and speaker functionality
-3. **Live Interview** - Participate in AI-powered voice interview
-4. **View Results** - Access interview feedback and scores
-
-## 🔒 Security
-
-- **Authentication** - Secure login with Supabase Auth
-- **Authorization** - Role-based access control
-- **Data Privacy** - GDPR and CCPA compliant
-- **Encryption** - End-to-end encryption for voice recordings
-- **Session Management** - Secure token-based sessions
-
-## 📱 Browser Support
-
-- Chrome 80+
-- Firefox 75+
-- Safari 13+
-- Edge 80+
-
-## 🧪 Testing
-
 ```bash
-# Run unit tests
-npm test
-
-# Run tests with coverage
-npm run test:coverage
-
-# Run linting
-npm run lint
+npm install
 ```
 
-## 🚀 Deployment
-
-### Production Build
-
+3. **Environment Setup**
 ```bash
-npm run build
+cp env.example .env
 ```
 
-### Environment Setup
+4. **Configure environment variables**
+```env
+# Supabase Configuration
+REACT_APP_SUPABASE_URL=your_supabase_url
+REACT_APP_SUPABASE_ANON_KEY=your_supabase_anon_key
 
-1. Set up production Supabase project
-2. Configure production n8n instance
-3. Set up CDN for static assets
-4. Configure SSL certificates
-5. Set up monitoring and logging
+# n8n Workflow URLs
+REACT_APP_N8N_RESUME_PARSER_WEBHOOK=your_resume_parser_webhook
+REACT_APP_N8N_JD_PARSER_WEBHOOK=your_jd_parser_webhook
+REACT_APP_N8N_INTERVIEW_WEBHOOK=your_interview_webhook
+REACT_APP_N8N_CHAT_WEBHOOK=your_chat_webhook
+REACT_APP_N8N_REPORT_WEBHOOK=your_report_webhook
+REACT_APP_N8N_VOICE_WEBHOOK=your_voice_webhook
 
-## 📊 Performance
+# ElevenLabs Configuration
+REACT_APP_ELEVEN_LABS_API_KEY=your_elevenlabs_api_key
+REACT_APP_ELEVEN_LABS_DEFAULT_VOICE_ID=your_default_voice_id
+REACT_APP_ELEVEN_LABS_DEFAULT_MODEL=eleven_multilingual_v2
 
-- **Page Load Time**: < 3 seconds
-- **Audio Latency**: < 200ms
-- **Concurrent Users**: 100+ interviews
-- **Uptime**: 99.9% availability
+# Voice Configuration
+REACT_APP_DEFAULT_VOICE_PRESET=professional
+REACT_APP_AUTO_VOICE_SELECTION=true
+```
 
-## 🤝 Contributing
+5. **Database Setup**
+```bash
+# Run SQL scripts in Supabase SQL Editor
+# See sql/README_DATABASE_SETUP.md for detailed instructions
+```
+
+6. **Start the application**
+```bash
+npm start
+```
+
+## 📁 **Project Structure**
+
+```
+ai-interviewer/
+├── src/
+│   ├── components/          # Reusable UI components
+│   │   ├── interview/       # Interview-specific components
+│   │   ├── layout/          # Layout components
+│   │   ├── ui/              # Basic UI components
+│   │   └── voice/           # Voice-related components
+│   ├── pages/               # Application pages
+│   ├── services/            # API and external service integrations
+│   ├── types/               # TypeScript type definitions
+│   ├── config/              # Configuration files
+│   └── utils/               # Utility functions
+├── sql/                     # Database migration scripts
+├── n8n/                     # n8n workflow configurations
+├── prompts/                 # AI prompts for analysis
+├── docs/                    # Documentation
+└── public/                  # Static assets
+```
+
+## 🔧 **Configuration**
+
+### **Database Setup**
+1. Create Supabase project
+2. Run SQL migration scripts in order:
+   - `sql/fix_interview_tables_step_by_step.sql`
+   - `sql/add_candidate_auth_fields.sql`
+   - `sql/add_summary_fields.sql`
+
+### **n8n Workflow Setup**
+1. Import workflow JSON files from `n8n/` directory
+2. Configure webhook URLs
+3. Set up AI model integrations
+4. Test workflow connections
+
+### **Voice Configuration**
+1. Get ElevenLabs API key
+2. Configure voice presets in `src/config/voiceConfig.ts`
+3. Test voice settings in admin panel
+
+## 📚 **Documentation**
+
+- [Database Setup Guide](sql/README_DATABASE_SETUP.md)
+- [Voice Configuration Guide](VOICE_CONFIGURATION_GUIDE.md)
+- [n8n Integration Setup](VOICE_N8N_SETUP_GUIDE.md)
+- [Enhanced Resume Analyzer](docs/ENHANCED_RESUME_ANALYZER.md)
+- [Summary Fields Integration](docs/SUMMARY_FIELDS_INTEGRATION.md)
+
+## 🎯 **Key Features Deep Dive**
+
+### **AI Resume Analysis**
+- **Enhanced Parsing**: Extracts structured data from resumes
+- **Comprehensive Descriptions**: AI-generated candidate profiles
+- **Skill Categorization**: Organized skill extraction and classification
+- **Experience Analysis**: Career progression and leadership assessment
+
+### **Voice Interview System**
+- **Real-time Voice**: Bidirectional voice conversations
+- **Voice Selection**: Multiple AI voice presets
+- **Audio Recording**: Interview session recording
+- **Transcription**: Speech-to-text conversion
+
+### **Candidate Management**
+- **Authentication**: Secure candidate login system
+- **Dashboard**: Personalized candidate interface
+- **Profile Management**: Complete candidate profile system
+- **Application Tracking**: Job application status tracking
+
+## 🚀 **Deployment**
+
+### **Frontend Deployment**
+- **Vercel**: Recommended for React applications
+- **Netlify**: Alternative deployment option
+- **GitHub Pages**: Free hosting option
+
+### **Backend Services**
+- **Supabase**: Database and authentication
+- **n8n Cloud**: Workflow automation
+- **ElevenLabs**: Voice processing
+
+## 🤝 **Contributing**
 
 1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Add tests for new functionality
-5. Submit a pull request
+2. Create a feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
 
-## 📄 License
+## 📄 **License**
 
-This project is licensed under the MIT License - see the LICENSE file for details.
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
-## 🆘 Support
+## 🙏 **Acknowledgments**
+
+- **Supabase** for backend infrastructure
+- **n8n** for workflow automation
+- **ElevenLabs** for voice processing
+- **OpenAI** for AI analysis capabilities
+- **React** and **TypeScript** communities
+
+## 📞 **Support**
 
 For support and questions:
+- Create an issue in this repository
+- Check the documentation in the `docs/` folder
+- Review the setup guides for detailed instructions
 
-- Create an issue in the repository
-- Check the documentation
-- Contact the development team
+---
 
-## 🔄 Version History
-
-- **v1.0.0** - Initial release with core functionality
-- **v1.1.0** - Added advanced analytics and reporting
-- **v1.2.0** - Enhanced AI capabilities and multi-language support
-
-## 🎉 Acknowledgments
-
-- Built with React and TypeScript
-- Powered by Supabase and n8n
-- Styled with Tailwind CSS
-- Icons by Lucide React and Heroicons
+**Built with ❤️ for modern recruitment and AI-powered interviewing**
