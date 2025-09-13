@@ -1,0 +1,586 @@
+{
+  "name": "Voice Interview Workflow",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "voice-interview",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "webhook-voice-interview",
+      "name": "Voice Interview Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [240, 300],
+      "webhookId": "voice-interview-webhook"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{ $json.action }}",
+              "operation": "equal",
+              "value2": "start_interview"
+            }
+          ]
+        }
+      },
+      "id": "if-start-interview",
+      "name": "If Start Interview",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [460, 300]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{ $json.action }}",
+              "operation": "equal",
+              "value2": "voice_message"
+            }
+          ]
+        }
+      },
+      "id": "if-voice-message",
+      "name": "If Voice Message",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [460, 500]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{ $json.action }}",
+              "operation": "equal",
+              "value2": "end_interview"
+            }
+          ]
+        }
+      },
+      "id": "if-end-interview",
+      "name": "If End Interview",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [460, 700]
+    },
+    {
+      "parameters": {
+        "operation": "select",
+        "table": "interview_sessions",
+        "select": "*",
+        "where": {
+          "conditions": [
+            {
+              "column": "session_id",
+              "condition": "equal",
+              "value": "={{ $json.sessionId }}"
+            }
+          ]
+        }
+      },
+      "id": "get-interview-session",
+      "name": "Get Interview Session",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [680, 300]
+    },
+    {
+      "parameters": {
+        "operation": "select",
+        "table": "candidates",
+        "select": "*",
+        "where": {
+          "conditions": [
+            {
+              "column": "id",
+              "condition": "equal",
+              "value": "={{ $json.candidateId }}"
+            }
+          ]
+        }
+      },
+      "id": "get-candidate-info",
+      "name": "Get Candidate Info",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [900, 300]
+    },
+    {
+      "parameters": {
+        "operation": "select",
+        "table": "job_descriptions",
+        "select": "*",
+        "where": {
+          "conditions": [
+            {
+              "column": "id",
+              "condition": "equal",
+              "value": "={{ $json.jobDescriptionId }}"
+            }
+          ]
+        }
+      },
+      "id": "get-job-description",
+      "name": "Get Job Description",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [1120, 300]
+    },
+    {
+      "parameters": {
+        "operation": "select",
+        "table": "ai_agents",
+        "select": "*",
+        "where": {
+          "conditions": [
+            {
+              "column": "id",
+              "condition": "equal",
+              "value": "={{ $json.aiAgentId }}"
+            }
+          ]
+        }
+      },
+      "id": "get-ai-agent",
+      "name": "Get AI Agent",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [1340, 300]
+    },
+    {
+      "parameters": {
+        "url": "https://api.elevenlabs.io/v1/speech-to-text",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "xi-api-key",
+              "value": "={{ $credentials.elevenLabs.apiKey }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "audio",
+              "value": "={{ $json.audioData }}"
+            },
+            {
+              "name": "model",
+              "value": "eleven_multilingual_v2"
+            },
+            {
+              "name": "language",
+              "value": "en"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          }
+        }
+      },
+      "id": "elevenlabs-stt",
+      "name": "ElevenLabs Speech-to-Text",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [680, 500]
+    },
+    {
+      "parameters": {
+        "model": "gpt-4",
+        "messages": {
+          "values": [
+            {
+              "role": "system",
+              "content": "You are an AI interviewer conducting a voice interview. You are {{ $json.aiAgent.name }} specializing in {{ $json.aiAgent.specializations.join(', ') }}. The candidate is applying for {{ $json.jobDescription.title }} position. Keep responses conversational and natural for voice interaction. Limit responses to 2-3 sentences for better voice flow."
+            },
+            {
+              "role": "user",
+              "content": "={{ $json.transcript }}"
+            }
+          ]
+        },
+        "options": {
+          "temperature": 0.7,
+          "maxTokens": 150
+        }
+      },
+      "id": "openai-interview-response",
+      "name": "Generate Interview Response",
+      "type": "n8n-nodes-base.openAi",
+      "typeVersion": 1,
+      "position": [900, 500]
+    },
+    {
+      "parameters": {
+        "url": "https://api.elevenlabs.io/v1/text-to-speech/{{ $json.voiceId }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "xi-api-key",
+              "value": "={{ $credentials.elevenLabs.apiKey }}"
+            },
+            {
+              "name": "Accept",
+              "value": "audio/mpeg"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "text",
+              "value": "={{ $json.response }}"
+            },
+            {
+              "name": "model_id",
+              "value": "eleven_multilingual_v2"
+            },
+            {
+              "name": "voice_settings",
+              "value": "={{ $json.voiceSettings }}"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "file"
+            }
+          }
+        }
+      },
+      "id": "elevenlabs-tts",
+      "name": "ElevenLabs Text-to-Speech",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [1120, 500]
+    },
+    {
+      "parameters": {
+        "operation": "insert",
+        "table": "interview_messages",
+        "columns": "session_id, message_type, content, voice_mode, audio_url, audio_duration, original_audio_transcript, transcription_confidence, created_at",
+        "values": "={{ $json.sessionId }}, 'voice_input', '{{ $json.transcript }}', true, '{{ $json.audioUrl }}', {{ $json.audioDuration }}, '{{ $json.transcript }}', {{ $json.confidence }}, '{{ new Date().toISOString() }}'"
+      },
+      "id": "save-candidate-message",
+      "name": "Save Candidate Message",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [1340, 500]
+    },
+    {
+      "parameters": {
+        "operation": "insert",
+        "table": "interview_messages",
+        "columns": "session_id, message_type, content, voice_mode, audio_url, created_at",
+        "values": "={{ $json.sessionId }}, 'voice_response', '{{ $json.response }}', true, '{{ $json.audioResponse }}', '{{ new Date().toISOString() }}'"
+      },
+      "id": "save-ai-response",
+      "name": "Save AI Response",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [1340, 600]
+    },
+    {
+      "parameters": {
+        "model": "gpt-4",
+        "messages": {
+          "values": [
+            {
+              "role": "system",
+              "content": "Generate a comprehensive interview report based on the conversation. Include candidate strengths, areas for improvement, technical skills assessment, and overall recommendation. Format as JSON with sections: summary, strengths, weaknesses, technical_skills, communication_skills, recommendation, score (1-10)."
+            },
+            {
+              "role": "user",
+              "content": "Interview conversation: {{ $json.conversation }}"
+            }
+          ]
+        }
+      },
+      "id": "generate-interview-report",
+      "name": "Generate Interview Report",
+      "type": "n8n-nodes-base.openAi",
+      "typeVersion": 1,
+      "position": [680, 700]
+    },
+    {
+      "parameters": {
+        "operation": "insert",
+        "table": "interview_reports",
+        "columns": "session_id, report_data, generated_at",
+        "values": "={{ $json.sessionId }}, '{{ $json.report }}', '{{ new Date().toISOString() }}'"
+      },
+      "id": "save-interview-report",
+      "name": "Save Interview Report",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [900, 700]
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "table": "interview_sessions",
+        "updateKey": "session_id",
+        "columns": "status, completed_at",
+        "values": "'completed', '{{ new Date().toISOString() }}'"
+      },
+      "id": "update-session-status",
+      "name": "Update Session Status",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [1120, 700]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ { \"success\": true, \"message\": \"Interview started\", \"sessionId\": $json.sessionId, \"voiceId\": $json.voiceId, \"voiceSettings\": $json.voiceSettings } }}"
+      },
+      "id": "respond-start-success",
+      "name": "Respond Start Success",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [1560, 300]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ { \"success\": true, \"transcript\": $json.transcript, \"response\": $json.response, \"audioResponse\": $json.audioResponse, \"confidence\": $json.confidence } }}"
+      },
+      "id": "respond-voice-success",
+      "name": "Respond Voice Success",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [1560, 500]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ { \"success\": true, \"message\": \"Interview completed\", \"report\": $json.report } }}"
+      },
+      "id": "respond-end-success",
+      "name": "Respond End Success",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [1560, 700]
+    }
+  ],
+  "connections": {
+    "Voice Interview Webhook": {
+      "main": [
+        [
+          {
+            "node": "If Start Interview",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "If Voice Message",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "If End Interview",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If Start Interview": {
+      "main": [
+        [
+          {
+            "node": "Get Interview Session",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Interview Session": {
+      "main": [
+        [
+          {
+            "node": "Get Candidate Info",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Candidate Info": {
+      "main": [
+        [
+          {
+            "node": "Get Job Description",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Job Description": {
+      "main": [
+        [
+          {
+            "node": "Get AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Respond Start Success",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If Voice Message": {
+      "main": [
+        [
+          {
+            "node": "ElevenLabs Speech-to-Text",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "ElevenLabs Speech-to-Text": {
+      "main": [
+        [
+          {
+            "node": "Generate Interview Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate Interview Response": {
+      "main": [
+        [
+          {
+            "node": "ElevenLabs Text-to-Speech",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "ElevenLabs Text-to-Speech": {
+      "main": [
+        [
+          {
+            "node": "Save Candidate Message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Save Candidate Message": {
+      "main": [
+        [
+          {
+            "node": "Save AI Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Save AI Response": {
+      "main": [
+        [
+          {
+            "node": "Respond Voice Success",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If End Interview": {
+      "main": [
+        [
+          {
+            "node": "Generate Interview Report",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate Interview Report": {
+      "main": [
+        [
+          {
+            "node": "Save Interview Report",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Save Interview Report": {
+      "main": [
+        [
+          {
+            "node": "Update Session Status",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update Session Status": {
+      "main": [
+        [
+          {
+            "node": "Respond End Success",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": null,
+  "tags": [],
+  "triggerCount": 1,
+  "updatedAt": "2024-01-15T10:00:00.000Z",
+  "versionId": "1"
+}
