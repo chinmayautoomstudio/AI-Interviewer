@@ -1,0 +1,110 @@
+{
+  "name": "Resume Parser Workflow",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "webhook-test/parse-resume",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "webhook-trigger",
+      "name": "Resume Upload Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [240, 300],
+      "webhookId": "resume-parser-webhook"
+    },
+    {
+      "parameters": {
+        "model": "gpt-4",
+        "messages": {
+          "values": [
+            {
+              "role": "system",
+              "content": "You are an expert resume parser and AI data extractor. Your task is to analyze the provided resume text and extract key information.\n\n**Your Goal:** Generate a single, valid JSON object containing all the extracted details. Do not include any text before or after the JSON.\n\n## Input Data\nYou will be provided with a raw text string representing a resume. This text may contain errors or be unstructured.\n\n## Extraction Instructions\nExtract the following information and place it into the corresponding JSON fields. If a piece of information is not present in the resume, use `null` as the value.\n\n## Required Information\n\n* **Name:** The full name of the candidate.\n* **Email:** The candidate's primary email address.\n* **Phone:** The candidate's primary phone number.\n* **Summary:** The candidate's professional summary or objective, if available.\n* **Experience:** A list of professional experiences. For each experience, extract the `title`, `company`, `duration`, and `description`.\n* **Education:** A list of educational qualifications. For each entry, extract the `degree`, `institution`, and `graduation_year`.\n* **Skills:** A list of all skills mentioned. Group them by category if possible (e.g., \"Programming Languages,\" \"Frameworks,\" \"Databases\"). If no categories are provided, list them all as a single array of strings.\n* **Projects:** A list of projects the candidate has worked on. For each project, extract the `title`, `description`, and `technologies_used`.\n\n## Output Schema\nYou MUST generate a single, valid JSON object.\n\n```json\n{\n  \"name\": \"string | null\",\n  \"email\": \"string | null\",\n  \"phone\": \"string | null\",\n  \"summary\": \"string | null\",\n  \"experience\": [\n    {\n      \"title\": \"string\",\n      \"company\": \"string\",\n      \"duration\": \"string\",\n      \"description\": \"string\"\n    }\n  ],\n  \"education\": [\n    {\n      \"degree\": \"string\",\n      \"institution\": \"string\",\n      \"graduation_year\": \"string\"\n    }\n  ],\n  \"skills\": {\n    \"Programming Languages\": [\n      \"string\"\n    ],\n    \"Frameworks\": [\n      \"string\"\n    ],\n    \"Databases\": [\n      \"string\"\n    ],\n    \"Other\": [\n      \"string\"\n    ]\n  },\n  \"projects\": [\n    {\n      \"title\": \"string\",\n      \"description\": \"string\",\n      \"technologies_used\": [\n        \"string\"\n      ]\n    }\n  ]\n}\n```\n\n## Important Guidelines\n\n1. **Accuracy:** Extract information exactly as it appears in the resume. Do not make assumptions or add information that is not present.\n\n2. **Completeness:** Try to extract as much information as possible, but use `null` for missing fields rather than guessing.\n\n3. **Format Consistency:** \n   - For dates, use the format as it appears in the resume\n   - For phone numbers, include the format as provided\n   - For emails, extract the primary email address\n\n4. **Skills Categorization:** \n   - Group skills logically (Programming Languages, Frameworks, Databases, Tools, etc.)\n   - If no clear categories exist, use \"Other\" for all skills\n   - Remove duplicates within each category\n\n5. **Experience Details:**\n   - Extract job titles, company names, and durations as they appear\n   - For descriptions, summarize the key responsibilities and achievements\n   - If duration is not clear, use the format as it appears in the resume\n\n6. **Education Information:**\n   - Extract degree names, institution names, and graduation years\n   - If graduation year is not available, use `null`\n\n7. **Projects:**\n   - Include personal projects, academic projects, and work projects\n   - Extract project titles, descriptions, and technologies used\n   - If technologies are not mentioned, use an empty array\n\n## Error Handling\n\n- If the resume text is corrupted or unreadable, return `null` for all fields\n- If only partial information is available, extract what you can and use `null` for missing fields\n- Always ensure the JSON is valid and properly formatted"
+            },
+            {
+              "role": "user",
+              "content": "Parse this resume text:\n\n{{ $json.resumeText }}"
+            }
+          ]
+        },
+        "options": {
+          "temperature": 0.1,
+          "maxTokens": 2000
+        }
+      },
+      "id": "openai-parser",
+      "name": "OpenAI Resume Parser",
+      "type": "n8n-nodes-base.openAi",
+      "typeVersion": 1,
+      "position": [460, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Parse the AI response and structure the data\nconst aiResponse = $input.first().json.message.content;\n\nlet parsedData;\ntry {\n  // Try to parse the JSON response from AI\n  parsedData = JSON.parse(aiResponse);\n} catch (error) {\n  // If parsing fails, return error\n  return {\n    success: false,\n    error: 'Failed to parse AI response as JSON',\n    rawResponse: aiResponse\n  };\n}\n\n// Validate the parsed data structure\nif (!parsedData || typeof parsedData !== 'object') {\n  return {\n    success: false,\n    error: 'Invalid data structure from AI',\n    rawResponse: aiResponse\n  };\n}\n\n// Ensure required fields exist with proper defaults\nconst structuredData = {\n  name: parsedData.name || null,\n  email: parsedData.email || null,\n  phone: parsedData.phone || null,\n  summary: parsedData.summary || null,\n  experience: Array.isArray(parsedData.experience) ? parsedData.experience : [],\n  education: Array.isArray(parsedData.education) ? parsedData.education : [],\n  skills: parsedData.skills && typeof parsedData.skills === 'object' ? parsedData.skills : {},\n  projects: Array.isArray(parsedData.projects) ? parsedData.projects : []\n};\n\n// Validate experience entries\nif (structuredData.experience.length > 0) {\n  structuredData.experience = structuredData.experience.map(exp => ({\n    title: exp.title || '',\n    company: exp.company || '',\n    duration: exp.duration || '',\n    description: exp.description || ''\n  }));\n}\n\n// Validate education entries\nif (structuredData.education.length > 0) {\n  structuredData.education = structuredData.education.map(edu => ({\n    degree: edu.degree || '',\n    institution: edu.institution || '',\n    graduation_year: edu.graduation_year || null\n  }));\n}\n\n// Validate project entries\nif (structuredData.projects.length > 0) {\n  structuredData.projects = structuredData.projects.map(proj => ({\n    title: proj.title || '',\n    description: proj.description || '',\n    technologies_used: Array.isArray(proj.technologies_used) ? proj.technologies_used : []\n  }));\n}\n\n// Flatten skills into a single array for easier processing\nconst allSkills = [];\nif (structuredData.skills && typeof structuredData.skills === 'object') {\n  Object.values(structuredData.skills).forEach(skillArray => {\n    if (Array.isArray(skillArray)) {\n      allSkills.push(...skillArray);\n    }\n  });\n}\n\n// Remove duplicates from skills\nconst uniqueSkills = [...new Set(allSkills)];\n\nreturn {\n  success: true,\n  extractedData: structuredData,\n  skills: uniqueSkills,\n  resumeText: $('webhook-trigger').first().json.resumeText || '',\n  timestamp: new Date().toISOString()\n};"
+      },
+      "id": "data-processor",
+      "name": "Process Extracted Data",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [680, 300]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ $json }}"
+      },
+      "id": "response",
+      "name": "Return Response",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [900, 300]
+    }
+  ],
+  "connections": {
+    "webhook-trigger": {
+      "main": [
+        [
+          {
+            "node": "openai-parser",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "openai-parser": {
+      "main": [
+        [
+          {
+            "node": "data-processor",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "data-processor": {
+      "main": [
+        [
+          {
+            "node": "response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": null,
+  "tags": [],
+  "triggerCount": 1,
+  "updatedAt": "2024-01-01T00:00:00.000Z",
+  "versionId": "1"
+}
