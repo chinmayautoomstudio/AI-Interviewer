@@ -6,8 +6,11 @@ import { getBestIndianVoice, getVoiceForJobType, getVoiceForDepartment } from '.
 import LoadingSpinner from '../components/ui/LoadingSpinner';
 import VoiceRecorder from '../components/interview/VoiceRecorder';
 import VoicePlayer from '../components/interview/VoicePlayer';
+import InterviewSetupPage from './InterviewSetupPage';
+import InterviewPage from './InterviewPage';
 import { Candidate, JobDescription, AIAgent, InterviewSession, InterviewMessage } from '../types';
 import { supabase } from '../services/supabase';
+import { microphonePermissionManager } from '../utils/microphonePermissions';
 
 const AdminInterviewTestPage: React.FC = () => {
   const [candidates, setCandidates] = useState<Candidate[]>([]);
@@ -22,6 +25,8 @@ const AdminInterviewTestPage: React.FC = () => {
   const [isVoiceMode, setIsVoiceMode] = useState(false);
   const [isVoiceAvailable, setIsVoiceAvailable] = useState(false);
   const [currentVoice, setCurrentVoice] = useState<string>('');
+  const [error, setError] = useState<string | null>(null);
+  const [currentPage, setCurrentPage] = useState<'setup' | 'interview' | 'main'>('main');
 
   // Load data on component mount
   useEffect(() => {
@@ -29,34 +34,64 @@ const AdminInterviewTestPage: React.FC = () => {
     checkVoiceAvailability();
   }, []);
 
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      // Stop any ongoing audio playback
+      elevenLabsService.stopAudio();
+      // Revoke any audio URLs to free memory
+      if (currentSession) {
+        messages.forEach(message => {
+          if (message.audioUrl) {
+            elevenLabsService.revokeAudioUrl(message.audioUrl);
+          }
+        });
+      }
+    };
+  }, [currentSession, messages]);
+
   const loadData = async () => {
     setIsLoading(true);
+    setError(null);
     try {
       // Load candidates
-      const { data: candidatesData } = await supabase
+      const { data: candidatesData, error: candidatesError } = await supabase
         .from('candidates')
         .select('*')
         .eq('status', 'active')
         .limit(10);
+      
+      if (candidatesError) {
+        throw new Error(`Failed to load candidates: ${candidatesError.message}`);
+      }
       setCandidates(candidatesData || []);
 
       // Load job descriptions
-      const { data: jobsData } = await supabase
+      const { data: jobsData, error: jobsError } = await supabase
         .from('job_descriptions')
         .select('*')
         .limit(10);
+      
+      if (jobsError) {
+        throw new Error(`Failed to load job descriptions: ${jobsError.message}`);
+      }
       setJobDescriptions(jobsData || []);
 
       // Load AI agents
-      const { data: agentsData } = await supabase
+      const { data: agentsData, error: agentsError } = await supabase
         .from('ai_agents')
         .select('*')
         .eq('is_active', true)
         .limit(10);
+      
+      if (agentsError) {
+        throw new Error(`Failed to load AI agents: ${agentsError.message}`);
+      }
       setAiAgents(agentsData || []);
 
     } catch (error) {
       console.error('Error loading data:', error);
+      setError(error instanceof Error ? error.message : 'Failed to load data');
     } finally {
       setIsLoading(false);
     }
@@ -66,54 +101,58 @@ const AdminInterviewTestPage: React.FC = () => {
     setIsVoiceAvailable(elevenLabsService.isAvailable());
   };
 
-  const startInterview = async () => {
+  const startInterview = () => {
     if (!selectedCandidate || !selectedJob) {
       alert('Please select a candidate and job description');
       return;
     }
 
-    setIsLoading(true);
+    console.log('🚀 Starting interview setup with:', {
+      candidate: selectedCandidate.name,
+      job: selectedJob.title,
+      agent: selectedAgent?.name || 'None',
+      agentWebhook: selectedAgent?.n8nWebhookUrl || 'No webhook URL'
+    });
+
+    // Navigate to setup page
+    setCurrentPage('setup');
+  };
+
+  const handleSetupComplete = async (session: InterviewSession) => {
+    setCurrentSession(session);
+    setCurrentPage('interview');
+    
+    // Auto-play the AI greeting when interview starts
     try {
-      const result = await InterviewSystemService.startVoiceInterview(
-        selectedCandidate.id,
-        selectedJob.id,
-        selectedAgent?.id
-      );
-
-      if (result.data) {
-        // Create a mock session for testing
-        const mockSession: InterviewSession = {
-          id: `temp-${Date.now()}`,
-          sessionId: result.data.sessionId,
-          candidateId: selectedCandidate.id,
-          jobDescriptionId: selectedJob.id,
-          aiAgentId: selectedAgent?.id,
-          status: 'in_progress',
-          startedAt: new Date().toISOString(),
-          completedAt: undefined,
-          totalQuestions: 0,
-          questionsAnswered: 0,
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString()
-        };
-
-        setCurrentSession(mockSession);
-        setCurrentVoice(result.data.voiceId);
-        
-        // Set voice configuration
-        const voiceConfig = getVoiceForJobType(selectedJob.title);
-        elevenLabsService.setVoiceConfig(voiceConfig);
-        
-        alert('Interview started! You can now test voice interactions.');
-      } else {
-        alert('Failed to start interview: ' + result.error);
-      }
+      const greeting = "Hi! I'm Supriya from AutoomStudio. I'll be your interviewer today. Ready to dive in?";
+      const voiceConfig = elevenLabsService.getCurrentVoiceConfig();
+      const ttsResponse = await elevenLabsService.textToSpeech({
+        text: greeting,
+        voiceId: voiceConfig.voiceId,
+        voiceSettings: voiceConfig.settings
+      });
+      
+      // Play the greeting audio
+      const audio = new Audio(ttsResponse.audioUrl);
+      await audio.play();
+      
+      // Clean up the URL after playing
+      audio.onended = () => URL.revokeObjectURL(ttsResponse.audioUrl);
     } catch (error) {
-      console.error('Error starting interview:', error);
-      alert('Failed to start interview');
-    } finally {
-      setIsLoading(false);
+      console.error('Error playing AI greeting:', error);
     }
+  };
+
+  const handleBackToMain = () => {
+    setCurrentPage('main');
+    setCurrentSession(null);
+    setMessages([]);
+  };
+
+  const handleEndInterview = () => {
+    setCurrentPage('main');
+    setCurrentSession(null);
+    setMessages([]);
   };
 
   const endInterview = async () => {
@@ -121,12 +160,12 @@ const AdminInterviewTestPage: React.FC = () => {
 
     setIsLoading(true);
     try {
-      const result = await InterviewSystemService.endVoiceInterview(currentSession.sessionId);
+      // Use the cancelInterview method to end the session
+      const result = await InterviewSystemService.cancelInterview(currentSession.sessionId);
       
-      if (result.data) {
-        alert('Interview completed! Report generated.');
-        setCurrentSession(null);
-        setMessages([]);
+      if (!result.error) {
+        alert('Interview ended successfully!');
+        handleEndInterview();
       } else {
         alert('Failed to end interview: ' + result.error);
       }
@@ -183,6 +222,55 @@ const AdminInterviewTestPage: React.FC = () => {
     alert('Voice error: ' + error);
   };
 
+  const handleTestCandidateResponse = async (response: string) => {
+    if (!currentSession || !selectedCandidate || !selectedJob) {
+      alert('Please ensure interview is started and candidate/job are selected');
+      return;
+    }
+
+    try {
+      // Add candidate message to chat
+      const candidateMessage: InterviewMessage = {
+        id: `candidate-${Date.now()}`,
+        interviewSessionId: currentSession.id,
+        messageType: 'answer',
+        content: response,
+        sender: 'candidate',
+        timestamp: new Date().toISOString()
+      };
+
+      setMessages(prev => [...prev, candidateMessage]);
+
+      // Send to AI Agent
+      const result = await InterviewSystemService.sendCandidateResponse(
+        currentSession.sessionId,
+        response,
+        selectedCandidate.id,
+        selectedJob.id
+      );
+
+      if (result.data) {
+        // Add AI response to chat
+        const aiMessage: InterviewMessage = {
+          id: `ai-${Date.now()}`,
+          interviewSessionId: currentSession.id,
+          messageType: 'question',
+          content: result.data.aiResponse,
+          sender: 'ai',
+          timestamp: new Date().toISOString()
+        };
+
+        setMessages(prev => [...prev, aiMessage]);
+      } else {
+        console.error('❌ AI Agent response failed:', result.error);
+        alert('Failed to get AI response: ' + result.error);
+      }
+    } catch (error) {
+      console.error('Error sending candidate response:', error);
+      alert('Error sending response: ' + error);
+    }
+  };
+
   const testVoice = async () => {
     if (!isVoiceAvailable) {
       alert('Voice features not available. Please check your ElevenLabs API key.');
@@ -206,6 +294,29 @@ const AdminInterviewTestPage: React.FC = () => {
     }
   };
 
+  // Render different pages based on current state
+  if (currentPage === 'setup' && selectedCandidate && selectedJob) {
+    return (
+      <InterviewSetupPage
+        candidate={selectedCandidate}
+        jobDescription={selectedJob}
+        aiAgent={selectedAgent}
+        onSetupComplete={handleSetupComplete}
+        onBack={handleBackToMain}
+      />
+    );
+  }
+
+  if (currentPage === 'interview' && currentSession) {
+    return (
+      <InterviewPage
+        session={currentSession}
+        onEndInterview={handleEndInterview}
+        onBack={handleBackToMain}
+      />
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="max-w-7xl mx-auto px-4 py-8">
@@ -221,6 +332,25 @@ const AdminInterviewTestPage: React.FC = () => {
             </div>
           </div>
         </div>
+
+        {/* Error Display */}
+        {error && (
+          <div className="mb-6 bg-red-50 border border-red-200 rounded-lg p-4">
+            <div className="flex items-center space-x-2">
+              <div className="text-red-600">⚠️</div>
+              <div>
+                <h3 className="text-red-800 font-medium">Error Loading Data</h3>
+                <p className="text-red-700 text-sm mt-1">{error}</p>
+                <button
+                  onClick={loadData}
+                  className="mt-2 px-3 py-1 bg-red-600 text-white text-sm rounded hover:bg-red-700 transition-colors"
+                >
+                  Retry
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Voice Status */}
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
@@ -243,7 +373,28 @@ const AdminInterviewTestPage: React.FC = () => {
                 Test Voice
               </button>
               <button
-                onClick={() => setIsVoiceMode(!isVoiceMode)}
+                onClick={async () => {
+                  if (!isVoiceMode) {
+                    // Check microphone permission before enabling voice mode
+                    const permissionState = await microphonePermissionManager.checkPermissionStatus();
+                    if (!permissionState.canRecord) {
+                      if (permissionState.status === 'denied') {
+                        alert('Microphone access denied. Please allow microphone access in your browser settings and refresh the page.');
+                        return;
+                      } else if (permissionState.status === 'prompt') {
+                        const newPermissionState = await microphonePermissionManager.requestMicrophonePermission();
+                        if (!newPermissionState.canRecord) {
+                          alert('Microphone permission is required for voice mode. Please allow microphone access.');
+                          return;
+                        }
+                      } else {
+                        alert('Microphone not available. Please check your microphone connection and browser settings.');
+                        return;
+                      }
+                    }
+                  }
+                  setIsVoiceMode(!isVoiceMode);
+                }}
                 className={`px-4 py-2 rounded-lg transition-colors ${
                   isVoiceMode 
                     ? 'bg-green-600 text-white hover:bg-green-700' 
@@ -343,8 +494,23 @@ const AdminInterviewTestPage: React.FC = () => {
             {selectedAgent && (
               <div className="mt-3 p-3 bg-purple-50 rounded-lg">
                 <p className="text-sm font-medium text-purple-900">{selectedAgent.name}</p>
-                <p className="text-xs text-purple-700">Type: {selectedAgent.agentType}</p>
+                <p className="text-xs text-purple-700">Type: {selectedAgent.agentType || 'Not specified'}</p>
                 <p className="text-xs text-purple-700">ID: {selectedAgent.id}</p>
+                {selectedAgent.n8nWebhookUrl && (
+                  <p className="text-xs text-purple-600 mt-1">
+                    <span className="font-medium">Webhook:</span> {selectedAgent.n8nWebhookUrl}
+                  </p>
+                )}
+                {selectedAgent.description && (
+                  <p className="text-xs text-purple-600 mt-1">{selectedAgent.description}</p>
+                )}
+                {selectedJob && (
+                  <div className="mt-2 pt-2 border-t border-purple-200">
+                    <p className="text-xs text-purple-600">
+                      <span className="font-medium">Voice:</span> {getVoiceForJobType(selectedJob.title).name} ({getVoiceForJobType(selectedJob.title).gender})
+                    </p>
+                  </div>
+                )}
               </div>
             )}
           </div>
@@ -405,7 +571,7 @@ const AdminInterviewTestPage: React.FC = () => {
         {messages.length > 0 && (
           <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
             <h3 className="font-semibold text-gray-900 mb-4">Interview Messages</h3>
-            <div className="space-y-4 max-h-96 overflow-y-auto">
+            <div className="space-y-4 max-h-96 overflow-y-auto mb-4">
               {messages.map((message) => (
                 <div
                   key={message.id}
@@ -444,6 +610,37 @@ const AdminInterviewTestPage: React.FC = () => {
                 </div>
               ))}
             </div>
+            
+            {/* Test Candidate Response Input */}
+            {currentSession && (
+              <div className="border-t pt-4">
+                <div className="flex space-x-2">
+                  <input
+                    type="text"
+                    placeholder="Type your response to test the AI Agent..."
+                    className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    onKeyPress={(e) => {
+                      if (e.key === 'Enter' && e.currentTarget.value.trim()) {
+                        handleTestCandidateResponse(e.currentTarget.value.trim());
+                        e.currentTarget.value = '';
+                      }
+                    }}
+                  />
+                  <button
+                    onClick={() => {
+                      const input = document.querySelector('input[placeholder*="Type your response"]') as HTMLInputElement;
+                      if (input?.value.trim()) {
+                        handleTestCandidateResponse(input.value.trim());
+                        input.value = '';
+                      }
+                    }}
+                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                  >
+                    Send
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         )}
 

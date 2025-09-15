@@ -124,7 +124,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ sessionId, session, onSes
     }
   };
 
-  const handleVoiceTranscription = (result: { transcript: string; response: string; audioResponse: string; confidence: number }) => {
+  const handleVoiceTranscription = async (result: { transcript: string; response: string; audioResponse: string; confidence: number }) => {
     if (result.transcript.trim()) {
       // Add the candidate's message to the chat
       const candidateMessage: InterviewMessage = {
@@ -143,30 +143,67 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ sessionId, session, onSes
         timestamp: new Date().toISOString()
       };
 
-      // Add the AI's response to the chat
-      const aiMessage: InterviewMessage = {
-        id: `temp-${Date.now() + 1}`,
-        interviewSessionId: session.id || '',
-        messageType: 'voice_response',
-        content: result.response,
-        sender: 'ai',
-        voiceMode: true,
-        audioUrl: result.audioResponse,
-        audioDuration: 0,
-        originalAudioTranscript: undefined,
-        transcriptionConfidence: undefined,
-        transcriptionLanguage: undefined,
-        voiceMetadata: undefined,
-        timestamp: new Date().toISOString()
-      };
+      setMessages(prev => [...prev, candidateMessage]);
 
-      setMessages(prev => [...prev, candidateMessage, aiMessage]);
+      // If we have an AI response, add it to the chat
+      if (result.response && result.response.trim()) {
+        const aiMessage: InterviewMessage = {
+          id: `temp-${Date.now() + 1}`,
+          interviewSessionId: session.id || '',
+          messageType: 'voice_response',
+          content: result.response,
+          sender: 'ai',
+          voiceMode: true,
+          audioUrl: result.audioResponse,
+          audioDuration: 0,
+          originalAudioTranscript: undefined,
+          transcriptionConfidence: undefined,
+          transcriptionLanguage: undefined,
+          voiceMetadata: undefined,
+          timestamp: new Date().toISOString()
+        };
+
+        setMessages(prev => [...prev, aiMessage]);
+
+        // Auto-play the AI's voice response if available
+        if (result.audioResponse) {
+          try {
+            const audio = new Audio(result.audioResponse);
+            await audio.play();
+          } catch (error) {
+            console.error('Error playing AI voice response:', error);
+          }
+        }
+      }
     }
   };
 
   const handleVoiceError = (error: string) => {
     console.error('Voice error:', error);
     // You could show a toast notification here
+  };
+
+  const playAIMessage = async (message: InterviewMessage) => {
+    if (message.sender === 'ai' && message.content) {
+      try {
+        // Generate speech from AI text response
+        const voiceConfig = elevenLabsService.getCurrentVoiceConfig();
+        const ttsResponse = await elevenLabsService.textToSpeech({
+          text: message.content,
+          voiceId: voiceConfig.voiceId,
+          voiceSettings: voiceConfig.settings
+        });
+        
+        // Play the audio
+        const audio = new Audio(ttsResponse.audioUrl);
+        await audio.play();
+        
+        // Clean up the URL after playing
+        audio.onended = () => URL.revokeObjectURL(ttsResponse.audioUrl);
+      } catch (error) {
+        console.error('Error playing AI message:', error);
+      }
+    }
   };
 
   const toggleVoiceMode = () => {
@@ -268,12 +305,20 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ sessionId, session, onSes
                     
                     {/* Voice Player for AI messages */}
                     {message.sender === 'ai' && isVoiceAvailable && (
-                      <div className="mt-2">
+                      <div className="mt-2 flex items-center space-x-2">
                         <VoicePlayer
                           text={message.content}
                           autoPlay={false}
                           className="text-xs"
                         />
+                        <button
+                          onClick={() => playAIMessage(message)}
+                          className="flex items-center space-x-1 px-2 py-1 bg-blue-100 text-blue-700 rounded text-xs hover:bg-blue-200 transition-colors"
+                          title="Play AI response"
+                        >
+                          <Volume2 className="h-3 w-3" />
+                          <span>Play</span>
+                        </button>
                       </div>
                     )}
                     

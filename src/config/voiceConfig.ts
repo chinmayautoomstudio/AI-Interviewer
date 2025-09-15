@@ -166,8 +166,12 @@ export const getVoiceForJobType = (jobType: string, preferIndianAccent: boolean 
   }
   
   // Standard voice selection
-  if (jobTypeLower.includes('technical') || jobTypeLower.includes('engineer') || jobTypeLower.includes('developer')) {
-    return VOICE_PRESETS.technical_male;
+  if (jobTypeLower.includes('web developer trainee') || jobTypeLower.includes('developer trainee')) {
+    // Specific voice for Web Developer Trainee role
+    return VOICE_PRESETS.professional_female;
+  } else if (jobTypeLower.includes('technical') || jobTypeLower.includes('engineer') || jobTypeLower.includes('developer')) {
+    // Use female voice for other developer roles
+    return VOICE_PRESETS.professional_female;
   } else if (jobTypeLower.includes('creative') || jobTypeLower.includes('design') || jobTypeLower.includes('marketing')) {
     return VOICE_PRESETS.friendly_female;
   } else if (jobTypeLower.includes('manager') || jobTypeLower.includes('lead') || jobTypeLower.includes('director')) {
@@ -210,7 +214,8 @@ export const getVoiceForDepartment = (department: string, preferIndianAccent: bo
     case 'engineering':
     case 'technology':
     case 'it':
-      return VOICE_PRESETS.technical_male;
+    case 'development':
+      return VOICE_PRESETS.professional_female; // Use female voice for development departments
     case 'hr':
     case 'human resources':
       return VOICE_PRESETS.friendly_female;
