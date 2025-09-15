@@ -1,6 +1,6 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import './utils/testConnection'; // Auto-test Supabase connection
+// import './utils/testConnection'; // Auto-test Supabase connection - disabled to prevent errors
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import LoginPage from './pages/LoginPage';
 import DashboardPage from './pages/DashboardPage';
@@ -18,6 +18,7 @@ import SupabaseTestPage from './pages/SupabaseTestPage';
 import AIAgentsPage from './pages/AIAgentsPage';
 import VoiceSettingsPage from './pages/VoiceSettingsPage';
 import AdminInterviewTestPage from './pages/AdminInterviewTestPage';
+import MicrophoneSetupPage from './pages/MicrophoneSetupPage';
 import Header from './components/layout/Header';
 import Sidebar from './components/layout/Sidebar';
 import LoadingSpinner from './components/ui/LoadingSpinner';
@@ -54,7 +55,7 @@ const AppContent: React.FC = () => {
         <main className="flex-1">
           <Routes>
             <Route path="/dashboard" element={<DashboardPage />} />
-            <Route path="/interviews" element={<InterviewPage />} />
+            <Route path="/interviews" element={<div>Interview page - use Admin Test for interview setup</div>} />
             <Route path="/candidates" element={<CandidatesPage />} />
             <Route path="/candidates/:id" element={<CandidateProfilePage />} />
             <Route path="/reports" element={<ReportsPage />} />
@@ -64,6 +65,7 @@ const AppContent: React.FC = () => {
             <Route path="/ai-agents" element={<AIAgentsPage />} />
             <Route path="/voice-settings" element={<VoiceSettingsPage />} />
             <Route path="/admin-interview-test" element={<AdminInterviewTestPage />} />
+            <Route path="/microphone-setup" element={<MicrophoneSetupPage />} />
             <Route path="/settings" element={<SettingsPage />} />
             <Route path="/supabase-test" element={<SupabaseTestPage />} />
         <Route path="/" element={<Navigate to="/dashboard" replace />} />
