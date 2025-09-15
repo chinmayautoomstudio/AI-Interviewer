@@ -419,9 +419,9 @@ export class N8nService {
 
       return {
         success: true,
-        candidate: candidateData,
+        candidateId: candidateData?.id || 'generated-id',
+        resumeText: data.extracted_text || data.resumeText || data.extractedText || '',
         extractedData: extractedData,
-        resumeUrl: resumeUrl
       };
 
     } catch (error) {

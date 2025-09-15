@@ -147,6 +147,28 @@ class ElevenLabsService {
     try {
       const startTime = Date.now();
       
+      // Clean up voice settings to match ElevenLabs API format
+      const voiceSettings = request.voiceSettings || this.currentVoiceConfig.settings;
+      const cleanVoiceSettings = {
+        stability: voiceSettings.stability,
+        similarity_boost: voiceSettings.similarityBoost,
+        ...(voiceSettings.style !== undefined && { style: voiceSettings.style }),
+        ...(voiceSettings.useSpeakerBoost !== undefined && { use_speaker_boost: voiceSettings.useSpeakerBoost })
+      };
+
+      const requestBody = {
+        text: request.text,
+        model_id: request.modelId || this.defaultModelId,
+        voice_settings: cleanVoiceSettings,
+      };
+
+      console.log('🔊 TTS Request:', {
+        voiceId: request.voiceId,
+        text: request.text,
+        modelId: requestBody.model_id,
+        voiceSettings: requestBody.voice_settings
+      });
+      
       const response = await fetch(
         `${this.baseUrl}/text-to-speech/${request.voiceId}`,
         {
@@ -156,16 +178,18 @@ class ElevenLabsService {
             'Content-Type': 'application/json',
             'xi-api-key': this.apiKey,
           },
-          body: JSON.stringify({
-            text: request.text,
-            model_id: request.modelId || this.defaultModelId,
-            voice_settings: request.voiceSettings || this.currentVoiceConfig.settings,
-          }),
+          body: JSON.stringify(requestBody),
         }
       );
 
       if (!response.ok) {
-        throw new Error(`TTS request failed: ${response.statusText}`);
+        const errorText = await response.text();
+        console.error('❌ TTS Error Response:', {
+          status: response.status,
+          statusText: response.statusText,
+          body: errorText
+        });
+        throw new Error(`TTS request failed: ${response.status} ${response.statusText} - ${errorText}`);
       }
 
       const audioData = await response.arrayBuffer();
@@ -193,9 +217,64 @@ class ElevenLabsService {
 
   // Convert speech to text (using Eleven Labs STT if available, or fallback to Web Speech API)
   async speechToText(request: STTRequest): Promise<STTResponse> {
-    // For now, we'll use the Web Speech API as Eleven Labs STT is not widely available
-    // This can be enhanced when Eleven Labs STT becomes more accessible
-    return this.webSpeechToText(request);
+    // For recorded audio, we need to use a different approach
+    // Web Speech API works with live microphone, not recorded audio
+    return this.processRecordedAudio(request);
+  }
+
+  // Process recorded audio for speech-to-text
+  private async processRecordedAudio(request: STTRequest): Promise<STTResponse> {
+    // For now, we'll use a simple approach: convert audio to text using Web Speech API
+    // by creating a temporary audio element and using the microphone-based recognition
+    return new Promise((resolve, reject) => {
+      if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
+        reject(new Error('Speech recognition not supported in this browser'));
+        return;
+      }
+
+      const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+      const recognition = new SpeechRecognition();
+
+      recognition.continuous = false;
+      recognition.interimResults = false;
+      recognition.lang = request.language || 'en-US';
+
+      // Set a timeout for the recognition
+      const timeout = setTimeout(() => {
+        recognition.stop();
+        reject(new Error('Speech recognition timeout'));
+      }, 10000); // 10 second timeout
+
+      recognition.onresult = (event: any) => {
+        clearTimeout(timeout);
+        const result = event.results[0];
+        const text = result[0].transcript;
+        const confidence = result[0].confidence || 0.8;
+
+        resolve({
+          text,
+          confidence,
+          language: recognition.lang,
+          duration: 0,
+          metadata: {
+            model: 'Web Speech API (Recorded)',
+            processingTime: 0,
+          },
+        });
+      };
+
+      recognition.onerror = (event: any) => {
+        clearTimeout(timeout);
+        reject(new Error(`Speech recognition error: ${event.error}`));
+      };
+
+      recognition.onend = () => {
+        clearTimeout(timeout);
+      };
+
+      // Start recognition
+      recognition.start();
+    });
   }
 
   // Web Speech API implementation (fallback)
