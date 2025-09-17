@@ -35,6 +35,52 @@ export class InterviewSystemService {
     console.log('✅ Response cache cleared for session:', sessionId);
   }
 
+  // Get current session data
+  static async getCurrentSession(): Promise<{
+    sessionId: string;
+    candidate: Candidate;
+    jobDescription: JobDescription;
+    aiAgent: AIAgent | null;
+  } | null> {
+    try {
+      // Get the most recent active session
+      const { data: sessions, error } = await supabase
+        .from('interview_sessions')
+        .select(`
+          session_id,
+          candidate: candidates(*),
+          job_description: job_descriptions(*),
+          ai_agent: ai_agents(*)
+        `)
+        .eq('status', 'in_progress')
+        .order('created_at', { ascending: false })
+        .limit(1);
+
+      if (error) {
+        console.error('❌ Error fetching current session:', error);
+        return null;
+      }
+
+      if (!sessions || sessions.length === 0) {
+        console.log('⚠️ No active session found');
+        return null;
+      }
+
+      const session = sessions[0];
+      console.log('✅ Current session found:', session.session_id);
+
+      return {
+        sessionId: session.session_id,
+        candidate: Array.isArray(session.candidate) ? session.candidate[0] : session.candidate,
+        jobDescription: Array.isArray(session.job_description) ? session.job_description[0] : session.job_description,
+        aiAgent: Array.isArray(session.ai_agent) ? session.ai_agent[0] : session.ai_agent
+      };
+    } catch (error) {
+      console.error('❌ Error getting current session:', error);
+      return null;
+    }
+  }
+
   // Check if response is duplicate and add to cache
   private static isDuplicateResponse(sessionId: string, response: any): boolean {
     // Normalize response by trimming whitespace and newlines for better duplicate detection
