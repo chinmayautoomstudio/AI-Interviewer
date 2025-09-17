@@ -25,22 +25,41 @@ const VoiceRecorder: React.FC<VoiceRecorderProps> = ({
   const [isListening, setIsListening] = useState(false);
   const [audioLevel, setAudioLevel] = useState(0);
   const [interimText, setInterimText] = useState('');
+  const [debugMode, setDebugMode] = useState(false);
+  const [debugLogs, setDebugLogs] = useState<Array<{timestamp: string, level: string, message: string}>>([]);
 
   const streamRef = useRef<MediaStream | null>(null);
   const audioContextRef = useRef<AudioContext | null>(null);
   const analyserRef = useRef<AnalyserNode | null>(null);
   const animationFrameRef = useRef<number | null>(null);
 
+  // Debug logging function
+  const addDebugLog = (level: 'info' | 'warn' | 'error' | 'success', message: string) => {
+    const timestamp = new Date().toLocaleTimeString();
+    const logEntry = { timestamp, level, message };
+    
+    setDebugLogs(prev => {
+      const newLogs = [...prev, logEntry];
+      // Keep only last 50 logs to prevent memory issues
+      return newLogs.slice(-50);
+    });
+    
+    // Also log to console for development
+    const consoleMethod = level === 'error' ? 'error' : level === 'warn' ? 'warn' : 'log';
+    console[consoleMethod](`[${timestamp}] ${level.toUpperCase()}: ${message}`);
+  };
+
   // Start audio monitoring for visual feedback
   const startAudioMonitoring = async () => {
     try {
-      console.log('🎤 Starting audio monitoring...');
+      addDebugLog('info', 'Starting audio monitoring...');
       
       if (streamRef.current) {
-        console.log('✅ Audio stream already exists');
+        addDebugLog('info', 'Audio stream already exists');
         return;
       }
 
+      addDebugLog('info', 'Requesting microphone access...');
       const stream = await navigator.mediaDevices.getUserMedia({ 
         audio: {
           echoCancellation: true,
@@ -51,9 +70,10 @@ const VoiceRecorder: React.FC<VoiceRecorderProps> = ({
       
       streamRef.current = stream;
       setIsListening(true);
-      console.log('✅ Audio stream obtained');
+      addDebugLog('success', `Audio stream obtained - ${stream.getAudioTracks().length} audio tracks`);
 
       // Set up audio analysis for visual feedback
+      addDebugLog('info', 'Setting up audio analysis...');
       const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
       const analyser = audioContext.createAnalyser();
       const source = audioContext.createMediaStreamSource(stream);
@@ -64,6 +84,7 @@ const VoiceRecorder: React.FC<VoiceRecorderProps> = ({
       
       audioContextRef.current = audioContext;
       analyserRef.current = analyser;
+      addDebugLog('success', `Audio context created - sample rate: ${audioContext.sampleRate}Hz`);
 
       // Start monitoring audio levels
       const monitorAudioLevel = () => {
@@ -73,23 +94,29 @@ const VoiceRecorder: React.FC<VoiceRecorderProps> = ({
         analyserRef.current.getByteFrequencyData(dataArray);
         
         const average = dataArray.reduce((sum, value) => sum + value, 0) / dataArray.length;
-        setAudioLevel(average / 255);
+        const level = average / 255;
+        setAudioLevel(level);
+        
+        // Log significant audio level changes
+        if (level > 0.1 && Math.random() < 0.01) { // Log 1% of high audio levels
+          addDebugLog('info', `Audio level: ${(level * 100).toFixed(1)}%`);
+        }
         
         animationFrameRef.current = requestAnimationFrame(monitorAudioLevel);
       };
       
       monitorAudioLevel();
-      console.log('✅ Audio monitoring started');
+      addDebugLog('success', 'Audio monitoring started successfully');
       
     } catch (error: any) {
-      console.error('❌ Error starting audio monitoring:', error);
+      addDebugLog('error', `Error starting audio monitoring: ${error.message}`);
       if (error.name === 'NotAllowedError') {
-        console.warn('⚠️ Microphone access denied - audio meter will not work');
+        addDebugLog('warn', 'Microphone access denied - audio meter will not work');
         // Don't show error for audio monitoring, just log it
       } else if (error.name === 'NotFoundError') {
-        console.warn('⚠️ No microphone found - audio meter will not work');
+        addDebugLog('warn', 'No microphone found - audio meter will not work');
       } else {
-        console.error('❌ Unexpected error starting audio monitoring:', error);
+        addDebugLog('error', `Unexpected error starting audio monitoring: ${error.name} - ${error.message}`);
       }
     }
   };
@@ -141,55 +168,58 @@ const VoiceRecorder: React.FC<VoiceRecorderProps> = ({
 
   // Handle voice input (Primary method - Audio to n8n workflow)
   const handleVoiceInput = async () => {
-    console.log('🎤 handleVoiceInput called - using audio-to-n8n workflow');
-    console.log('📊 Current state:', { isProcessing, isSTTRunning, isListening });
+    addDebugLog('info', 'Voice input initiated - using audio-to-n8n workflow');
+    addDebugLog('info', `Current state: processing=${isProcessing}, sttRunning=${isSTTRunning}, listening=${isListening}`);
     
     if (isProcessing || isSTTRunning) {
-      console.log('⚠️ Voice input blocked - already processing or STT running');
+      addDebugLog('warn', 'Voice input blocked - already processing or STT running');
       return;
     }
 
     setIsProcessing(true);
-    console.log('✅ Set isProcessing to true');
+    addDebugLog('info', 'Set processing state to true');
     
     try {
-      console.log('🎤 Starting voice input...');
+      addDebugLog('info', 'Starting voice input process...');
       
       // Audio monitoring should already be started on component mount
       if (!isListening) {
-        console.log('⚠️ Audio monitoring not started, attempting to start...');
+        addDebugLog('warn', 'Audio monitoring not started, attempting to start...');
         await startAudioMonitoring();
       } else {
-        console.log('✅ Audio monitoring is already active');
+        addDebugLog('info', 'Audio monitoring is already active');
       }
       
       // Record audio for n8n workflow
-      console.log('🎤 Recording audio for n8n workflow...');
+      addDebugLog('info', 'Recording audio for n8n workflow...');
       const audioBlob = await recordAudioForWhisper();
       
       if (!audioBlob) {
-        console.log('❌ Failed to record audio');
+        addDebugLog('error', 'Failed to record audio');
         onError('Failed to record audio. Please check your microphone permissions.');
         return;
       }
 
       if (audioBlob.size === 0) {
-        console.log('❌ Empty audio blob recorded');
+        addDebugLog('error', 'Empty audio blob recorded');
         onError('No audio recorded. Please speak louder or check your microphone.');
         return;
       }
 
-      console.log('✅ Audio recorded successfully:', audioBlob.size, 'bytes');
+      addDebugLog('success', `Audio recorded successfully: ${audioBlob.size} bytes, type: ${audioBlob.type}`);
 
       // Get session data
+      addDebugLog('info', 'Fetching current session data...');
       const session = await InterviewSystemService.getCurrentSession();
       if (!session) {
-        console.error('❌ No active session found');
+        addDebugLog('error', 'No active session found');
         onError('No active interview session. Please start an interview first.');
         return;
       }
 
-      console.log('🔤 Sending audio to n8n workflow for STT and AI response (audio-to-n8n workflow)...');
+      addDebugLog('success', `Session found: ${session.sessionId}, candidate: ${session.candidate.name}, job: ${session.jobDescription.title}`);
+
+      addDebugLog('info', 'Sending audio to n8n workflow for STT and AI response...');
       const result = await InterviewSystemService.sendAudioToN8nWorkflow(
         session.sessionId,
         session.candidate,
@@ -199,43 +229,41 @@ const VoiceRecorder: React.FC<VoiceRecorderProps> = ({
       );
 
       if (result.error) {
-        console.error('❌ n8n workflow failed:', result.error);
-        console.log('🔄 n8n workflow failed, falling back to Amazon Transcribe...');
+        addDebugLog('error', `n8n workflow failed: ${result.error}`);
+        addDebugLog('info', 'Falling back to Amazon Transcribe...');
         
         // Fallback to Amazon Transcribe
         try {
           await handleAmazonTranscribeInput();
         } catch (fallbackError) {
-          console.error('❌ Amazon Transcribe fallback also failed:', fallbackError);
+          addDebugLog('error', `Amazon Transcribe fallback also failed: ${fallbackError}`);
           onError(`Audio processing failed: ${result.error}`);
         }
         return;
       }
 
       if (result.response && result.response.trim()) {
-        console.log('✅ n8n workflow successful:', result.response);
-        console.log('📊 Response details:', {
-          text: result.response,
-          sessionId: result.sessionId
-        });
+        addDebugLog('success', `n8n workflow successful: ${result.response.substring(0, 100)}${result.response.length > 100 ? '...' : ''}`);
+        addDebugLog('info', `Response details: sessionId=${result.sessionId}, length=${result.response.length} chars`);
         await processAIResponse(result.response, 0.95); // High confidence for n8n workflow
       } else {
-        console.log('⚠️ n8n workflow returned empty response');
+        addDebugLog('warn', 'n8n workflow returned empty response');
         onError('No response received from AI. Please try speaking again.');
       }
       
     } catch (error: any) {
-      console.error('❌ Audio-to-n8n workflow failed:', error);
-      console.log('🔄 n8n workflow failed, falling back to Amazon Transcribe...');
+      addDebugLog('error', `Audio-to-n8n workflow failed: ${error.message}`);
+      addDebugLog('info', 'Falling back to Amazon Transcribe...');
       
       try {
         await handleAmazonTranscribeInput();
       } catch (fallbackError) {
-        console.error('❌ Amazon Transcribe fallback also failed:', fallbackError);
+        addDebugLog('error', `Amazon Transcribe fallback also failed: ${fallbackError}`);
         onError(`Speech recognition failed: ${error.message}`);
       }
     } finally {
       setIsProcessing(false);
+      addDebugLog('info', 'Voice input process completed, processing state reset');
     }
   };
 
@@ -243,14 +271,13 @@ const VoiceRecorder: React.FC<VoiceRecorderProps> = ({
   const recordAudioForWhisper = async (): Promise<Blob | null> => {
     return new Promise((resolve) => {
       if (!streamRef.current) {
-        console.error('❌ No audio stream available');
+        addDebugLog('error', 'No audio stream available for recording');
         resolve(null);
         return;
       }
 
-      console.log('🎤 Setting up MediaRecorder for Whisper...');
-      console.log('📊 Stream tracks:', streamRef.current.getTracks().length);
-      console.log('📊 Audio tracks:', streamRef.current.getAudioTracks().length);
+      addDebugLog('info', 'Setting up MediaRecorder for audio recording...');
+      addDebugLog('info', `Stream tracks: ${streamRef.current.getTracks().length}, Audio tracks: ${streamRef.current.getAudioTracks().length}`);
 
       const supportedTypes = [
         'audio/webm;codecs=opus',
@@ -268,12 +295,12 @@ const VoiceRecorder: React.FC<VoiceRecorderProps> = ({
       }
 
       if (!selectedType) {
-        console.error('❌ No supported audio format found');
+        addDebugLog('error', 'No supported audio format found');
         resolve(null);
         return;
       }
 
-      console.log('✅ Using audio format:', selectedType);
+      addDebugLog('success', `Using audio format: ${selectedType}`);
 
       const mediaRecorder = new MediaRecorder(streamRef.current, {
         mimeType: selectedType,
@@ -283,45 +310,43 @@ const VoiceRecorder: React.FC<VoiceRecorderProps> = ({
       const audioChunks: Blob[] = [];
 
       mediaRecorder.ondataavailable = (event) => {
-        console.log('📊 Audio data available:', event.data.size, 'bytes');
+        addDebugLog('info', `Audio data available: ${event.data.size} bytes`);
         if (event.data.size > 0) {
           audioChunks.push(event.data);
         }
       };
 
       mediaRecorder.onstart = () => {
-        console.log('🎤 MediaRecorder started');
+        addDebugLog('success', 'MediaRecorder started recording');
       };
 
       mediaRecorder.onstop = () => {
-        console.log('🎤 MediaRecorder stopped');
+        addDebugLog('info', 'MediaRecorder stopped recording');
         const audioBlob = new Blob(audioChunks, { type: selectedType });
-        console.log('📊 Total audio chunks:', audioChunks.length);
-        console.log('📊 Final blob size:', audioBlob.size, 'bytes');
-        console.log('📊 Final blob type:', audioBlob.type);
+        addDebugLog('success', `Recording complete: ${audioChunks.length} chunks, ${audioBlob.size} bytes, type: ${audioBlob.type}`);
         resolve(audioBlob);
       };
 
       mediaRecorder.onerror = (event) => {
-        console.error('❌ MediaRecorder error:', event);
+        addDebugLog('error', `MediaRecorder error: ${event}`);
         resolve(null);
       };
 
       const recordDuration = Math.max(3000, Math.min(8000, 3000 + (audioLevel * 5000)));
-      console.log('⏰ Recording duration:', recordDuration, 'ms');
+      addDebugLog('info', `Recording duration: ${recordDuration}ms (audio level: ${(audioLevel * 100).toFixed(1)}%)`);
 
       try {
         mediaRecorder.start(100); // Collect data every 100ms
-        console.log('🎤 Started recording for Whisper...');
+        addDebugLog('success', 'Started recording for n8n workflow...');
 
         setTimeout(() => {
           if (mediaRecorder.state === 'recording') {
-            console.log('⏰ Stopping recording after timeout');
+            addDebugLog('info', 'Stopping recording after timeout');
             mediaRecorder.stop();
           }
         }, recordDuration);
       } catch (error) {
-        console.error('❌ Failed to start MediaRecorder:', error);
+        addDebugLog('error', `Failed to start MediaRecorder: ${error}`);
         resolve(null);
       }
     });
@@ -668,6 +693,53 @@ const VoiceRecorder: React.FC<VoiceRecorderProps> = ({
         <div className="text-xs text-gray-500 text-center max-w-md">
           Say anything - single words, phrases, or complete sentences. The system will capture it all!
         </div>
+
+        {/* Debug Toggle */}
+        <button
+          onClick={() => setDebugMode(!debugMode)}
+          className="mt-4 px-3 py-1 text-xs bg-gray-200 hover:bg-gray-300 rounded transition-colors"
+        >
+          {debugMode ? 'Hide Debug' : 'Show Debug'}
+        </button>
+
+        {/* Debug Panel */}
+        {debugMode && (
+          <div className="mt-4 w-full max-w-4xl bg-gray-900 text-green-400 p-4 rounded-lg font-mono text-xs max-h-96 overflow-y-auto">
+            <div className="flex justify-between items-center mb-2">
+              <h3 className="text-sm font-bold text-white">Debug Logs</h3>
+              <button
+                onClick={() => setDebugLogs([])}
+                className="px-2 py-1 bg-red-600 hover:bg-red-700 text-white rounded text-xs"
+              >
+                Clear
+              </button>
+            </div>
+            <div className="space-y-1">
+              {debugLogs.length === 0 ? (
+                <div className="text-gray-500">No debug logs yet...</div>
+              ) : (
+                debugLogs.map((log, index) => (
+                  <div key={index} className="flex items-start space-x-2">
+                    <span className="text-gray-400 text-xs flex-shrink-0">
+                      {log.timestamp}
+                    </span>
+                    <span className={`text-xs flex-shrink-0 ${
+                      log.level === 'error' ? 'text-red-400' :
+                      log.level === 'warn' ? 'text-yellow-400' :
+                      log.level === 'success' ? 'text-green-400' :
+                      'text-blue-400'
+                    }`}>
+                      [{log.level.toUpperCase()}]
+                    </span>
+                    <span className="text-gray-300 break-words">
+                      {log.message}
+                    </span>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
