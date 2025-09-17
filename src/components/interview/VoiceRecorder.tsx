@@ -291,7 +291,6 @@ const VoiceRecorder: React.FC<VoiceRecorderProps> = ({
 
       mediaRecorder.onstart = () => {
         console.log('🎤 MediaRecorder started');
-        recordingStarted = true;
       };
 
       mediaRecorder.onstop = () => {
