@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from 'react';
-import { Mic, MicOff, Play, Square, Volume2, MessageSquare, Send, ArrowLeft, Clock, User, Bot } from 'lucide-react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { Mic, Play, Volume2, MessageSquare, Send, ArrowLeft, Clock, User, Bot } from 'lucide-react';
 import { InterviewSystemService } from '../services/interviewSystem';
-import { elevenLabsService } from '../services/elevenLabs';
+import { ttsManager } from '../services/ttsManager';
 import LoadingSpinner from '../components/ui/LoadingSpinner';
 import VoiceRecorder from '../components/interview/VoiceRecorder';
 import { InterviewSession, InterviewMessage } from '../types';
@@ -20,31 +20,187 @@ const InterviewPage: React.FC<InterviewPageProps> = ({
   const [messages, setMessages] = useState<InterviewMessage[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [isVoiceMode, setIsVoiceMode] = useState(false);
+  const [isVoiceMode, setIsVoiceMode] = useState(true); // Voice mode is default
   const [currentMessage, setCurrentMessage] = useState('');
-  const [isRecording, setIsRecording] = useState(false);
   const [interviewDuration, setInterviewDuration] = useState(0);
+  const currentAudioRef = useRef<HTMLAudioElement | null>(null);
+  const greetingProcessedRef = useRef<boolean>(false);
+  const startInterviewCalledRef = useRef<boolean>(false);
+
+  // Helper function to stop any currently playing audio
+  const stopCurrentAudio = () => {
+    if (currentAudioRef.current) {
+      currentAudioRef.current.pause();
+      currentAudioRef.current.currentTime = 0;
+      currentAudioRef.current = null;
+    }
+  };
+
+  // Helper function to play audio with proper cleanup
+  const playAudio = useCallback(async (audioUrl: string) => {
+    try {
+      // Stop any currently playing audio
+      stopCurrentAudio();
+      
+      // Create and play new audio with volume boost
+      const audio = new Audio(audioUrl);
+      audio.volume = 1.0; // Maximum volume
+      currentAudioRef.current = audio;
+      
+      await audio.play();
+      
+      // Clean up when audio ends
+      audio.onended = () => {
+        URL.revokeObjectURL(audioUrl);
+        currentAudioRef.current = null;
+      };
+      
+      // Clean up on error
+      audio.onerror = () => {
+        URL.revokeObjectURL(audioUrl);
+        currentAudioRef.current = null;
+      };
+    } catch (error) {
+      console.warn('⚠️ Audio playback failed:', error);
+      URL.revokeObjectURL(audioUrl);
+      currentAudioRef.current = null;
+    }
+  }, []);
 
   useEffect(() => {
+    console.log('🔄 InterviewPage useEffect called');
+    console.log('📊 useEffect called at:', new Date().toISOString());
+    console.log('📊 Greeting processed flag:', greetingProcessedRef.current);
+    
     // Start the interview timer
     const timer = setInterval(() => {
       setInterviewDuration(prev => prev + 1);
     }, 1000);
 
-    // Add initial AI greeting
-    const initialGreeting: InterviewMessage = {
-      id: `greeting-${Date.now()}`,
-      interviewSessionId: session.id,
-      messageType: 'question',
-      content: "Hi! I'm Supriya from AutoomStudio. I'll be your interviewer today. Ready to dive in?",
-      sender: 'ai',
-      timestamp: new Date().toISOString()
-    };
-    
-    setMessages([initialGreeting]);
+    // Don't add hardcoded greeting - let AI Agent generate it
+    setMessages([]);
 
-    return () => clearInterval(timer);
-  }, [session]);
+    // Trigger AI Agent to start the interview with greeting
+    const startInterviewWithAI = async () => {
+      console.log('🔄 startInterviewWithAI function called');
+      console.log('📊 Greeting processed flag:', greetingProcessedRef.current);
+      console.log('📊 Start interview called flag:', startInterviewCalledRef.current);
+      
+      // Prevent duplicate calls (React StrictMode causes double execution)
+      if (startInterviewCalledRef.current) {
+        console.log('⚠️ startInterviewWithAI already called, skipping...');
+        return;
+      }
+      
+      // Mark as called immediately to prevent duplicates
+      startInterviewCalledRef.current = true;
+      
+      // Prevent duplicate greeting processing
+      if (greetingProcessedRef.current) {
+        console.log('⚠️ Greeting already processed, skipping...');
+        return;
+      }
+      
+      try {
+        console.log('🤖 Starting interview with AI Agent...');
+        console.log('📊 Session ID:', session.sessionId);
+        const result = await InterviewSystemService.startActualInterview(session.sessionId);
+        
+        if (result.data && result.data.greeting) {
+          console.log('✅ AI Agent response received:', result.data.greeting);
+          
+          // Mark greeting as processed
+          greetingProcessedRef.current = true;
+          
+          // Extract text content from AI response (handle different response formats)
+          let aiText = '';
+          if (typeof result.data.greeting === 'string') {
+            aiText = result.data.greeting;
+          } else if (result.data.greeting && typeof result.data.greeting === 'object') {
+            // Try to extract text from various possible fields
+            aiText = result.data.greeting.greeting || 
+                    result.data.greeting.message || 
+                    result.data.greeting.ai_response ||
+                    result.data.greeting.response ||
+                    result.data.greeting.output ||
+                    result.data.greeting.text ||
+                    result.data.greeting.content ||
+                    JSON.stringify(result.data.greeting);
+          }
+          
+          if (aiText) {
+            // Add AI response to messages
+            const aiMessage: InterviewMessage = {
+              id: `ai-response-${Date.now()}`,
+              interviewSessionId: session.id,
+              messageType: 'question',
+              content: aiText,
+              sender: 'ai',
+              timestamp: new Date().toISOString()
+            };
+            
+            setMessages([aiMessage]);
+            
+            // Auto-play the AI response
+            try {
+              const voiceConfig = ttsManager.getCurrentVoiceConfig();
+              const ttsResponse = await ttsManager.textToSpeech({
+                text: aiText,
+                voiceId: voiceConfig.voiceId,
+                voiceSettings: voiceConfig.settings
+              });
+              
+              if (ttsResponse.audioUrl) {
+              await playAudio(ttsResponse.audioUrl);
+            } else {
+              console.log('🔊 Browser TTS is playing directly');
+            }
+            } catch (ttsError) {
+              console.warn('⚠️ TTS failed for AI response:', ttsError);
+            }
+          } else {
+            console.warn('⚠️ Could not extract text from AI response:', result.data.greeting);
+          }
+        } else if (result.data && result.data.greeting === undefined) {
+          console.log('⚠️ Duplicate response detected and ignored');
+        } else {
+          console.error('❌ No response received from AI Agent');
+          console.log('🔍 Debug info:', {
+            hasResult: !!result,
+            hasData: !!result?.data,
+            hasGreeting: !!result?.data?.greeting,
+            resultData: result?.data
+          });
+        }
+      } catch (error) {
+        console.error('❌ Failed to start interview with AI Agent:', error);
+      }
+    };
+
+    // Start the interview with AI Agent
+    startInterviewWithAI();
+
+    // Add beforeunload event listener to end interview when page is closed/refreshed
+    const handleBeforeUnload = (event: BeforeUnloadEvent) => {
+      if (session) {
+        // End the interview session
+        InterviewSystemService.cancelInterview(session.sessionId).catch(console.error);
+      }
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+
+    return () => {
+      clearInterval(timer);
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+      stopCurrentAudio(); // Stop any playing audio when component unmounts
+      
+      // Clear response cache when component unmounts to prevent cache pollution
+      if (session?.sessionId) {
+        InterviewSystemService.clearResponseCache(session.sessionId);
+      }
+    };
+  }, [playAudio, session]); // Include dependencies to prevent warnings
 
   const formatDuration = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
@@ -102,14 +258,21 @@ const InterviewPage: React.FC<InterviewPageProps> = ({
         let audioResponse = '';
         try {
           console.log('🔊 Generating TTS...');
-          const voiceConfig = elevenLabsService.getCurrentVoiceConfig();
-          const ttsResponse = await elevenLabsService.textToSpeech({
+          const voiceConfig = ttsManager.getCurrentVoiceConfig();
+          const ttsResponse = await ttsManager.textToSpeech({
             text: result.data.aiResponse,
             voiceId: voiceConfig.voiceId,
             voiceSettings: voiceConfig.settings
           });
           audioResponse = ttsResponse.audioUrl;
           console.log('✅ TTS generated:', audioResponse);
+          
+          // Auto-play the AI response
+          if (audioResponse) {
+            await playAudio(audioResponse);
+          } else {
+            console.log('🔊 Browser TTS is playing directly');
+          }
         } catch (ttsError) {
           console.warn('⚠️ TTS failed, continuing without audio:', ttsError);
           // Continue without audio - the text response will still show
@@ -138,19 +301,7 @@ const InterviewPage: React.FC<InterviewPageProps> = ({
           return newMessages;
         });
 
-        // Auto-play the AI's voice response if available
-        if (audioResponse) {
-          try {
-            console.log('🔊 Playing AI voice response from text input:', audioResponse);
-            const audio = new Audio(audioResponse);
-            await audio.play();
-            console.log('✅ AI voice response played successfully');
-          } catch (error) {
-            console.error('❌ Error playing AI voice response:', error);
-          }
-        } else {
-          console.log('⚠️ No audio response to play');
-        }
+        // Audio is already played by the playAudio helper function above
       } else {
         console.error('❌ No AI response data:', result.error);
         setError(result.error || 'Failed to get AI response');
@@ -215,9 +366,8 @@ const InterviewPage: React.FC<InterviewPageProps> = ({
       // Auto-play the AI's voice response if available
       if (result.audioResponse) {
         try {
-          console.log('🔊 Playing AI voice response:', result.audioResponse);
-          const audio = new Audio(result.audioResponse);
-          await audio.play();
+          console.log('🔊 Playing AI voice response using centralized audio management:', result.audioResponse);
+          await playAudio(result.audioResponse);
           console.log('✅ AI voice response played successfully');
         } catch (error) {
           console.error('❌ Error playing AI voice response:', error);
@@ -344,6 +494,7 @@ const InterviewPage: React.FC<InterviewPageProps> = ({
                         <button
                           onClick={() => {
                             const audio = new Audio(message.audioUrl);
+                            audio.volume = 1.0; // Maximum volume
                             audio.play().catch(console.error);
                           }}
                           className="ml-2 p-1 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
@@ -401,43 +552,49 @@ const InterviewPage: React.FC<InterviewPageProps> = ({
               className={`flex items-center space-x-2 px-4 py-2 rounded-lg transition-colors ${
                 isVoiceMode 
                   ? 'bg-green-600 text-white hover:bg-green-700' 
-                  : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                  : 'bg-blue-600 text-white hover:bg-blue-700'
               }`}
             >
-              {isVoiceMode ? <Mic className="h-4 w-4" /> : <MicOff className="h-4 w-4" />}
-              <span>{isVoiceMode ? 'Voice Mode ON' : 'Voice Mode OFF'}</span>
+              {isVoiceMode ? <Mic className="h-4 w-4" /> : <MessageSquare className="h-4 w-4" />}
+              <span>{isVoiceMode ? '🎤 Voice Mode (Default)' : '✍️ Text Mode (Optional)'}</span>
             </button>
           </div>
 
           {!isVoiceMode && (
-            <div className="flex space-x-2">
-              <input
-                type="text"
-                value={currentMessage}
-                onChange={(e) => setCurrentMessage(e.target.value)}
-                onKeyPress={(e) => {
-                  if (e.key === 'Enter' && !e.shiftKey) {
-                    e.preventDefault();
-                    handleSendMessage();
-                  }
-                }}
-                placeholder="Type your response..."
-                className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                disabled={isLoading}
-              />
-              <button
-                onClick={handleSendMessage}
-                disabled={!currentMessage.trim() || isLoading}
-                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-400 transition-colors"
-              >
-                <Send className="h-4 w-4" />
-              </button>
+            <div>
+              <div className="mb-2 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                <p className="text-sm text-blue-800">✍️ <strong>Text Mode (Optional)</strong> - Type your response below or switch back to Voice Mode for a more natural conversation.</p>
+              </div>
+              <div className="flex space-x-2">
+                <input
+                  type="text"
+                  value={currentMessage}
+                  onChange={(e) => setCurrentMessage(e.target.value)}
+                  onKeyPress={(e) => {
+                    if (e.key === 'Enter' && !e.shiftKey) {
+                      e.preventDefault();
+                      handleSendMessage();
+                    }
+                  }}
+                  placeholder="Type your response..."
+                  className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  disabled={isLoading}
+                />
+                <button
+                  onClick={handleSendMessage}
+                  disabled={!currentMessage.trim() || isLoading}
+                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-400 transition-colors"
+                >
+                  <Send className="h-4 w-4" />
+                </button>
+              </div>
             </div>
           )}
 
           {isVoiceMode && (
             <div className="text-center text-gray-600">
-              <p className="text-sm">Use the voice recorder above to respond to the interviewer.</p>
+              <p className="text-sm">🎤 <strong>Voice Mode Active</strong> - Use the voice recorder above to respond to the interviewer.</p>
+              <p className="text-xs text-gray-500 mt-1">Click "Text Mode (Optional)" above if you prefer to type your responses.</p>
             </div>
           )}
         </div>

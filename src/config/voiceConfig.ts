@@ -29,8 +29,8 @@ export const VOICE_PRESETS: Record<string, VoiceConfig> = {
     age: 'young',
     useCase: 'Professional interviews, technical discussions',
     settings: {
-      stability: 0.7,
-      similarityBoost: 0.8,
+      stability: 0.8, // Increased for better clarity
+      similarityBoost: 0.9, // Increased for louder, clearer voice
       useSpeakerBoost: true,
     },
   },
@@ -45,7 +45,7 @@ export const VOICE_PRESETS: Record<string, VoiceConfig> = {
     useCase: 'Professional interviews, leadership roles',
     settings: {
       stability: 0.8,
-      similarityBoost: 0.7,
+      similarityBoost: 0.9, // Increased for louder voice
       useSpeakerBoost: true,
     },
   },
@@ -138,8 +138,8 @@ export const VOICE_PRESETS: Record<string, VoiceConfig> = {
     age: 'young',
     useCase: 'Customer care interviews, supportive conversations, friendly interactions',
     settings: {
-      stability: 0.6, // Lower stability for more natural, conversational tone
-      similarityBoost: 0.7, // Good similarity for friendly voice
+      stability: 0.7, // Increased for better clarity
+      similarityBoost: 0.9, // Increased for louder, clearer voice
       useSpeakerBoost: true,
     },
   },

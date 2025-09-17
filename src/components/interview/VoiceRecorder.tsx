@@ -1,7 +1,8 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Mic, MicOff, Square, Play, Pause } from 'lucide-react';
+import { Mic, MicOff } from 'lucide-react';
 import { InterviewSystemService } from '../../services/interviewSystem';
-import { elevenLabsService } from '../../services/elevenLabs';
+import { ttsManager } from '../../services/ttsManager';
+import { amazonTranscribeService } from '../../services/amazonTranscribe';
 import { microphonePermissionManager } from '../../utils/microphonePermissions';
 import { supabase } from '../../services/supabase';
 
@@ -14,14 +15,6 @@ interface VoiceRecorderProps {
   className?: string;
 }
 
-interface RecordingState {
-  isRecording: boolean;
-  isPaused: boolean;
-  duration: number;
-  audioBlob: Blob | null;
-  audioUrl: string | null;
-}
-
 const VoiceRecorder: React.FC<VoiceRecorderProps> = ({
   onTranscription,
   onError,
@@ -30,618 +23,691 @@ const VoiceRecorder: React.FC<VoiceRecorderProps> = ({
   language = 'en-US',
   className = '',
 }) => {
-  const [recordingState, setRecordingState] = useState<RecordingState>({
-    isRecording: false,
-    isPaused: false,
-    duration: 0,
-    audioBlob: null,
-    audioUrl: null,
-  });
-
   const [isProcessing, setIsProcessing] = useState(false);
-  const [isPlaying, setIsPlaying] = useState(false);
-  const [showTextFallback, setShowTextFallback] = useState(false);
-  const [fallbackText, setFallbackText] = useState('');
   const [isSTTRunning, setIsSTTRunning] = useState(false);
+  const [interimText, setInterimText] = useState('');
+  const [audioLevel, setAudioLevel] = useState(0);
+  const [isListening, setIsListening] = useState(false);
   
-  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
-  const audioChunksRef = useRef<Blob[]>([]);
-  const durationIntervalRef = useRef<NodeJS.Timeout | null>(null);
-  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const audioContextRef = useRef<AudioContext | null>(null);
+  const analyserRef = useRef<AnalyserNode | null>(null);
+  const microphoneRef = useRef<MediaStreamAudioSourceNode | null>(null);
+  const streamRef = useRef<MediaStream | null>(null);
+  const animationFrameRef = useRef<number | null>(null);
 
-  // Cleanup on unmount
-  useEffect(() => {
-    return () => {
-      if (durationIntervalRef.current) {
-        clearInterval(durationIntervalRef.current);
-      }
-      if (recordingState.audioUrl) {
-        elevenLabsService.revokeAudioUrl(recordingState.audioUrl);
-      }
-    };
-  }, [recordingState.audioUrl]);
+  // Cleanup function
+  const cleanup = () => {
+    if (animationFrameRef.current) {
+      cancelAnimationFrame(animationFrameRef.current);
+    }
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach(track => track.stop());
+    }
+    if (audioContextRef.current) {
+      audioContextRef.current.close();
+    }
+    setAudioLevel(0);
+    setIsListening(false);
+  };
 
-  const startRecording = async () => {
+  // Audio level monitoring
+  const monitorAudioLevel = () => {
+    if (!analyserRef.current) return;
+
+    const dataArray = new Uint8Array(analyserRef.current.frequencyBinCount);
+    analyserRef.current.getByteFrequencyData(dataArray);
+    
+    // Calculate average audio level
+    const average = dataArray.reduce((sum, value) => sum + value, 0) / dataArray.length;
+    const normalizedLevel = Math.min(average / 64, 1); // More sensitive normalization (was 128)
+    
+    // Only update if there's a significant change to avoid too many re-renders
+    if (Math.abs(normalizedLevel - audioLevel) > 0.01) {
+      setAudioLevel(normalizedLevel);
+    }
+    
+    // Continue monitoring
+    animationFrameRef.current = requestAnimationFrame(monitorAudioLevel);
+  };
+
+  // Start audio monitoring
+  const startAudioMonitoring = async () => {
     try {
-      // Check microphone permission first
-      const permissionState = await microphonePermissionManager.checkPermissionStatus();
-      
-      if (!permissionState.canRecord) {
-        if (permissionState.status === 'denied') {
-          onError('Microphone access denied. Please allow microphone access in your browser settings and refresh the page.');
-        } else if (permissionState.status === 'prompt') {
-          // Request permission
-          const newPermissionState = await microphonePermissionManager.requestMicrophonePermission();
-          if (!newPermissionState.canRecord) {
-            onError('Microphone permission is required for voice recording. Please allow microphone access.');
-            return;
-          }
-        } else {
-          onError('Microphone not available. Please check your microphone connection and browser settings.');
-          return;
-        }
-      }
-
+      console.log('🎤 Requesting microphone access...');
       const stream = await navigator.mediaDevices.getUserMedia({ 
         audio: {
-          echoCancellation: true,
-          noiseSuppression: true,
-          autoGainControl: true,
+          echoCancellation: false, // Disable for better level detection
+          noiseSuppression: false, // Disable for better level detection
+          autoGainControl: false   // Disable for better level detection
         }
       });
+      streamRef.current = stream;
+      console.log('✅ Microphone access granted');
       
-      const mediaRecorder = new MediaRecorder(stream, {
-        mimeType: 'audio/webm;codecs=opus',
-      });
-
-      mediaRecorderRef.current = mediaRecorder;
-      audioChunksRef.current = [];
-
-      mediaRecorder.ondataavailable = (event) => {
-        if (event.data.size > 0) {
-          audioChunksRef.current.push(event.data);
-        }
-      };
-
-      mediaRecorder.onstop = () => {
-        const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
-        const audioUrl = URL.createObjectURL(audioBlob);
-        
-        setRecordingState(prev => ({
-          ...prev,
-          audioBlob,
-          audioUrl,
-        }));
-
-        // Stop all tracks to release microphone
-        stream.getTracks().forEach(track => track.stop());
-      };
-
-      mediaRecorder.start();
+      console.log('🎤 Setting up audio context...');
+      audioContextRef.current = new (window.AudioContext || (window as any).webkitAudioContext)();
+      analyserRef.current = audioContextRef.current.createAnalyser();
+      microphoneRef.current = audioContextRef.current.createMediaStreamSource(stream);
       
-      setRecordingState(prev => ({
-        ...prev,
-        isRecording: true,
-        isPaused: false,
-        duration: 0,
-      }));
-
-      // Start duration timer
-      durationIntervalRef.current = setInterval(() => {
-        setRecordingState(prev => ({
-          ...prev,
-          duration: prev.duration + 1,
-        }));
-      }, 1000);
-
+      // Better settings for audio level detection
+      analyserRef.current.fftSize = 512; // Increased for better resolution
+      analyserRef.current.smoothingTimeConstant = 0.3; // Less smoothing for more responsive meter
+      analyserRef.current.minDecibels = -90;
+      analyserRef.current.maxDecibels = -10;
+      microphoneRef.current.connect(analyserRef.current);
+      
+      console.log('✅ Audio monitoring setup complete');
+      setIsListening(true);
+      monitorAudioLevel();
     } catch (error: any) {
-      console.error('Error starting recording:', error);
-      
-      let errorMessage = 'Failed to access microphone. Please check permissions.';
-      
+      console.error('❌ Error starting audio monitoring:', error);
       if (error.name === 'NotAllowedError') {
-        errorMessage = 'Microphone access denied. Please allow microphone access in your browser settings and refresh the page.';
+        console.warn('⚠️ Microphone access denied - audio meter will not work');
+        // Don't show error for audio monitoring, just log it
       } else if (error.name === 'NotFoundError') {
-        errorMessage = 'No microphone found. Please connect a microphone and try again.';
-      } else if (error.name === 'NotReadableError') {
-        errorMessage = 'Microphone is being used by another application. Please close other applications and try again.';
-      } else if (error.name === 'SecurityError') {
-        errorMessage = 'Microphone access blocked due to security restrictions. Please use HTTPS.';
-      }
-      
-      onError(errorMessage);
-    }
-  };
-
-  const stopRecording = () => {
-    if (mediaRecorderRef.current && recordingState.isRecording) {
-      mediaRecorderRef.current.stop();
-      
-      setRecordingState(prev => ({
-        ...prev,
-        isRecording: false,
-        isPaused: false,
-      }));
-
-      if (durationIntervalRef.current) {
-        clearInterval(durationIntervalRef.current);
-        durationIntervalRef.current = null;
-      }
-    }
-  };
-
-  const pauseRecording = () => {
-    if (mediaRecorderRef.current && recordingState.isRecording) {
-      if (recordingState.isPaused) {
-        mediaRecorderRef.current.resume();
-        setRecordingState(prev => ({ ...prev, isPaused: false }));
+        console.warn('⚠️ No microphone found - audio meter will not work');
+        // Don't show error for audio monitoring, just log it
       } else {
-        mediaRecorderRef.current.pause();
-        setRecordingState(prev => ({ ...prev, isPaused: true }));
+        console.warn('⚠️ Audio monitoring failed:', error.message);
+        // Don't show error for audio monitoring, just log it
       }
     }
   };
 
-  const processRecording = async () => {
-    if (!recordingState.audioBlob) return;
-
-    setIsProcessing(true);
-    try {
-      console.log('🎤 Starting STT process...');
-      
-      // For now, let's skip STT and go directly to text input
-      // This will help us test if the AI response part is working
-      console.log('🎤 Skipping STT for testing - showing text input');
-      setShowTextFallback(true);
-      onError('STT temporarily disabled for testing. Please type your response below.');
-
-    } catch (error) {
-      console.error('Error processing recording:', error);
-      // Show text fallback option when STT fails
-      setShowTextFallback(true);
-      onError('Voice transcription failed. You can type your response below.');
-    } finally {
-      setIsProcessing(false);
-    }
+  // Stop audio monitoring
+  const stopAudioMonitoring = () => {
+    cleanup();
   };
 
-  // Process AI response (extracted for reuse)
-  const processAIResponse = async (text: string, confidence: number) => {
+  // Initialize audio monitoring on component mount (with error handling)
+  useEffect(() => {
+    // Start audio monitoring immediately for the meter
+    startAudioMonitoring();
+    
+    return () => {
+      cleanup();
+    };
+  }, []);
+
+  // Process AI response
+  const processAIResponse = async (transcript: string, confidence: number) => {
     try {
-      console.log('🤖 Processing AI response for text:', text);
+      console.log('📝 Processing AI response for transcript:', transcript);
       
-      // Get session data to extract candidate and job IDs
+      // Get the actual candidate and job description IDs from the session
+      // We need to fetch the session data to get the correct IDs
       const { data: session, error: sessionError } = await supabase
         .from('interview_sessions')
-        .select('*')
+        .select('candidate_id, job_description_id')
         .eq('session_id', sessionId)
         .single();
 
       if (sessionError || !session) {
-        console.error('❌ Session not found:', sessionError);
-        onError('Session not found');
+        console.error('❌ Error fetching session data:', sessionError);
+        onError('Failed to get session information. Please try again.');
         return;
       }
 
-      console.log('✅ Session found:', session);
-      console.log('📤 Sending to AI Agent...');
+      console.log('📊 Session data:', { 
+        candidateId: session.candidate_id, 
+        jobDescriptionId: session.job_description_id 
+      });
 
-      // Send the transcribed text to n8n workflow for AI response
-      const aiResult = await InterviewSystemService.sendCandidateResponse(
+      const result = await InterviewSystemService.sendCandidateResponse(
         sessionId,
-        text,
+        transcript,
         session.candidate_id,
         session.job_description_id
       );
 
-      console.log('🤖 AI Result:', aiResult);
-      console.log('🤖 AI Result data:', aiResult.data);
-      console.log('🤖 AI Response text:', aiResult.data?.aiResponse);
-      console.log('🤖 AI Response type:', typeof aiResult.data?.aiResponse);
-
-      if (aiResult.data) {
-        console.log('✅ AI Response received:', aiResult.data.aiResponse);
-        
-        // Check if AI response is empty or null
-        if (!aiResult.data.aiResponse || aiResult.data.aiResponse.trim() === '') {
-          console.error('❌ AI Response is empty or null!');
-          onError('AI response is empty. Please try again.');
-          return;
-        }
-        
-        // Generate TTS for AI response
-        let audioResponse = '';
-        try {
-          console.log('🔊 Generating TTS...');
-          const voiceConfig = elevenLabsService.getCurrentVoiceConfig();
-          const ttsResponse = await elevenLabsService.textToSpeech({
-            text: aiResult.data.aiResponse,
-            voiceId: voiceConfig.voiceId,
-            voiceSettings: voiceConfig.settings
-          });
-          audioResponse = ttsResponse.audioUrl;
-          console.log('✅ TTS generated:', audioResponse);
-        } catch (ttsError) {
-          console.warn('⚠️ TTS failed, continuing without audio:', ttsError);
-          // Continue without audio - the text response will still show
-        }
-
-        console.log('📤 Calling onTranscription with:', {
-          transcript: text,
-          response: aiResult.data.aiResponse,
-          audioResponse: audioResponse,
-          confidence: confidence
-        });
-
-        // Return the complete result
-        onTranscription({
-          transcript: text,
-          response: aiResult.data.aiResponse,
-          audioResponse: audioResponse,
-          confidence: confidence
-        });
-      } else {
-        console.error('❌ No AI response data:', aiResult.error);
-        onError(aiResult.error || 'Failed to get AI response');
+      if (result.error) {
+        console.error('❌ Error sending candidate response:', result.error);
+        onError(`Failed to send response: ${result.error}`);
+        return;
       }
-    } catch (error) {
+
+      console.log('✅ AI response received:', result.data);
+      
+      let aiResponse = '';
+      if (result.data && Array.isArray(result.data.aiResponse) && result.data.aiResponse.length > 0) {
+        const firstItem = result.data.aiResponse[0];
+        aiResponse = (firstItem as any).output || (firstItem as any).response || (firstItem as any).message || (firstItem as any).text || (firstItem as any).content;
+      } else if (result.data && typeof result.data.aiResponse === 'object' && result.data.aiResponse !== null) {
+        const responseObj = result.data.aiResponse as any;
+        aiResponse = responseObj.output || responseObj.response || responseObj.message || responseObj.ai_response || responseObj.text || responseObj.content;
+      } else if (result.data && typeof result.data.aiResponse === 'string') {
+        aiResponse = result.data.aiResponse;
+      }
+
+      if (!aiResponse) {
+        console.warn('⚠️ AI Response is empty or null!');
+        onError('AI response is empty. Please try again.');
+        return;
+      }
+
+      console.log('✅ Final AI response:', aiResponse);
+
+      // Generate TTS for AI response
+      let audioResponse = '';
+      try {
+        const voiceConfig = ttsManager.getCurrentVoiceConfig();
+        const ttsResponse = await ttsManager.textToSpeech({
+          text: aiResponse,
+          voiceId: voiceConfig.voiceId,
+          voiceSettings: voiceConfig.settings
+        });
+        audioResponse = ttsResponse.audioUrl;
+        
+        // Don't auto-play here - let the parent component handle audio playback
+        // This prevents audio overlap issues
+      } catch (ttsError) {
+        console.warn('⚠️ TTS failed:', ttsError);
+      }
+
+      onTranscription({
+        transcript,
+        response: aiResponse,
+        audioResponse,
+        confidence
+      });
+
+    } catch (error: any) {
       console.error('❌ Error processing AI response:', error);
-      onError('Failed to get AI response');
+      onError(`Failed to process response: ${error.message}`);
     }
   };
 
-  // Skip STT and go to text input
-  const skipSTT = () => {
-    setShowTextFallback(true);
+  // Stop current voice recording
+  const stopVoiceRecording = () => {
+    console.log('🛑 Stopping voice recording...');
+    if (isSTTRunning) {
+      // Stop Amazon Transcribe if running
+      amazonTranscribeService.stopTranscription();
+      setIsSTTRunning(false);
+      setInterimText('');
+    }
     setIsProcessing(false);
-    setIsSTTRunning(false);
   };
 
-  // Handle text fallback submission
-  const handleTextFallback = async () => {
-    if (!fallbackText.trim()) return;
+  // Handle Amazon Transcribe voice input
+  const handleVoiceInput = async () => {
+    console.log('🎤 handleVoiceInput called');
+    console.log('📊 Current state:', { isProcessing, isSTTRunning, isListening });
+    
+    if (isProcessing || isSTTRunning) {
+      console.log('⚠️ Voice input blocked - already processing or STT running');
+      return;
+    }
 
     setIsProcessing(true);
+    console.log('✅ Set isProcessing to true');
+    
     try {
-      await processAIResponse(fallbackText, 1.0); // Text input has 100% confidence
+      console.log('🎤 Starting voice input...');
       
-      // Reset fallback
-      setShowTextFallback(false);
-      setFallbackText('');
-    } catch (error) {
-      console.error('Error processing text fallback:', error);
-      onError('Failed to process text response');
+      // Audio monitoring should already be started on component mount
+      if (!isListening) {
+        console.log('⚠️ Audio monitoring not started, attempting to start...');
+        await startAudioMonitoring();
+      } else {
+        console.log('✅ Audio monitoring is already active');
+      }
+      
+      console.log('🔍 Checking Amazon Transcribe availability...');
+      if (!amazonTranscribeService.isAvailable()) {
+        console.log('⚠️ Amazon Transcribe not configured, falling back to Web Speech API');
+        console.log('📊 Amazon Transcribe status:', {
+          isAvailable: amazonTranscribeService.isAvailable(),
+          awsAccessKey: !!process.env.REACT_APP_AWS_ACCESS_KEY_ID,
+          awsSecretKey: !!process.env.REACT_APP_AWS_SECRET_ACCESS_KEY,
+          awsRegion: process.env.REACT_APP_AWS_REGION
+        });
+        await handleWebSpeechInput();
+        return;
+      } else {
+        console.log('✅ Amazon Transcribe is available');
+      }
+
+      console.log('🔧 Initializing Amazon Transcribe...');
+      const initialized = await amazonTranscribeService.initialize();
+      console.log('📊 Amazon Transcribe initialization result:', initialized);
+      
+      if (!initialized) {
+        console.log('⚠️ Failed to initialize Amazon Transcribe, falling back to Web Speech API');
+        await handleWebSpeechInput();
+        return;
+      } else {
+        console.log('✅ Amazon Transcribe initialized successfully');
+      }
+
+      let hasResult = false;
+      let hasStarted = false;
+      let hasProcessed = false; // Flag to prevent duplicate processing
+      
+      console.log('⏰ Setting up 30-second timeout for Amazon Transcribe...');
+      // Increased timeout for long speech while maintaining fast partial result processing
+      const timeout = setTimeout(() => {
+        if (!hasResult) {
+          console.log('⏰ Amazon Transcribe timeout after 30 seconds, falling back to Web Speech API');
+          console.log('📊 Timeout state:', { hasResult, hasStarted, isSTTRunning });
+          amazonTranscribeService.stopTranscription();
+          setIsSTTRunning(false);
+          setInterimText('');
+          
+          // Fallback to Web Speech API
+          console.log('🔄 Starting Web Speech API fallback...');
+          handleWebSpeechInput().catch((fallbackError) => {
+            console.error('❌ Web Speech API fallback also failed:', fallbackError);
+            console.log('📊 Fallback error details:', {
+              name: fallbackError.name,
+              message: fallbackError.message,
+              stack: fallbackError.stack
+            });
+            onError('Voice input failed. Please try again or use text input.');
+          });
+        }
+      }, 30000); // 30 second timeout for Amazon Transcribe (increased for long speech)
+
+      console.log('🎤 Starting Amazon Transcribe transcription...');
+      await amazonTranscribeService.startTranscription(
+        (result) => {
+          console.log('🎤 Amazon Transcribe result received:', result);
+          console.log('📊 Result details:', { 
+            text: result.text, 
+            isPartial: result.isPartial, 
+            confidence: result.confidence,
+            textLength: result.text?.length || 0
+          });
+          hasStarted = true;
+          
+          if (result.isPartial) {
+            console.log('📝 Processing partial result:', result.text);
+            setInterimText(result.text);
+          } else if (result.text && result.text.trim() && !hasProcessed) {
+            console.log('✅ Processing final result:', result.text);
+            console.log('📊 Final result details:', { 
+              text: result.text, 
+              length: result.text.length, 
+              confidence: result.confidence 
+            });
+            
+            hasResult = true;
+            hasProcessed = true;
+            clearTimeout(timeout);
+            amazonTranscribeService.stopTranscription();
+            setIsSTTRunning(false);
+            setInterimText('');
+            
+            // For long speech, add a small delay to ensure complete processing
+            if (result.text.length > 50) {
+              console.log('📝 Long speech detected in Amazon Transcribe, ensuring complete processing...');
+              setTimeout(() => {
+                console.log('✅ Amazon Transcribe transcription successful (long speech), processing AI response...');
+                processAIResponse(result.text, result.confidence);
+              }, 1000); // Wait 1 second for long speech
+            } else {
+              console.log('✅ Amazon Transcribe transcription successful, processing AI response...');
+              processAIResponse(result.text, result.confidence);
+            }
+          } else if (hasProcessed) {
+            console.log('⚠️ Amazon Transcribe result already processed, ignoring duplicate');
+          } else {
+            console.log('⚠️ Empty or invalid result received:', result);
+          }
+        },
+        (error) => {
+          console.error('❌ Amazon Transcribe error callback triggered:', error);
+          console.log('📊 Error details:', { 
+            name: (error as any).name, 
+            message: error.message, 
+            stack: (error as any).stack 
+          });
+          clearTimeout(timeout);
+          amazonTranscribeService.stopTranscription();
+          setIsSTTRunning(false);
+          setInterimText('');
+          
+          // Fallback to Web Speech API
+          console.log('🔄 Falling back to Web Speech API due to Amazon Transcribe error');
+          handleWebSpeechInput().catch((fallbackError) => {
+            console.error('❌ Web Speech API fallback also failed:', fallbackError);
+            console.log('📊 Amazon Transcribe error details:', {
+              code: error.code,
+              message: error.message,
+              details: error.details
+            });
+            console.log('📊 Web Speech API fallback error details:', {
+              name: fallbackError.name,
+              message: fallbackError.message,
+              stack: fallbackError.stack
+            });
+            onError(`Voice input failed: ${error.message}. Please try again or use text input.`);
+          });
+        }
+      );
+
+      console.log('✅ Amazon Transcribe startTranscription called, setting isSTTRunning to true');
+      setIsSTTRunning(true);
+      
+    } catch (error: any) {
+      console.error('❌ Error in voice input:', error);
+      onError('Voice input failed. Please try again.');
     } finally {
       setIsProcessing(false);
     }
   };
 
-  // Start live STT using Web Speech API
-  const startLiveSTT = (): Promise<{ text: string; confidence: number }> => {
-    return new Promise((resolve, reject) => {
-      // Check if speech recognition is supported
-      if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
-        reject(new Error('Speech recognition not supported in this browser. Please use Chrome or Edge.'));
-        return;
+  // Fallback to Web Speech API
+  const handleWebSpeechInput = async () => {
+    console.log('🔄 handleWebSpeechInput called - Web Speech API fallback');
+    
+    if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
+      console.error('❌ Speech recognition not supported in this browser');
+      console.log('📊 Browser support check:', {
+        webkitSpeechRecognition: 'webkitSpeechRecognition' in window,
+        SpeechRecognition: 'SpeechRecognition' in window,
+        userAgent: navigator.userAgent
+      });
+      onError('Speech recognition not supported in this browser');
+      return;
+    } else {
+      console.log('✅ Web Speech API is available in this browser');
+      console.log('📊 Browser support details:', {
+        webkitSpeechRecognition: 'webkitSpeechRecognition' in window,
+        SpeechRecognition: 'SpeechRecognition' in window
+      });
+    }
+
+    // Audio monitoring should already be started on component mount
+    if (!isListening) {
+      console.log('⚠️ Audio monitoring not started for Web Speech API, attempting to start...');
+      try {
+        await startAudioMonitoring();
+      } catch (error) {
+        console.warn('⚠️ Audio monitoring failed, continuing with speech recognition:', error);
       }
+    } else {
+      console.log('✅ Audio monitoring is active for Web Speech API');
+    }
 
-      // Check if microphone permission is granted
-      if (navigator.permissions) {
-        navigator.permissions.query({ name: 'microphone' as PermissionName }).then((result) => {
-          if (result.state === 'denied') {
-            reject(new Error('Microphone access denied. Please allow microphone access and try again.'));
-            return;
-          }
-        }).catch(() => {
-          // Permission API not supported, continue anyway
-        });
-      }
+    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    console.log('🔧 Creating SpeechRecognition instance...');
+    const recognition = new SpeechRecognition();
+    
+    recognition.continuous = true; // Allow continuous speech
+    recognition.interimResults = true;
+    recognition.lang = language;
+    recognition.maxAlternatives = 1; // Only get the best result
+    
+    // Optimize for faster response (removed problematic settings)
+    // Note: Removed grammar and serviceURI settings that were causing errors
+    
+    console.log('⚙️ Web Speech API configuration:', {
+      continuous: recognition.continuous,
+      interimResults: recognition.interimResults,
+      lang: recognition.lang
+    });
 
-      const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-      const recognition = new SpeechRecognition();
-
-      recognition.continuous = false;
-      recognition.interimResults = false;
-      recognition.lang = language;
-      recognition.maxAlternatives = 1;
-
-      // Set a timeout for the recognition
+    return new Promise<void>((resolve, reject) => {
+      console.log('⏰ Setting up 45-second timeout for Web Speech API...');
+      let hasProcessed = false; // Flag to prevent duplicate processing
       const timeout = setTimeout(() => {
+        console.log('⏰ Web Speech API timeout after 45 seconds');
         recognition.stop();
-        setIsSTTRunning(false);
-        reject(new Error('Speech recognition timeout. Please try speaking again.'));
-      }, 5000); // 5 second timeout for faster response
-
-      recognition.onstart = () => {
-        console.log('🎤 Speech recognition started');
-        setIsSTTRunning(true);
-      };
+        reject(new Error('Speech recognition timeout. Please try speaking again or use text input.'));
+      }, 45000); // 45 second timeout for Web Speech API (increased for long speech)
 
       recognition.onresult = (event: any) => {
-        clearTimeout(timeout);
-        setIsSTTRunning(false);
-        console.log('🎤 Speech recognition result:', event);
+        console.log('🎤 Web Speech API onresult triggered');
+        console.log('📊 Event details:', { 
+          resultsLength: event.results.length,
+          resultIndex: event.results.length - 1
+        });
         
-        if (event.results && event.results.length > 0) {
-          const result = event.results[0];
-          if (result && result.length > 0) {
-            const text = result[0].transcript;
-            const confidence = result[0].confidence || 0.8;
-            
-            console.log('🎤 Transcribed text:', text);
-            console.log('🎤 Confidence:', confidence);
-            
-            resolve({ text, confidence });
+        const result = event.results[event.results.length - 1];
+        const text = result[0].transcript;
+        
+        console.log('🎤 Web Speech API result:', { 
+          text, 
+          isFinal: result.isFinal,
+          confidence: result[0].confidence,
+          textLength: text?.length || 0
+        });
+        
+        if (result.isFinal && text.trim() && !hasProcessed) {
+          console.log('✅ Processing final Web Speech API result');
+          console.log('📊 Final result details:', { 
+            text, 
+            length: text.length, 
+            confidence: result[0].confidence 
+          });
+          
+          // For long speech, wait longer to ensure we have the complete result
+          if (text.length > 50) {
+            console.log('📝 Long speech detected, waiting for complete result...');
+            const waitTime = text.length > 200 ? 4000 : 2000; // 4s for very long speech, 2s for medium
+            console.log(`⏰ Waiting ${waitTime}ms for long speech completion...`);
+            setTimeout(() => {
+              if (!hasProcessed) {
+                hasProcessed = true;
+                clearTimeout(timeout);
+                recognition.stop();
+                console.log('✅ Web Speech API transcription successful (long speech):', text);
+                processAIResponse(text, result[0].confidence || 0.8);
+                resolve();
+              }
+            }, waitTime);
           } else {
-            reject(new Error('No speech detected. Please try speaking again.'));
+            hasProcessed = true;
+            clearTimeout(timeout);
+            recognition.stop();
+            console.log('✅ Web Speech API transcription successful:', text);
+            processAIResponse(text, result[0].confidence || 0.8);
+            resolve();
           }
+        } else if (text.trim().length > 0 && !hasProcessed) {
+          console.log('📝 Processing partial Web Speech API result - showing interim text only');
+          setInterimText(text);
+          
+          // For single words or short phrases, process immediately for faster response
+          if (text.trim().length <= 10) {
+            console.log('⚡ Short speech detected, processing immediately:', text);
+            hasProcessed = true;
+            clearTimeout(timeout);
+            recognition.stop();
+            processAIResponse(text, 0.6); // Lower confidence for partial results
+            resolve();
+          } else {
+            // For longer speech, wait for final result
+            console.log('⏳ Longer speech detected, waiting for final result');
+          }
+        } else if (hasProcessed) {
+          console.log('⚠️ Result already processed, ignoring duplicate');
         } else {
-          reject(new Error('No speech detected. Please try speaking again.'));
+          console.log('⚠️ Web Speech API result too short or empty:', text);
         }
       };
 
       recognition.onerror = (event: any) => {
         clearTimeout(timeout);
-        setIsSTTRunning(false);
-        console.error('🎤 Speech recognition error:', event.error);
+        console.error('❌ Web Speech API error callback triggered:', event.error);
+        console.log('📊 Error event details:', {
+          error: event.error,
+          type: event.type,
+          timeStamp: event.timeStamp
+        });
         
-        let errorMessage = 'Speech recognition failed. ';
-        switch (event.error) {
-          case 'no-speech':
-            errorMessage += 'No speech detected. Please try speaking again.';
-            break;
-          case 'audio-capture':
-            errorMessage += 'Microphone not found or not working. Please check your microphone.';
-            break;
-          case 'not-allowed':
-            errorMessage += 'Microphone access denied. Please allow microphone access.';
-            break;
-          case 'network':
-            errorMessage += 'Network error. Please check your internet connection.';
-            break;
-          default:
-            errorMessage += `Error: ${event.error}. Please try again.`;
+        if (event.error === 'no-speech') {
+          console.log('⚠️ No speech detected error');
+          reject(new Error('No speech detected. Please speak clearly into your microphone.'));
+        } else if (event.error === 'audio-capture') {
+          console.log('⚠️ Audio capture error');
+          reject(new Error('Microphone not accessible. Please check your microphone permissions.'));
+        } else if (event.error === 'not-allowed') {
+          console.log('⚠️ Not allowed error');
+          reject(new Error('Microphone access denied. Please allow microphone access.'));
+        } else if (event.error === 'aborted') {
+          console.log('⚠️ Speech recognition aborted - this is usually normal when stopping');
+          // Don't reject for aborted errors - they're usually intentional stops
+          if (!hasProcessed) {
+            console.log('🔄 Speech was aborted before processing, trying again...');
+            // Try to restart recognition after a short delay
+            setTimeout(() => {
+              if (!hasProcessed) {
+                console.log('🔄 Restarting speech recognition after abort...');
+                try {
+                  recognition.start();
+                } catch (restartError) {
+                  console.error('❌ Failed to restart recognition:', restartError);
+                  reject(new Error('Speech recognition failed to restart. Please try again.'));
+                }
+              }
+            }, 1000);
+          }
+        } else {
+          console.log('⚠️ Other speech recognition error:', event.error);
+          reject(new Error(`Speech recognition failed: ${event.error}`));
         }
-        
-        reject(new Error(errorMessage));
       };
 
       recognition.onend = () => {
         clearTimeout(timeout);
         setIsSTTRunning(false);
-        console.log('🎤 Speech recognition ended');
+        setInterimText('');
+        console.log('🔚 Web Speech API recognition ended');
+      };
+
+      recognition.onstart = () => {
+        console.log('🎤 Web Speech API recognition started');
+      };
+
+      recognition.onnomatch = () => {
+        console.log('⚠️ Web Speech API no match found');
+      };
+
+      recognition.onspeechstart = () => {
+        console.log('🎤 Web Speech API speech start detected');
+        // DISABLED: Don't auto-process during speech start - wait for natural speech end
+        // This prevents premature stopping after just a few words
+        console.log('⏳ Speech started - waiting for natural speech end instead of auto-processing');
+      };
+
+      recognition.onspeechend = () => {
+        console.log('🎤 Web Speech API speech end detected');
+        console.log('📊 Current interim text length:', interimText.trim().length);
+        
+        // Wait longer for long speech to ensure complete capture
+        const waitTime = interimText.trim().length > 50 ? 3000 : 1000; // 3s for long speech, 1s for short
+        console.log(`⏰ Waiting ${waitTime}ms for speech completion...`);
+        
+        setTimeout(() => {
+          if (!hasProcessed && interimText.trim().length > 0) { // Reduced from 10 to 0 - capture any speech
+            console.log('⚡ Processing speech after pause:', interimText);
+            hasProcessed = true;
+            clearTimeout(timeout);
+            recognition.stop();
+            processAIResponse(interimText, 0.7); // Use interim text with medium confidence
+            resolve();
+          } else if (!hasProcessed) {
+            console.log('⚠️ Speech end detected but no text captured');
+            console.log('🔄 Continuing to listen for more speech...');
+            // Don't stop recognition - continue listening for more speech
+            // The timeout will eventually handle this if no more speech comes
+          }
+        }, waitTime);
       };
 
       try {
-        // Start recognition
+        console.log('🎤 Starting Web Speech API recognition...');
         recognition.start();
-        console.log('🎤 Starting speech recognition...');
+        setIsSTTRunning(true);
+        console.log('✅ Web Speech API recognition initiated successfully');
       } catch (error) {
         clearTimeout(timeout);
-        setIsSTTRunning(false);
-        console.error('🎤 Failed to start speech recognition:', error);
-        reject(new Error('Failed to start speech recognition. Please try again.'));
+        console.error('❌ Failed to start Web Speech API:', error);
+        console.log('📊 Start error details:', { 
+          name: (error as any).name, 
+          message: (error as any).message 
+        });
+        reject(error);
       }
     });
   };
 
-  const playRecording = () => {
-    if (!recordingState.audioUrl) return;
-
-    if (audioRef.current) {
-      audioRef.current.pause();
-      audioRef.current.currentTime = 0;
-    }
-
-    const audio = new Audio(recordingState.audioUrl);
-    audioRef.current = audio;
-
-    audio.onplay = () => setIsPlaying(true);
-    audio.onended = () => setIsPlaying(false);
-    audio.onpause = () => setIsPlaying(false);
-
-    audio.play().catch(error => {
-      console.error('Error playing audio:', error);
-      onError('Failed to play recording.');
-    });
-  };
-
-  const stopPlayback = () => {
-    if (audioRef.current) {
-      audioRef.current.pause();
-      audioRef.current.currentTime = 0;
-      setIsPlaying(false);
-    }
-  };
-
-  const clearRecording = () => {
-    if (recordingState.audioUrl) {
-      elevenLabsService.revokeAudioUrl(recordingState.audioUrl);
-    }
-    
-    setRecordingState({
-      isRecording: false,
-      isPaused: false,
-      duration: 0,
-      audioBlob: null,
-      audioUrl: null,
-    });
-
-    if (audioRef.current) {
-      audioRef.current.pause();
-      audioRef.current.currentTime = 0;
-      setIsPlaying(false);
-    }
-  };
-
-  const formatDuration = (seconds: number): string => {
-    const mins = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    return `${mins}:${secs.toString().padStart(2, '0')}`;
-  };
-
   return (
     <div className={`voice-recorder ${className}`}>
-      {/* Recording Controls */}
-      <div className="flex items-center space-x-3">
-        {!recordingState.isRecording && !recordingState.audioBlob && (
-          <>
-            <button
-              onClick={startRecording}
-              disabled={disabled}
-              className="flex items-center justify-center w-12 h-12 bg-red-500 hover:bg-red-600 disabled:bg-gray-400 text-white rounded-full transition-colors"
-              title="Start Recording"
-            >
-              <Mic className="h-6 w-6" />
-            </button>
-            <button
-              onClick={skipSTT}
-              className="flex items-center justify-center w-12 h-12 bg-blue-500 hover:bg-blue-600 text-white rounded-full transition-colors"
-              title="Type Instead"
-            >
-              <span className="text-xs font-bold">T</span>
-            </button>
-          </>
-        )}
-
-        {recordingState.isRecording && (
-          <>
-            <button
-              onClick={pauseRecording}
-              className="flex items-center justify-center w-10 h-10 bg-yellow-500 hover:bg-yellow-600 text-white rounded-full transition-colors"
-              title={recordingState.isPaused ? "Resume Recording" : "Pause Recording"}
-            >
-              {recordingState.isPaused ? <Play className="h-5 w-5" /> : <Pause className="h-5 w-5" />}
-            </button>
-            
-            <button
-              onClick={stopRecording}
-              className="flex items-center justify-center w-12 h-12 bg-red-600 hover:bg-red-700 text-white rounded-full transition-colors"
-              title="Stop Recording"
-            >
-              <Square className="h-6 w-6" />
-            </button>
-          </>
-        )}
-
-        {recordingState.audioBlob && !recordingState.isRecording && (
-          <>
-            <button
-              onClick={isPlaying ? stopPlayback : playRecording}
-              className="flex items-center justify-center w-10 h-10 bg-blue-500 hover:bg-blue-600 text-white rounded-full transition-colors"
-              title={isPlaying ? "Stop Playback" : "Play Recording"}
-            >
-              {isPlaying ? <Pause className="h-5 w-5" /> : <Play className="h-5 w-5" />}
-            </button>
-
-            <button
-              onClick={processRecording}
-              disabled={isProcessing}
-              className="flex items-center justify-center w-10 h-10 bg-green-500 hover:bg-green-600 disabled:bg-gray-400 text-white rounded-full transition-colors"
-              title="Process Recording"
-            >
-              {isProcessing ? (
-                <div className="animate-spin rounded-full h-5 w-5 border-2 border-white border-t-transparent" />
-              ) : (
-                <Mic className="h-5 w-5" />
-              )}
-            </button>
-
-            <button
-              onClick={clearRecording}
-              className="flex items-center justify-center w-10 h-10 bg-gray-500 hover:bg-gray-600 text-white rounded-full transition-colors"
-              title="Clear Recording"
-            >
-              <MicOff className="h-5 w-5" />
-            </button>
-          </>
-        )}
+      {/* Audio Level Meter */}
+      <div className="mb-4">
+        <div className="flex items-center justify-between mb-2">
+          <span className="text-sm font-medium text-gray-700">Microphone Level</span>
+          <span className="text-xs text-gray-500">
+            {isListening ? '🎤 Listening' : '🔇 Not Listening'}
+          </span>
+        </div>
+        <div className="w-full bg-gray-200 rounded-full h-3 overflow-hidden">
+          <div 
+            className={`h-full transition-all duration-100 ${
+              audioLevel > 0.7 ? 'bg-red-500' : 
+              audioLevel > 0.4 ? 'bg-yellow-500' : 
+              audioLevel > 0.1 ? 'bg-green-500' : 'bg-gray-300'
+            }`}
+            style={{ width: `${Math.max(audioLevel * 100, 2)}%` }}
+          />
+        </div>
+        <div className="flex justify-between text-xs text-gray-500 mt-1">
+          <span>Quiet</span>
+          <span>Loud</span>
+        </div>
       </div>
 
-      {/* Recording Status */}
-      {recordingState.isRecording && (
-        <div className="mt-2 flex items-center space-x-2">
-          <div className="flex items-center space-x-1">
-            <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse" />
-            <span className="text-sm text-gray-600">
-              {recordingState.isPaused ? 'Paused' : 'Recording'}
-            </span>
+
+      {/* Voice Input Button */}
+      <div className="flex flex-col items-center space-y-4">
+        <button
+          onClick={isSTTRunning ? stopVoiceRecording : handleVoiceInput}
+          disabled={disabled || isProcessing}
+          className={`flex items-center justify-center w-20 h-20 rounded-full transition-all duration-200 ${
+            isSTTRunning 
+              ? 'bg-red-500 hover:bg-red-600 animate-pulse' 
+              : 'bg-green-500 hover:bg-green-600 hover:scale-105'
+          } disabled:bg-gray-400 disabled:cursor-not-allowed text-white shadow-lg`}
+          title={isSTTRunning ? "Click to stop recording" : "Click to speak"}
+        >
+          {isSTTRunning ? (
+            <div className="flex flex-col items-center">
+              <div className="w-6 h-6 bg-white rounded-sm flex items-center justify-center">
+                <div className="w-3 h-3 bg-red-500 rounded-sm"></div>
+              </div>
+              <span className="text-xs mt-1">Stop</span>
+            </div>
+          ) : (
+            <Mic className="h-8 w-8" />
+          )}
+        </button>
+
+        {/* Status Text */}
+        {isSTTRunning && (
+          <div className="text-center">
+            <p className="text-sm text-gray-600 mb-2">
+              🎤 <strong>Listening...</strong> Speak clearly into your microphone
+            </p>
+            <p className="text-xs text-gray-500 mb-2">
+              💡 <strong>Tip:</strong> Say anything - single words, phrases, or complete sentences. The system will capture it all!
+            </p>
+            {interimText && (
+              <p className="text-xs text-gray-500 italic">
+                "{interimText}"
+              </p>
+            )}
           </div>
-          <span className="text-sm font-mono text-gray-500">
-            {formatDuration(recordingState.duration)}
-          </span>
-        </div>
-      )}
+        )}
 
-      {/* Audio Preview */}
-      {recordingState.audioBlob && !recordingState.isRecording && (
-        <div className="mt-2 flex items-center space-x-2">
-          <span className="text-sm text-gray-600">
-            Recording ready ({formatDuration(recordingState.duration)})
-          </span>
-          {isProcessing && (
-            <span className="text-sm text-blue-600">
-              {isSTTRunning ? 'Listening...' : 'Processing...'}
-            </span>
-          )}
-          {isSTTRunning && (
-            <button
-              onClick={skipSTT}
-              className="text-xs px-2 py-1 bg-yellow-500 hover:bg-yellow-600 text-white rounded transition-colors"
-            >
-              Skip STT
-            </button>
-          )}
-        </div>
-      )}
-
-      {/* Text Fallback */}
-      {showTextFallback && (
-        <div className="mt-4 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
-          <p className="text-sm text-yellow-800 mb-3">
-            Voice transcription failed. Please type your response:
+        {!isSTTRunning && !isProcessing && (
+          <p className="text-sm text-gray-600 text-center">
+            Click the microphone to start speaking
           </p>
-          <div className="flex space-x-2">
-            <input
-              type="text"
-              value={fallbackText}
-              onChange={(e) => setFallbackText(e.target.value)}
-              placeholder="Type your response here..."
-              className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              onKeyPress={(e) => {
-                if (e.key === 'Enter' && !isProcessing) {
-                  handleTextFallback();
-                }
-              }}
-            />
-            <button
-              onClick={handleTextFallback}
-              disabled={!fallbackText.trim() || isProcessing}
-              className="px-4 py-2 bg-blue-500 hover:bg-blue-600 disabled:bg-gray-400 text-white rounded-lg transition-colors"
-            >
-              {isProcessing ? 'Sending...' : 'Send'}
-            </button>
-            <button
-              onClick={() => {
-                setShowTextFallback(false);
-                setFallbackText('');
-              }}
-              className="px-4 py-2 bg-gray-500 hover:bg-gray-600 text-white rounded-lg transition-colors"
-            >
-              Cancel
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* Hidden audio element for playback */}
-      {recordingState.audioUrl && (
-        <audio
-          ref={audioRef}
-          src={recordingState.audioUrl}
-          preload="none"
-        />
-      )}
+        )}
+      </div>
     </div>
   );
 };
