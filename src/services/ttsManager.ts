@@ -3,6 +3,7 @@
 
 import { elevenLabsService, TTSRequest, TTSResponse } from './elevenLabs';
 import { amazonPollyWithSDK, PollyTTSRequest, PollyTTSResponse } from './awsPollyWithSDK';
+import { browserTTSService, BrowserTTSRequest } from './browserTTS';
 
 export interface TTSManagerRequest {
   text: string;
@@ -16,7 +17,7 @@ export interface TTSManagerResponse {
   duration: number;
   voice: string;
   language: string;
-  provider: 'elevenlabs' | 'polly';
+  provider: 'elevenlabs' | 'polly' | 'browser';
 }
 
 class TTSManager {
@@ -71,26 +72,40 @@ class TTSManager {
   // Text to speech with automatic fallback
   private async textToSpeechWithFallback(request: TTSManagerRequest): Promise<TTSManagerResponse> {
     try {
-      // Try primary provider first (Amazon Polly)
-      if (this.primaryProvider === 'polly') {
-        try {
-          return await this.textToSpeechPolly(request);
-        } catch (error) {
-          console.warn('⚠️ Amazon Polly failed, falling back to ElevenLabs:', error);
-          return await this.textToSpeechElevenLabs(request);
-        }
-      } else {
-        try {
-          return await this.textToSpeechElevenLabs(request);
-        } catch (error) {
-          console.warn('⚠️ ElevenLabs failed, falling back to Amazon Polly:', error);
-          return await this.textToSpeechPolly(request);
-        }
+      // Always try Amazon Polly first (as requested by user)
+      try {
+        return await this.textToSpeechPolly(request);
+      } catch (error) {
+        console.warn('⚠️ Amazon Polly failed, falling back to browser TTS:', error);
+        // Fallback to browser TTS instead of ElevenLabs
+        return await this.textToSpeechBrowser(request);
       }
     } catch (error) {
       console.error('❌ All TTS providers failed:', error);
       throw new Error('All TTS providers are unavailable');
     }
+  }
+
+  // Text to speech using Browser TTS
+  private async textToSpeechBrowser(request: TTSManagerRequest): Promise<TTSManagerResponse> {
+    const browserRequest: BrowserTTSRequest = {
+      text: request.text,
+      voice: request.voiceId || 'Samantha', // Use female voice
+      language: 'en-US',
+      speed: 1.0,
+      pitch: 1.0,
+      volume: 1.0
+    };
+
+    const response = await browserTTSService.textToSpeech(browserRequest);
+    
+    return {
+      audioUrl: response.audioUrl,
+      duration: response.duration,
+      voice: browserRequest.voice || 'Samantha',
+      language: browserRequest.language || 'en-US',
+      provider: 'browser'
+    };
   }
 
   // Text to speech using ElevenLabs

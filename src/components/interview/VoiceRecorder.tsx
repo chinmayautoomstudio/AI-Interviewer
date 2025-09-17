@@ -32,6 +32,8 @@ const VoiceRecorder: React.FC<VoiceRecorderProps> = ({
   const audioContextRef = useRef<AudioContext | null>(null);
   const analyserRef = useRef<AnalyserNode | null>(null);
   const animationFrameRef = useRef<number | null>(null);
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const audioChunksRef = useRef<Blob[]>([]);
 
   // Debug logging function
   const addDebugLog = (level: 'info' | 'warn' | 'error' | 'success', message: string) => {
@@ -147,16 +149,31 @@ const VoiceRecorder: React.FC<VoiceRecorderProps> = ({
   };
 
   // Process AI response
-  const processAIResponse = async (transcript: string, confidence: number) => {
+  const processAIResponse = async (aiResponse: string, confidence: number) => {
     try {
-      console.log('🤖 Processing AI response for transcript:', transcript);
+      console.log('🤖 Processing AI response:', aiResponse);
       console.log('📊 Confidence:', confidence);
 
-      // Call the transcription callback
+      // Convert AI response to speech
+      let audioResponse = '';
+      try {
+        console.log('🔊 Converting AI response to speech...');
+        const { ttsManager } = await import('../../services/ttsManager');
+        const ttsResult = await ttsManager.textToSpeech({
+          text: aiResponse,
+          provider: 'auto'
+        });
+        audioResponse = ttsResult.audioUrl;
+        console.log('✅ TTS generated:', audioResponse);
+      } catch (ttsError) {
+        console.warn('⚠️ TTS failed, continuing without audio:', ttsError);
+      }
+
+      // Call the transcription callback with AI response and audio
       onTranscription({
-        transcript: transcript,
-        response: '', // Will be filled by the AI response
-        audioResponse: '', // Will be filled by TTS
+        transcript: '', // No transcript needed since this is AI response
+        response: aiResponse,
+        audioResponse: audioResponse,
         confidence: confidence
       });
 
@@ -166,21 +183,21 @@ const VoiceRecorder: React.FC<VoiceRecorderProps> = ({
     }
   };
 
-  // Handle voice input (Primary method - Audio to n8n workflow)
-  const handleVoiceInput = async () => {
-    addDebugLog('info', 'Voice input initiated - using audio-to-n8n workflow');
+  // Start voice recording (Manual control)
+  const startVoiceRecording = async () => {
+    addDebugLog('info', 'Starting voice recording - manual control');
     addDebugLog('info', `Current state: processing=${isProcessing}, sttRunning=${isSTTRunning}, listening=${isListening}`);
     
     if (isProcessing || isSTTRunning) {
-      addDebugLog('warn', 'Voice input blocked - already processing or STT running');
+      addDebugLog('warn', 'Recording blocked - already processing or STT running');
       return;
     }
 
-    setIsProcessing(true);
-    addDebugLog('info', 'Set processing state to true');
+    setIsSTTRunning(true);
+    addDebugLog('info', 'Set STT running state to true');
     
     try {
-      addDebugLog('info', 'Starting voice input process...');
+      addDebugLog('info', 'Starting voice recording process...');
       
       // Audio monitoring should already be started on component mount
       if (!isListening) {
@@ -189,10 +206,96 @@ const VoiceRecorder: React.FC<VoiceRecorderProps> = ({
       } else {
         addDebugLog('info', 'Audio monitoring is already active');
       }
+
+      // Start MediaRecorder for continuous recording
+      if (streamRef.current) {
+        const supportedTypes = [
+          'audio/webm;codecs=opus',
+          'audio/webm',
+          'audio/mp4',
+          'audio/wav'
+        ];
+
+        let selectedType = '';
+        for (const type of supportedTypes) {
+          if (MediaRecorder.isTypeSupported(type)) {
+            selectedType = type;
+            break;
+          }
+        }
+
+        if (selectedType) {
+          const mediaRecorder = new MediaRecorder(streamRef.current, {
+            mimeType: selectedType,
+            audioBitsPerSecond: 128000
+          });
+
+          mediaRecorderRef.current = mediaRecorder;
+          audioChunksRef.current = [];
+
+          mediaRecorder.ondataavailable = (event) => {
+            if (event.data.size > 0) {
+              audioChunksRef.current.push(event.data);
+            }
+          };
+
+          mediaRecorder.onstart = () => {
+            addDebugLog('success', 'MediaRecorder started recording');
+          };
+
+          mediaRecorder.onerror = (event) => {
+            addDebugLog('error', `MediaRecorder error: ${event}`);
+          };
+
+          mediaRecorder.start(100); // Collect data every 100ms
+          addDebugLog('success', 'Voice recording started - waiting for user to stop recording');
+        } else {
+          addDebugLog('error', 'No supported audio format found');
+          setIsSTTRunning(false);
+          onError('Audio format not supported. Please try a different browser.');
+        }
+      } else {
+        addDebugLog('error', 'No audio stream available');
+        setIsSTTRunning(false);
+        onError('No audio stream available. Please check your microphone permissions.');
+      }
       
-      // Record audio for n8n workflow
-      addDebugLog('info', 'Recording audio for n8n workflow...');
-      const audioBlob = await recordAudioForWhisper();
+    } catch (error: any) {
+      addDebugLog('error', `Error starting voice recording: ${error.message}`);
+      setIsSTTRunning(false);
+      onError('Failed to start recording. Please try again.');
+    }
+  };
+
+  // Stop voice recording and process audio (Manual control)
+  const stopVoiceRecordingAndProcess = async () => {
+    addDebugLog('info', 'Stopping voice recording and processing audio');
+    
+    if (!isSTTRunning) {
+      addDebugLog('warn', 'Recording not running, ignoring stop request');
+      return;
+    }
+
+    setIsSTTRunning(false);
+    setIsProcessing(true);
+    addDebugLog('info', 'Set STT running to false, processing to true');
+
+    try {
+      // Stop MediaRecorder and get audio blob
+      addDebugLog('info', 'Stopping MediaRecorder and getting audio...');
+      const audioBlob = await new Promise<Blob | null>((resolve) => {
+        if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'recording') {
+          mediaRecorderRef.current.onstop = () => {
+            const blob = new Blob(audioChunksRef.current, { type: mediaRecorderRef.current?.mimeType || 'audio/webm' });
+            addDebugLog('success', `Recording stopped: ${audioChunksRef.current.length} chunks, ${blob.size} bytes`);
+            resolve(blob);
+          };
+          mediaRecorderRef.current.stop();
+        } else {
+          addDebugLog('warn', 'MediaRecorder not running or not available');
+          resolve(null);
+        }
+      });
       
       if (!audioBlob) {
         addDebugLog('error', 'Failed to record audio');
@@ -272,15 +375,8 @@ const VoiceRecorder: React.FC<VoiceRecorderProps> = ({
       }
       
     } catch (error: any) {
-      addDebugLog('error', `Audio-to-n8n workflow failed: ${error.message}`);
-      addDebugLog('info', 'Falling back to Amazon Transcribe...');
-      
-      try {
-        await handleAmazonTranscribeInput();
-      } catch (fallbackError) {
-        addDebugLog('error', `Amazon Transcribe fallback also failed: ${fallbackError}`);
-        onError(`Speech recognition failed: ${error.message}`);
-      }
+      addDebugLog('error', `Error processing voice input: ${error.message}`);
+      onError('Voice input failed. Please try again or use text input.');
     } finally {
       setIsProcessing(false);
       addDebugLog('info', 'Voice input process completed, processing state reset');
@@ -628,17 +724,24 @@ const VoiceRecorder: React.FC<VoiceRecorderProps> = ({
     });
   };
 
-  // Stop voice recording
+  // Stop voice recording (without processing)
   const stopVoiceRecording = () => {
-    console.log('🛑 Stopping voice recording...');
+    addDebugLog('info', 'Stopping voice recording without processing...');
     setIsSTTRunning(false);
     setInterimText('');
+    
+    // Stop MediaRecorder if running
+    if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'recording') {
+      mediaRecorderRef.current.stop();
+      mediaRecorderRef.current = null;
+      audioChunksRef.current = [];
+    }
     
     if (amazonTranscribeService.isAvailable()) {
       amazonTranscribeService.stopTranscription();
     }
     
-    console.log('✅ Voice recording stopped');
+    addDebugLog('success', 'Voice recording stopped');
   };
 
   // Initialize audio monitoring on component mount
@@ -656,6 +759,12 @@ const VoiceRecorder: React.FC<VoiceRecorderProps> = ({
     // Cleanup on unmount
     return () => {
       stopAudioMonitoring();
+      // Clean up MediaRecorder
+      if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'recording') {
+        mediaRecorderRef.current.stop();
+        mediaRecorderRef.current = null;
+        audioChunksRef.current = [];
+      }
     };
   }, []);
 
@@ -679,7 +788,7 @@ const VoiceRecorder: React.FC<VoiceRecorderProps> = ({
 
         {/* Voice Input Button */}
         <button
-          onClick={isSTTRunning ? stopVoiceRecording : handleVoiceInput}
+          onClick={isSTTRunning ? stopVoiceRecordingAndProcess : startVoiceRecording}
           disabled={disabled || isProcessing}
           className={`
             px-6 py-3 rounded-lg font-medium transition-all duration-200
@@ -711,7 +820,7 @@ const VoiceRecorder: React.FC<VoiceRecorderProps> = ({
 
         {/* User Tip */}
         <div className="text-xs text-gray-500 text-center max-w-md">
-          Say anything - single words, phrases, or complete sentences. The system will capture it all!
+          Click "Start Recording" to begin, then click "Stop Recording" when finished. You control when to start and stop!
         </div>
 
         {/* Debug Toggle */}
