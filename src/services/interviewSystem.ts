@@ -386,17 +386,20 @@ export class InterviewSystemService {
       
       // Use AI Agent's webhook URL if available, otherwise fall back to environment variable
       let webhookUrl = aiAgent?.n8nWebhookUrl || (aiAgent as any)?.n8n_webhook_url;
+      let isUsingFallback = false;
       
       if (!webhookUrl) {
         webhookUrl = process.env.REACT_APP_N8N_INTERVIEW_WEBHOOK;
+        isUsingFallback = true;
+        console.log('⚠️ Using environment webhook URL as fallback');
       }
       
       if (!webhookUrl) {
         console.error('❌ No webhook URL available for audio processing');
-        return { error: 'No webhook URL available. Please configure webhook URL in database.' };
+        return { error: 'No webhook URL available. Please configure webhook URL in database or environment variables.' };
       }
       
-      console.log('🔗 Using webhook URL:', webhookUrl);
+      console.log(`🔗 Using ${isUsingFallback ? 'environment' : 'database'} webhook URL:`, webhookUrl);
       console.log('🤖 AI Agent:', aiAgent?.name || 'None');
 
       // Create FormData to send audio file
@@ -481,7 +484,118 @@ export class InterviewSystemService {
       
     } catch (error: any) {
       console.error('❌ Error sending audio to N8N workflow:', error);
-      return { error: `Failed to process audio: ${error.message}` };
+      
+      // Handle specific error types
+      let errorMessage = `Failed to process audio: ${error.message}`;
+      if (error.name === 'TypeError' && error.message.includes('Failed to fetch')) {
+        if (error.message.includes('CORS')) {
+          errorMessage = 'CORS Error: The webhook server needs to allow requests from localhost:3000. Please configure CORS headers on your n8n server.';
+        } else if (error.message.includes('404')) {
+          errorMessage = 'Webhook Not Found (404): The webhook URL does not exist. Please check the webhook URL in your AI Agent configuration.';
+        } else {
+          errorMessage = `Network Error: ${error.message}. Please check your internet connection and webhook URL.`;
+        }
+      }
+      
+      return { error: errorMessage };
+    }
+  }
+
+  // Send audio to n8n workflow with fallback to environment webhook URL
+  static async sendAudioToN8nWorkflowWithFallback(
+    sessionId: string,
+    candidate: Candidate,
+    jobDescription: JobDescription,
+    aiAgent: AIAgent | null,
+    audioBlob: Blob
+  ): Promise<{ response?: string; sessionId?: string; error?: string }> {
+    try {
+      console.log('🔄 Attempting fallback webhook for audio processing...');
+      
+      // Force use of environment webhook URL
+      const webhookUrl = process.env.REACT_APP_N8N_INTERVIEW_WEBHOOK;
+      
+      if (!webhookUrl) {
+        console.error('❌ No environment webhook URL available for fallback');
+        return { error: 'No environment webhook URL available for fallback' };
+      }
+      
+      console.log('🔗 Using environment webhook URL for fallback:', webhookUrl);
+      
+      // Create FormData to send audio file
+      const formData = new FormData();
+      
+      // Create a file from the blob
+      const audioFile = new File([audioBlob], 'audio.webm', {
+        type: audioBlob.type || 'audio/webm'
+      });
+      
+      formData.append('audio', audioFile);
+      formData.append('action', 'candidate_response');
+      formData.append('session_id', sessionId);
+      formData.append('candidate_id', candidate.id);
+      formData.append('job_description_id', jobDescription.id);
+      formData.append('timestamp', new Date().toISOString());
+      
+      console.log('📤 Sending audio to fallback webhook...');
+      
+      const response = await fetch(webhookUrl, {
+        method: 'POST',
+        body: formData,
+        mode: 'cors',
+        credentials: 'omit'
+      });
+      
+      console.log('📥 Fallback webhook response status:', response.status);
+      
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('❌ Fallback webhook error response:', errorText);
+        throw new Error(`Fallback webhook failed: ${response.status} - ${errorText}`);
+      }
+      
+      // Handle response
+      let responseData = null;
+      try {
+        const responseText = await response.text();
+        console.log('📥 Raw fallback webhook response:', responseText);
+        
+        if (responseText.trim()) {
+          responseData = JSON.parse(responseText);
+          console.log('✅ Parsed fallback webhook response data:', responseData);
+        } else {
+          console.log('ℹ️ Fallback webhook returned empty response');
+        }
+      } catch (parseError) {
+        console.log('ℹ️ Fallback webhook response is not JSON, treating as successful');
+      }
+      
+      // Extract response text from various possible formats
+      let responseText = '';
+      if (responseData) {
+        if (typeof responseData === 'string') {
+          responseText = responseData;
+        } else if (responseData.output) {
+          responseText = responseData.output;
+        } else if (responseData.response) {
+          responseText = responseData.response;
+        } else if (responseData.text) {
+          responseText = responseData.text;
+        } else if (responseData.message) {
+          responseText = responseData.message;
+        }
+      }
+      
+      console.log('🤖 Fallback AI Agent response received:', { response: responseText });
+      
+      return {
+        response: responseText,
+        sessionId: sessionId
+      };
+      
+    } catch (error: any) {
+      console.error('❌ Error in fallback webhook:', error);
+      return { error: `Fallback webhook failed: ${error.message}` };
     }
   }
 
@@ -539,7 +653,9 @@ export class InterviewSystemService {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(payload)
+        body: JSON.stringify(payload),
+        mode: 'cors', // Explicitly set CORS mode
+        credentials: 'omit' // Don't send credentials for CORS
       });
 
       console.log('📥 Webhook response status:', response.status);
@@ -593,8 +709,23 @@ export class InterviewSystemService {
         sessionId: sessionId
       };
 
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error sending to N8N workflow:', error);
+      
+      // Handle specific error types
+      let errorMessage = 'Failed to connect to AI Agent';
+      if (error.name === 'TypeError' && error.message.includes('Failed to fetch')) {
+        if (error.message.includes('CORS')) {
+          errorMessage = 'CORS Error: The webhook server needs to allow requests from localhost:3000. Please configure CORS headers on your n8n server.';
+        } else if (error.message.includes('404')) {
+          errorMessage = 'Webhook Not Found (404): The webhook URL does not exist. Please check the webhook URL in your AI Agent configuration.';
+        } else {
+          errorMessage = `Network Error: ${error.message}. Please check your internet connection and webhook URL.`;
+        }
+      } else if (error instanceof Error) {
+        errorMessage = error.message;
+      }
+      
       // Update session status to failed
       await supabase
         .from('interview_sessions')
@@ -604,7 +735,7 @@ export class InterviewSystemService {
         })
         .eq('session_id', sessionId);
       
-      return { error: error instanceof Error ? error.message : 'Failed to connect to AI Agent' };
+      return { error: errorMessage };
     }
   }
 
