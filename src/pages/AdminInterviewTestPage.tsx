@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Mic, MicOff, Play, Square, Users, Briefcase, Bot, Volume2, Settings, TestTube } from 'lucide-react';
 import { InterviewSystemService } from '../services/interviewSystem';
-import { elevenLabsService } from '../services/elevenLabs';
+import { ttsManager } from '../services/ttsManager';
 import { getBestIndianVoice, getVoiceForJobType, getVoiceForDepartment } from '../config/voiceConfig';
 import LoadingSpinner from '../components/ui/LoadingSpinner';
 import VoiceRecorder from '../components/interview/VoiceRecorder';
@@ -38,12 +38,12 @@ const AdminInterviewTestPage: React.FC = () => {
   useEffect(() => {
     return () => {
       // Stop any ongoing audio playback
-      elevenLabsService.stopAudio();
+      // Note: TTS Manager doesn't have stopAudio method, audio is managed by browser
       // Revoke any audio URLs to free memory
       if (currentSession) {
         messages.forEach(message => {
           if (message.audioUrl) {
-            elevenLabsService.revokeAudioUrl(message.audioUrl);
+            URL.revokeObjectURL(message.audioUrl);
           }
         });
       }
@@ -98,7 +98,7 @@ const AdminInterviewTestPage: React.FC = () => {
   };
 
   const checkVoiceAvailability = () => {
-    setIsVoiceAvailable(elevenLabsService.isAvailable());
+    setIsVoiceAvailable(ttsManager.isAvailable());
   };
 
   const startInterview = () => {
@@ -122,25 +122,8 @@ const AdminInterviewTestPage: React.FC = () => {
     setCurrentSession(session);
     setCurrentPage('interview');
     
-    // Auto-play the AI greeting when interview starts
-    try {
-      const greeting = "Hi! I'm Supriya from AutoomStudio. I'll be your interviewer today. Ready to dive in?";
-      const voiceConfig = elevenLabsService.getCurrentVoiceConfig();
-      const ttsResponse = await elevenLabsService.textToSpeech({
-        text: greeting,
-        voiceId: voiceConfig.voiceId,
-        voiceSettings: voiceConfig.settings
-      });
-      
-      // Play the greeting audio
-      const audio = new Audio(ttsResponse.audioUrl);
-      await audio.play();
-      
-      // Clean up the URL after playing
-      audio.onended = () => URL.revokeObjectURL(ttsResponse.audioUrl);
-    } catch (error) {
-      console.error('Error playing AI greeting:', error);
-    }
+    // Don't auto-play hardcoded greeting - let AI Agent generate and play it
+    // The AI Agent will generate the greeting and it will be played automatically
   };
 
   const handleBackToMain = () => {
@@ -279,14 +262,20 @@ const AdminInterviewTestPage: React.FC = () => {
 
     try {
       const testText = "Hello! This is a test of the voice system for the AI Interviewer. How does this sound?";
-      const response = await elevenLabsService.textToSpeech({
+      const voiceConfig = ttsManager.getCurrentVoiceConfig();
+      const response = await ttsManager.textToSpeech({
         text: testText,
-        voiceId: currentVoice || elevenLabsService.defaultVoiceId,
-        voiceSettings: elevenLabsService.getCurrentVoiceConfig().settings
+        voiceId: currentVoice || voiceConfig.voiceId,
+        voiceSettings: voiceConfig.settings
       });
       
       if (response.audioUrl) {
-        await elevenLabsService.playAudio(response.audioUrl);
+        // Play audio using browser's Audio API
+        const audio = new Audio(response.audioUrl);
+        await audio.play();
+      } else {
+        // For browser TTS, audio is already playing
+        console.log('🔊 Browser TTS is playing directly');
       }
     } catch (error) {
       console.error('Error testing voice:', error);
