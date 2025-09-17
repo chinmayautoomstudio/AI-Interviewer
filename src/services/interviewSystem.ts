@@ -619,9 +619,12 @@ export class InterviewSystemService {
       
       // Try both property names since we might have raw DB data or transformed data
       let webhookUrl = aiAgent?.n8nWebhookUrl || (aiAgent as any)?.n8n_webhook_url;
+      let isUsingFallback = false;
       
       if (!webhookUrl) {
         webhookUrl = process.env.REACT_APP_N8N_INTERVIEW_WEBHOOK;
+        isUsingFallback = true;
+        console.log('⚠️ Using environment webhook URL as fallback');
       }
       
       if (!webhookUrl) {
@@ -633,7 +636,7 @@ export class InterviewSystemService {
         return { error: 'No webhook URL available. Please configure webhook URL in database.' }; // Return gracefully instead of throwing error
       }
       
-      console.log('🔗 Using webhook URL:', webhookUrl);
+      console.log(`🔗 Using ${isUsingFallback ? 'environment' : 'database'} webhook URL:`, webhookUrl);
       console.log('🤖 AI Agent:', aiAgent?.name || 'None');
 
       const payload = {
@@ -664,6 +667,38 @@ export class InterviewSystemService {
       if (!response.ok) {
         const errorText = await response.text();
         console.error('❌ Webhook error response:', errorText);
+        
+        // If the error is CORS or 404, and we're using database webhook, try environment webhook as fallback
+        if ((response.status === 404 || errorText.includes('CORS')) && !isUsingFallback) {
+          console.log('🔄 Database webhook failed, attempting fallback to environment webhook...');
+          
+          const fallbackWebhookUrl = process.env.REACT_APP_N8N_INTERVIEW_WEBHOOK;
+          if (fallbackWebhookUrl) {
+            console.log('🔗 Using environment webhook URL for fallback:', fallbackWebhookUrl);
+            
+            const fallbackResponse = await fetch(fallbackWebhookUrl, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify(payload),
+              mode: 'cors',
+              credentials: 'omit'
+            });
+            
+            if (fallbackResponse.ok) {
+              console.log('✅ Fallback webhook successful');
+              const fallbackData = await fallbackResponse.json();
+              return {
+                greeting: fallbackData.output || fallbackData.response || fallbackData.text || fallbackData.message,
+                sessionId: sessionId
+              };
+            } else {
+              console.error('❌ Fallback webhook also failed:', fallbackResponse.status);
+            }
+          }
+        }
+        
         throw new Error(`N8N webhook failed: ${response.status} - ${errorText}`);
       }
       
