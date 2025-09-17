@@ -12,11 +12,61 @@ import {
 } from '../types';
 
 export class InterviewSystemService {
+  // Response cache to prevent duplicate processing
+  private static responseCache = new Map<string, { response: any; timestamp: number }>();
+  
   // Generate unique session ID
   static generateSessionId(): string {
     const timestamp = Date.now().toString(36);
     const random = Math.random().toString(36).substring(2, 8);
     return `INT-${timestamp}-${random}`.toUpperCase();
+  }
+
+  // Clear response cache for a new interview session
+  static clearResponseCache(sessionId: string): void {
+    console.log('🧹 Clearing response cache for session:', sessionId);
+    // Remove all entries for this session
+    const entries = Array.from(this.responseCache.entries());
+    for (const [key, value] of entries) {
+      if (key.startsWith(sessionId)) {
+        this.responseCache.delete(key);
+      }
+    }
+    console.log('✅ Response cache cleared for session:', sessionId);
+  }
+
+  // Check if response is duplicate and add to cache
+  private static isDuplicateResponse(sessionId: string, response: any): boolean {
+    // Normalize response by trimming whitespace and newlines for better duplicate detection
+    const normalizedResponse = typeof response === 'string' 
+      ? response.trim() 
+      : response && typeof response === 'object' && response.output
+        ? { ...response, output: response.output.trim() }
+        : response;
+    
+    const responseKey = `${sessionId}-${JSON.stringify(normalizedResponse)}`;
+    const now = Date.now();
+    
+    // Clean old cache entries (older than 30 seconds)
+    const entries = Array.from(this.responseCache.entries());
+    for (const [key, value] of entries) {
+      if (now - value.timestamp > 30000) {
+        this.responseCache.delete(key);
+      }
+    }
+    
+    if (this.responseCache.has(responseKey)) {
+      console.log('⚠️ Duplicate response detected, ignoring:', response);
+      console.log('📊 Normalized response:', normalizedResponse);
+      console.log('📊 Cache key:', responseKey);
+      return true;
+    }
+    
+    // Add to cache
+    this.responseCache.set(responseKey, { response: normalizedResponse, timestamp: now });
+    console.log('✅ New response added to cache:', normalizedResponse);
+    console.log('📊 Cache key:', responseKey);
+    return false;
   }
 
   // Create interview session without calling n8n workflow
@@ -66,7 +116,6 @@ export class InterviewSystemService {
         if (agentError) {
           console.error('❌ AI Agent fetch error:', agentError);
         } else {
-          aiAgent = agent;
           console.log('✅ AI Agent found:', {
             name: agent?.name,
             webhookUrl: agent?.n8n_webhook_url,
@@ -124,8 +173,8 @@ export class InterviewSystemService {
       return { 
         data: {
           ...transformedSession,
-          aiGreeting: "Hi! I'm Supriya from AutoomStudio. I'll be your interviewer today. Ready to dive in?"
-        } as InterviewSession & { aiGreeting: string }
+          aiGreeting: null // Let AI Agent generate the greeting
+        } as InterviewSession & { aiGreeting: string | null }
       };
     } catch (error) {
       console.error('Error creating interview session:', error);
@@ -180,7 +229,6 @@ export class InterviewSystemService {
         if (agentError) {
           console.error('❌ AI Agent fetch error:', agentError);
         } else {
-          aiAgent = agent;
           console.log('✅ AI Agent found:', {
             name: agent?.name,
             webhookUrl: agent?.n8n_webhook_url,
@@ -217,26 +265,13 @@ export class InterviewSystemService {
       }
       console.log('✅ Interview session created successfully:', session);
 
-      // Send initial data to n8n workflow to get AI Agent's greeting
-      let aiGreeting = "Hi! I'm Supriya from AutoomStudio. I'll be your interviewer today. Ready to dive in?";
-      try {
-        const aiResponse = await this.sendToN8nWorkflow(sessionId, candidate, jobDescription, aiAgent);
-        console.log('🤖 AI Agent initial response:', aiResponse);
-        
-        if (aiResponse.greeting) {
-          aiGreeting = aiResponse.greeting;
-        }
-      } catch (n8nError) {
-        console.warn('N8N workflow not available, continuing with local session:', n8nError);
-        // Continue without n8n for testing purposes
-      }
+      // Don't call webhook here - let startActualInterview handle the initial greeting
+      // This prevents duplicate webhook calls
+      console.log('✅ Interview session created, webhook will be called by startActualInterview');
 
-      // Return session data with the greeting
+      // Return session data without greeting (will be fetched by startActualInterview)
       return { 
-        data: {
-          ...session,
-          aiGreeting: aiGreeting
-        }
+        data: session
       };
     } catch (error) {
       console.error('Error starting interview:', error);
@@ -245,9 +280,13 @@ export class InterviewSystemService {
   }
 
   // Start the actual interview by calling n8n workflow
-  static async startActualInterview(sessionId: string): Promise<{ data: { greeting: string; sessionId: string } | null; error?: string }> {
+  static async startActualInterview(sessionId: string): Promise<{ data: { greeting: any; sessionId: string } | null; error?: string }> {
     try {
       console.log('🚀 Starting actual interview for session:', sessionId);
+      console.log('📊 startActualInterview called at:', new Date().toISOString());
+      
+      // Clear response cache for this new interview session
+      this.clearResponseCache(sessionId);
       
       // Get the interview session data
       const { data: session, error: sessionError } = await supabase
@@ -275,7 +314,7 @@ export class InterviewSystemService {
       
       return {
         data: {
-          greeting: aiResponse.greeting || "Hi! I'm Supriya from AutoomStudio. I'll be your interviewer today. Ready to dive in?",
+          greeting: aiResponse.greeting,
           sessionId: sessionId
         }
       };
@@ -293,6 +332,9 @@ export class InterviewSystemService {
     aiAgent: AIAgent | null
   ): Promise<{ greeting?: string; sessionId?: string; error?: string }> {
     try {
+      console.log('🚀 Sending to N8N workflow for session:', sessionId);
+      console.log('📊 Request timestamp:', new Date().toISOString());
+      
       // Use AI Agent's webhook URL if available, otherwise fall back to environment variable
       console.log('🔍 Checking webhook URLs...');
       console.log('AI Agent object:', aiAgent);
@@ -308,11 +350,12 @@ export class InterviewSystemService {
       }
       
       if (!webhookUrl) {
-        console.warn('No webhook URL available - skipping n8n workflow');
-        console.log('AI Agent webhook URL (n8nWebhookUrl):', aiAgent?.n8nWebhookUrl);
-        console.log('AI Agent webhook URL (n8n_webhook_url):', (aiAgent as any)?.n8n_webhook_url);
-        console.log('Environment webhook URL:', process.env.REACT_APP_N8N_INTERVIEW_WEBHOOK);
-        return { error: 'No webhook URL available' }; // Return gracefully instead of throwing error
+        console.error('❌ No webhook URL available - skipping n8n workflow');
+        console.error('❌ AI Agent webhook URL (n8nWebhookUrl):', aiAgent?.n8nWebhookUrl);
+        console.error('❌ AI Agent webhook URL (n8n_webhook_url):', (aiAgent as any)?.n8n_webhook_url);
+        console.error('❌ Environment webhook URL:', process.env.REACT_APP_N8N_INTERVIEW_WEBHOOK);
+        console.error('❌ Please run: node update-webhook-url.js to configure webhook URL');
+        return { error: 'No webhook URL available. Please configure webhook URL in database.' }; // Return gracefully instead of throwing error
       }
       
       console.log('🔗 Using webhook URL:', webhookUrl);
@@ -372,18 +415,20 @@ export class InterviewSystemService {
         })
         .eq('session_id', sessionId);
 
-      // Return the AI Agent's greeting and session info
-      // If webhook doesn't return a greeting, use the default one
-      const greeting = responseData?.greeting || 
-                      responseData?.message || 
-                      responseData?.ai_response ||
-                      "Hi! I'm Supriya from AutoomStudio. I'll be your interviewer today. Ready to dive in?";
+      // Check for duplicate response
+      if (this.isDuplicateResponse(sessionId, responseData)) {
+        console.log('⚠️ Duplicate response detected, returning null to prevent processing');
+        return {
+          greeting: undefined,
+          sessionId: sessionId
+        };
+      }
       
-      console.log('🤖 Using greeting:', greeting);
-      console.log('ℹ️ Note: If you want a custom greeting from your n8n workflow, make sure it returns a JSON response with a "greeting" field');
+      // Return the AI Agent's response directly - no special greeting handling
+      console.log('🤖 AI Agent response received:', responseData);
       
       return {
-        greeting: greeting,
+        greeting: responseData,
         sessionId: sessionId
       };
 
@@ -519,6 +564,9 @@ export class InterviewSystemService {
 
       const aiAgent = session.ai_agent;
       const webhookUrl = aiAgent?.n8n_webhook_url || aiAgent?.n8nWebhookUrl;
+
+      console.log('🤖 AI Agent data:', aiAgent);
+      console.log('🔗 Webhook URL from database:', webhookUrl);
 
       if (!webhookUrl) {
         return { data: null, error: 'AI Agent webhook URL not found' };
