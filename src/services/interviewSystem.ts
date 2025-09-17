@@ -324,6 +324,121 @@ export class InterviewSystemService {
     }
   }
 
+  // Send audio to n8n workflow for speech-to-text processing
+  static async sendAudioToN8nWorkflow(
+    sessionId: string,
+    candidate: Candidate,
+    jobDescription: JobDescription,
+    aiAgent: AIAgent | null,
+    audioBlob: Blob
+  ): Promise<{ response?: string; sessionId?: string; error?: string }> {
+    try {
+      console.log('🎤 Sending audio to N8N workflow for session:', sessionId);
+      console.log('📊 Audio size:', audioBlob.size, 'bytes');
+      console.log('📊 Audio type:', audioBlob.type);
+      console.log('📊 Request timestamp:', new Date().toISOString());
+      
+      // Use AI Agent's webhook URL if available, otherwise fall back to environment variable
+      let webhookUrl = aiAgent?.n8nWebhookUrl || (aiAgent as any)?.n8n_webhook_url;
+      
+      if (!webhookUrl) {
+        webhookUrl = process.env.REACT_APP_N8N_INTERVIEW_WEBHOOK;
+      }
+      
+      if (!webhookUrl) {
+        console.error('❌ No webhook URL available for audio processing');
+        return { error: 'No webhook URL available. Please configure webhook URL in database.' };
+      }
+      
+      console.log('🔗 Using webhook URL:', webhookUrl);
+      console.log('🤖 AI Agent:', aiAgent?.name || 'None');
+
+      // Create FormData to send audio file
+      const formData = new FormData();
+      
+      // Create a file from the blob
+      const audioFile = new File([audioBlob], 'audio.webm', {
+        type: audioBlob.type || 'audio/webm'
+      });
+      
+      formData.append('audio', audioFile);
+      formData.append('action', 'candidate_response');
+      formData.append('session_id', sessionId);
+      formData.append('candidate_id', candidate.id);
+      formData.append('job_description_id', jobDescription.id);
+      formData.append('timestamp', new Date().toISOString());
+      
+      console.log('📤 Sending audio to webhook...');
+      console.log('🔗 Webhook URL:', webhookUrl);
+      
+      const response = await fetch(webhookUrl, {
+        method: 'POST',
+        body: formData
+      });
+
+      console.log('📥 Webhook response status:', response.status);
+      console.log('📥 Webhook response headers:', Object.fromEntries(response.headers.entries()));
+      
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('❌ Webhook error response:', errorText);
+        throw new Error(`N8N webhook failed: ${response.status} - ${errorText}`);
+      }
+      
+      // Handle response
+      let responseData = null;
+      try {
+        const responseText = await response.text();
+        console.log('📥 Raw webhook response:', responseText);
+        
+        if (responseText.trim()) {
+          responseData = JSON.parse(responseText);
+          console.log('✅ Parsed webhook response data:', responseData);
+        } else {
+          console.log('ℹ️ Webhook returned empty response');
+        }
+      } catch (parseError) {
+        console.log('ℹ️ Webhook response is not JSON, treating as successful');
+      }
+
+      // Check for duplicate response
+      if (this.isDuplicateResponse(sessionId, responseData)) {
+        console.log('⚠️ Duplicate response detected, returning null to prevent processing');
+        return {
+          response: undefined,
+          sessionId: sessionId
+        };
+      }
+      
+      // Extract response text from various possible formats
+      let responseText = '';
+      if (responseData) {
+        if (typeof responseData === 'string') {
+          responseText = responseData;
+        } else if (responseData.output) {
+          responseText = responseData.output;
+        } else if (responseData.response) {
+          responseText = responseData.response;
+        } else if (responseData.text) {
+          responseText = responseData.text;
+        } else if (responseData.message) {
+          responseText = responseData.message;
+        }
+      }
+      
+      console.log('🤖 AI Agent response received:', { response: responseText });
+      
+      return {
+        response: responseText,
+        sessionId: sessionId
+      };
+      
+    } catch (error: any) {
+      console.error('❌ Error sending audio to N8N workflow:', error);
+      return { error: `Failed to process audio: ${error.message}` };
+    }
+  }
+
   // Send interview data to n8n workflow
   static async sendToN8nWorkflow(
     sessionId: string, 
