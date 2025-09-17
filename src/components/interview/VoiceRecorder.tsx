@@ -230,6 +230,26 @@ const VoiceRecorder: React.FC<VoiceRecorderProps> = ({
 
       if (result.error) {
         addDebugLog('error', `n8n workflow failed: ${result.error}`);
+        
+        // If the error is CORS or 404, try using environment webhook URL as fallback
+        if (result.error.includes('CORS') || result.error.includes('404')) {
+          addDebugLog('info', 'Attempting fallback to environment webhook URL...');
+          
+          const fallbackResult = await InterviewSystemService.sendAudioToN8nWorkflowWithFallback(
+            session.sessionId,
+            session.candidate,
+            session.jobDescription,
+            session.aiAgent,
+            audioBlob
+          );
+          
+          if (fallbackResult.response && fallbackResult.response.trim()) {
+            addDebugLog('success', `Fallback webhook successful: ${fallbackResult.response.substring(0, 100)}...`);
+            await processAIResponse(fallbackResult.response, 0.95);
+            return;
+          }
+        }
+        
         addDebugLog('info', 'Falling back to Amazon Transcribe...');
         
         // Fallback to Amazon Transcribe
