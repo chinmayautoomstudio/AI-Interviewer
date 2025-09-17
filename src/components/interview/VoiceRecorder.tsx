@@ -253,18 +253,66 @@ const VoiceRecorder: React.FC<VoiceRecorderProps> = ({
         console.log('✅ Audio monitoring is already active');
       }
       
-      console.log('🔍 Checking Amazon Transcribe availability...');
-      if (!amazonTranscribeService.isAvailable()) {
-        console.log('⚠️ Amazon Transcribe not configured, falling back to Web Speech API');
-        console.log('📊 Amazon Transcribe status:', {
-          isAvailable: amazonTranscribeService.isAvailable(),
-          awsAccessKey: !!process.env.REACT_APP_AWS_ACCESS_KEY_ID,
-          awsSecretKey: !!process.env.REACT_APP_AWS_SECRET_ACCESS_KEY,
-          awsRegion: process.env.REACT_APP_AWS_REGION
-        });
-        await handleWebSpeechInput();
+      // Record audio for n8n workflow
+      console.log('🎤 Recording audio for n8n workflow...');
+      const audioBlob = await recordAudioForWhisper();
+      
+      if (!audioBlob) {
+        console.log('❌ Failed to record audio');
+        onError('Failed to record audio. Please check your microphone permissions.');
         return;
+      }
+
+      if (audioBlob.size === 0) {
+        console.log('❌ Empty audio blob recorded');
+        onError('No audio recorded. Please speak louder or check your microphone.');
+        return;
+      }
+
+      console.log('✅ Audio recorded successfully:', audioBlob.size, 'bytes');
+
+      // Get session data
+      const session = await InterviewSystemService.getCurrentSession();
+      if (!session) {
+        console.error('❌ No active session found');
+        onError('No active interview session. Please start an interview first.');
+        return;
+      }
+
+      console.log('🔤 Sending audio to n8n workflow for STT and AI response (audio-to-n8n workflow)...');
+      const result = await InterviewSystemService.sendAudioToN8nWorkflow(
+        session.sessionId,
+        session.candidate,
+        session.jobDescription,
+        session.aiAgent,
+        audioBlob
+      );
+
+      if (result.error) {
+        console.error('❌ n8n workflow failed:', result.error);
+        console.log('🔄 n8n workflow failed, falling back to Amazon Transcribe...');
+        
+        // Fallback to Amazon Transcribe
+        try {
+          await handleAmazonTranscribeInput();
+        } catch (fallbackError) {
+          console.error('❌ Amazon Transcribe fallback also failed:', fallbackError);
+          onError(`Audio processing failed: ${result.error}`);
+        }
+        return;
+      }
+
+      if (result.response && result.response.trim()) {
+        console.log('✅ n8n workflow successful:', result.response);
+        console.log('📊 Response details:', {
+          text: result.response,
+          sessionId: result.sessionId
+        });
+        await processAIResponse(result.response, 0.95); // High confidence for n8n workflow
       } else {
+        console.log('⚠️ n8n workflow returned empty response');
+        onError('No response received from AI. Please try speaking again.');
+      }
         console.log('✅ Amazon Transcribe is available');
       }
 
@@ -394,6 +442,81 @@ const VoiceRecorder: React.FC<VoiceRecorderProps> = ({
       onError('Voice input failed. Please try again.');
     } finally {
       setIsProcessing(false);
+    }
+  };
+
+  // Amazon Transcribe fallback function
+  const handleAmazonTranscribeInput = async () => {
+    console.log('🎤 handleAmazonTranscribeInput called - fallback method');
+    
+    try {
+      console.log('🔍 Checking Amazon Transcribe availability...');
+      if (!amazonTranscribeService.isAvailable()) {
+        console.log('⚠️ Amazon Transcribe not configured, falling back to Web Speech API');
+        await handleWebSpeechInput();
+        return;
+      }
+
+      console.log('🔧 Initializing Amazon Transcribe...');
+      const initialized = await amazonTranscribeService.initialize();
+      
+      if (!initialized) {
+        console.log('⚠️ Failed to initialize Amazon Transcribe, falling back to Web Speech API');
+        await handleWebSpeechInput();
+        return;
+      }
+
+      let hasProcessed = false;
+      
+      const timeout = setTimeout(() => {
+        console.log('⏰ Amazon Transcribe timeout reached');
+        amazonTranscribeService.stopTranscription();
+        setIsSTTRunning(false);
+        setInterimText('');
+        
+        if (!hasProcessed) {
+          console.log('⚠️ No result received within timeout, falling back to Web Speech API');
+          handleWebSpeechInput().catch((fallbackError) => {
+            console.error('❌ Web Speech API fallback also failed:', fallbackError);
+            onError('Voice input timeout. Please try again.');
+          });
+        }
+      }, 30000);
+
+      console.log('🎤 Starting Amazon Transcribe...');
+      amazonTranscribeService.startTranscription(
+        (result) => {
+          if (result.transcript && result.transcript.trim() && !hasProcessed) {
+            hasProcessed = true;
+            clearTimeout(timeout);
+            amazonTranscribeService.stopTranscription();
+            setIsSTTRunning(false);
+            setInterimText('');
+            
+            console.log('✅ Amazon Transcribe successful:', result.transcript);
+            processAIResponse(result.transcript, result.confidence);
+          }
+        },
+        (error) => {
+          console.error('❌ Amazon Transcribe error:', error);
+          clearTimeout(timeout);
+          amazonTranscribeService.stopTranscription();
+          setIsSTTRunning(false);
+          setInterimText('');
+          
+          console.log('🔄 Falling back to Web Speech API due to Amazon Transcribe error');
+          handleWebSpeechInput().catch((fallbackError) => {
+            console.error('❌ Web Speech API fallback also failed:', fallbackError);
+            onError(`Voice input failed: ${error.message}. Please try again or use text input.`);
+          });
+        }
+      );
+
+      setIsSTTRunning(true);
+      
+    } catch (error: any) {
+      console.error('❌ Error in Amazon Transcribe fallback:', error);
+      onError('Voice input failed. Please try again.');
     }
   };
 
