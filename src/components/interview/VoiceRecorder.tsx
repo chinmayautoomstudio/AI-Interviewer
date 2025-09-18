@@ -27,6 +27,8 @@ const VoiceRecorder: React.FC<VoiceRecorderProps> = ({
   const [interimText, setInterimText] = useState('');
   const [debugMode, setDebugMode] = useState(false);
   const [debugLogs, setDebugLogs] = useState<Array<{timestamp: string, level: string, message: string}>>([]);
+  const [hasProcessedResponse, setHasProcessedResponse] = useState(false);
+  const isInitializedRef = useRef(false);
 
   const streamRef = useRef<MediaStream | null>(null);
   const audioContextRef = useRef<AudioContext | null>(null);
@@ -150,9 +152,18 @@ const VoiceRecorder: React.FC<VoiceRecorderProps> = ({
 
   // Process AI response
   const processAIResponse = async (aiResponse: string, confidence: number) => {
+    // Prevent duplicate processing
+    if (hasProcessedResponse) {
+      console.log('⚠️ Response already processed, skipping duplicate call');
+      return;
+    }
+
     try {
       console.log('🤖 Processing AI response:', aiResponse);
       console.log('📊 Confidence:', confidence);
+
+      // Mark as processed to prevent duplicates
+      setHasProcessedResponse(true);
 
       // Convert AI response to speech
       let audioResponse = '';
@@ -188,6 +199,9 @@ const VoiceRecorder: React.FC<VoiceRecorderProps> = ({
     addDebugLog('info', 'Starting voice recording - manual control');
     addDebugLog('info', `Current state: processing=${isProcessing}, sttRunning=${isSTTRunning}, listening=${isListening}`);
     
+    // Reset response processing flag for new recording
+    setHasProcessedResponse(false);
+    
     if (isProcessing || isSTTRunning) {
       addDebugLog('warn', 'Recording blocked - already processing or STT running');
       return;
@@ -199,10 +213,11 @@ const VoiceRecorder: React.FC<VoiceRecorderProps> = ({
     try {
       addDebugLog('info', 'Starting voice recording process...');
       
-      // Audio monitoring should already be started on component mount
+      // Start audio monitoring when record button is pressed
       if (!isListening) {
-        addDebugLog('warn', 'Audio monitoring not started, attempting to start...');
+        addDebugLog('info', 'Starting audio monitoring for recording...');
         await startAudioMonitoring();
+        addDebugLog('success', 'Audio monitoring started');
       } else {
         addDebugLog('info', 'Audio monitoring is already active');
       }
@@ -379,6 +394,14 @@ const VoiceRecorder: React.FC<VoiceRecorderProps> = ({
       onError('Voice input failed. Please try again or use text input.');
     } finally {
       setIsProcessing(false);
+      setHasProcessedResponse(false); // Reset for next recording
+      
+      // Stop audio monitoring after processing is complete
+      if (isListening) {
+        addDebugLog('info', 'Stopping audio monitoring after recording');
+        stopAudioMonitoring();
+      }
+      
       addDebugLog('info', 'Voice input process completed, processing state reset');
     }
   };
@@ -744,21 +767,11 @@ const VoiceRecorder: React.FC<VoiceRecorderProps> = ({
     addDebugLog('success', 'Voice recording stopped');
   };
 
-  // Initialize audio monitoring on component mount
+  // Cleanup on unmount only
   useEffect(() => {
-    const initializeAudio = async () => {
-      try {
-        await startAudioMonitoring();
-      } catch (error) {
-        console.warn('⚠️ Failed to initialize audio monitoring:', error);
-      }
-    };
-
-    initializeAudio();
-
-    // Cleanup on unmount
     return () => {
       stopAudioMonitoring();
+      isInitializedRef.current = false;
       // Clean up MediaRecorder
       if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'recording') {
         mediaRecorderRef.current.stop();
@@ -766,7 +779,7 @@ const VoiceRecorder: React.FC<VoiceRecorderProps> = ({
         audioChunksRef.current = [];
       }
     };
-  }, []);
+  }, []); // Empty dependency array - only cleanup on unmount
 
   return (
     <div className={`voice-recorder ${className}`}>

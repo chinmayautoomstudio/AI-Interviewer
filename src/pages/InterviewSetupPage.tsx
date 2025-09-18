@@ -209,8 +209,14 @@ const InterviewSetupPage: React.FC<InterviewSetupPageProps> = ({
       if (interviewResult.data) {
         console.log('✅ Actual interview started:', interviewResult.data);
         
+        // Add the AI greeting to the session object so InterviewPage can play it
+        const sessionWithGreeting = {
+          ...session,
+          aiGreeting: interviewResult.data.greeting
+        };
+        
         // Complete the setup and proceed to interview
-        onSetupComplete(session);
+        onSetupComplete(sessionWithGreeting);
       } else {
         setError(interviewResult.error || 'Failed to start actual interview');
       }
