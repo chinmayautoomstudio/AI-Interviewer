@@ -97,72 +97,66 @@ const InterviewPage: React.FC<InterviewPageProps> = ({
         return;
       }
       
-      try {
-        console.log('🤖 Starting interview with AI Agent...');
-        console.log('📊 Session ID:', session.sessionId);
-        const result = await InterviewSystemService.startActualInterview(session.sessionId);
+      // Note: Interview is already started in InterviewSetupPage, play the AI greeting that was passed
+      console.log('ℹ️ Interview already started in setup page, playing AI greeting...');
+      
+      // Check if we have the AI greeting from the session
+      if ((session as any).aiGreeting) {
+        console.log('✅ AI greeting found in session:', (session as any).aiGreeting);
         
-        if (result.data && result.data.greeting) {
-          console.log('✅ AI Agent response received:', result.data.greeting);
-          
-          // Mark greeting as processed
-          greetingProcessedRef.current = true;
-          
-          // Extract text content from AI response (handle different response formats)
-          let aiText = '';
-          if (typeof result.data.greeting === 'string') {
-            aiText = result.data.greeting;
-          } else if (result.data.greeting && typeof result.data.greeting === 'object') {
-            // Try to extract text from various possible fields
-            aiText = result.data.greeting.greeting || 
-                    result.data.greeting.message || 
-                    result.data.greeting.ai_response ||
-                    result.data.greeting.response ||
-                    result.data.greeting.output ||
-                    result.data.greeting.text ||
-                    result.data.greeting.content ||
-                    JSON.stringify(result.data.greeting);
-          }
-          
-          if (aiText) {
-            // Auto-play the AI response
-            try {
-              const voiceConfig = ttsManager.getCurrentVoiceConfig();
-              const ttsResponse = await ttsManager.textToSpeech({
-                text: aiText,
-                voiceId: voiceConfig.voiceId,
-                voiceSettings: voiceConfig.settings
-              });
-              
-              if (ttsResponse.audioUrl) {
-              await playAudio(ttsResponse.audioUrl);
+        // Extract text content from AI response (handle different response formats)
+        let aiText = '';
+        const greeting = (session as any).aiGreeting;
+        
+        if (typeof greeting === 'string') {
+          aiText = greeting;
+        } else if (greeting && typeof greeting === 'object') {
+          // Try to extract text from various possible fields
+          aiText = greeting.greeting || 
+                  greeting.message || 
+                  greeting.ai_response ||
+                  greeting.response ||
+                  greeting.output ||
+                  greeting.text ||
+                  greeting.content ||
+                  JSON.stringify(greeting);
+        }
+        
+        if (aiText) {
+          // Convert AI response to speech and play it
+          try {
+            console.log('🔊 Converting AI greeting to speech...');
+            const { ttsManager } = await import('../services/ttsManager');
+            const ttsResult = await ttsManager.textToSpeech({
+              text: aiText,
+              provider: 'auto'
+            });
+            
+            if (ttsResult.audioUrl) {
+              console.log('🔊 Playing AI greeting:', ttsResult.audioUrl);
+              await playAudio(ttsResult.audioUrl);
+              console.log('✅ AI greeting played successfully');
             } else {
               console.log('🔊 Browser TTS is playing directly');
             }
-            } catch (ttsError) {
-              console.warn('⚠️ TTS failed for AI response:', ttsError);
-            }
-          } else {
-            console.warn('⚠️ Could not extract text from AI response:', result.data.greeting);
+          } catch (ttsError) {
+            console.warn('⚠️ TTS failed for AI greeting:', ttsError);
           }
-        } else if (result.data && result.data.greeting === undefined) {
-          console.log('⚠️ Duplicate response detected and ignored');
         } else {
-          console.error('❌ No response received from AI Agent');
-          console.log('🔍 Debug info:', {
-            hasResult: !!result,
-            hasData: !!result?.data,
-            hasGreeting: !!result?.data?.greeting,
-            resultData: result?.data
-          });
+          console.log('⚠️ No text content found in AI greeting');
         }
-      } catch (error) {
-        console.error('❌ Failed to start interview with AI Agent:', error);
+      } else {
+        console.log('⚠️ No AI greeting found in session');
       }
+      
+      // Mark greeting as processed since interview is already active
+      greetingProcessedRef.current = true;
     };
 
-    // Start the interview with AI Agent
-    startInterviewWithAI();
+    // Start the interview with AI Agent after a short delay to ensure page is fully loaded
+    setTimeout(() => {
+      startInterviewWithAI();
+    }, 500);
 
     // Add beforeunload event listener to end interview when page is closed/refreshed
     const handleBeforeUnload = (event: BeforeUnloadEvent) => {
