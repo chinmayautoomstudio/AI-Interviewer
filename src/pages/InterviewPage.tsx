@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Mic, ArrowLeft, Clock } from 'lucide-react';
 import { InterviewSystemService } from '../services/interviewSystem';
 import { ttsManager } from '../services/ttsManager';
+import { detectInterviewEnd, shouldAutoEndInterview } from '../utils/interviewEndDetection';
 import LoadingSpinner from '../components/ui/LoadingSpinner';
 import VoiceRecorder from '../components/interview/VoiceRecorder';
 import { InterviewSession } from '../types';
@@ -97,6 +98,9 @@ const InterviewPage: React.FC<InterviewPageProps> = ({
         return;
       }
       
+      // Mark greeting as processed immediately
+      greetingProcessedRef.current = true;
+      
       // Note: Interview is already started in InterviewSetupPage, play the AI greeting that was passed
       console.log('ℹ️ Interview already started in setup page, playing AI greeting...');
       
@@ -123,6 +127,14 @@ const InterviewPage: React.FC<InterviewPageProps> = ({
         }
         
         if (aiText) {
+          // Check if the AI greeting indicates the interview is ending
+          const endDetection = detectInterviewEnd(aiText);
+          let shouldEndAfterAudio = false;
+          if (endDetection.isEnding && shouldAutoEndInterview(endDetection.confidence)) {
+            console.log('🎯 Interview end detected in greeting, will auto-end after audio finishes');
+            shouldEndAfterAudio = true;
+          }
+
           // Convert AI response to speech and play it
           try {
             console.log('🔊 Converting AI greeting to speech...');
@@ -136,8 +148,22 @@ const InterviewPage: React.FC<InterviewPageProps> = ({
               console.log('🔊 Playing AI greeting:', ttsResult.audioUrl);
               await playAudio(ttsResult.audioUrl);
               console.log('✅ AI greeting played successfully');
+              
+              // If this was an ending message, end the interview after audio finishes
+              if (shouldEndAfterAudio) {
+                console.log('🔊 AI ending message finished, ending interview');
+                setTimeout(() => {
+                  endInterview();
+                }, 1000); // Small delay after audio ends
+              }
             } else {
               console.log('🔊 Browser TTS is playing directly');
+              // For browser TTS, wait a bit longer since we can't detect when it ends
+              if (shouldEndAfterAudio) {
+                setTimeout(() => {
+                  endInterview();
+                }, 5000); // Wait 5 seconds for browser TTS
+              }
             }
           } catch (ttsError) {
             console.warn('⚠️ TTS failed for AI greeting:', ttsError);
@@ -307,6 +333,8 @@ const InterviewPage: React.FC<InterviewPageProps> = ({
             <VoiceRecorder
               onTranscription={handleVoiceTranscription}
               onError={handleVoiceError}
+              onEndInterview={endInterview}
+              onBackToTest={onBack}
               sessionId={session.sessionId}
               disabled={isLoading}
               language="en-US"

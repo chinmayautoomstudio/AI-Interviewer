@@ -2,10 +2,14 @@ import React, { useState, useRef, useEffect } from 'react';
 import { Mic, MicOff } from 'lucide-react';
 import { InterviewSystemService } from '../../services/interviewSystem';
 import { amazonTranscribeService } from '../../services/amazonTranscribe';
+import { detectInterviewEnd, shouldAutoEndInterview, shouldShowEndInterviewPopup } from '../../utils/interviewEndDetection';
+import InterviewEndPopup from './InterviewEndPopup';
 
 interface VoiceRecorderProps {
   onTranscription: (transcription: { transcript: string; response: string; audioResponse: string; confidence: number }) => void;
   onError: (error: string) => void;
+  onEndInterview?: () => void;
+  onBackToTest?: () => void;
   sessionId: string;
   disabled?: boolean;
   language?: string;
@@ -15,6 +19,8 @@ interface VoiceRecorderProps {
 const VoiceRecorder: React.FC<VoiceRecorderProps> = ({
   onTranscription,
   onError,
+  onEndInterview,
+  onBackToTest,
   sessionId,
   disabled = false,
   language = 'en-US',
@@ -29,6 +35,14 @@ const VoiceRecorder: React.FC<VoiceRecorderProps> = ({
   const [debugLogs, setDebugLogs] = useState<Array<{timestamp: string, level: string, message: string}>>([]);
   const [hasProcessedResponse, setHasProcessedResponse] = useState(false);
   const isInitializedRef = useRef(false);
+  
+  // Interview end detection state
+  const [showEndInterviewPopup, setShowEndInterviewPopup] = useState(false);
+  const [endInterviewData, setEndInterviewData] = useState<{
+    aiMessage: string;
+    detectedPhrase?: string;
+    confidence: number;
+  } | null>(null);
 
   const streamRef = useRef<MediaStream | null>(null);
   const audioContextRef = useRef<AudioContext | null>(null);
@@ -178,6 +192,40 @@ const VoiceRecorder: React.FC<VoiceRecorderProps> = ({
         console.log('✅ TTS generated:', audioResponse);
       } catch (ttsError) {
         console.warn('⚠️ TTS failed, continuing without audio:', ttsError);
+      }
+
+      // Check if the AI response indicates the interview is ending
+      const endDetection = detectInterviewEnd(aiResponse);
+      if (endDetection.isEnding) {
+        console.log('🎯 Interview end detected:', endDetection);
+        
+        // Store the end interview data
+        setEndInterviewData({
+          aiMessage: aiResponse,
+          detectedPhrase: endDetection.detectedPhrase,
+          confidence: endDetection.confidence
+        });
+        
+        // Auto-end if confidence is high enough
+        if (shouldAutoEndInterview(endDetection.confidence)) {
+          console.log('✅ Auto-ending interview due to high confidence');
+          // Calculate wait time based on text length (rough estimate: 150 words per minute)
+          const wordCount = aiResponse.split(' ').length;
+          const estimatedDurationMs = Math.max((wordCount / 150) * 60 * 1000, 3000); // At least 3 seconds
+          const waitTime = Math.min(estimatedDurationMs + 2000, 15000); // Max 15 seconds
+          
+          console.log(`⏱️ Estimated audio duration: ${Math.round(estimatedDurationMs/1000)}s, waiting ${Math.round(waitTime/1000)}s before ending`);
+          
+          setTimeout(() => {
+            console.log('🔊 Estimated audio finished, ending interview');
+            if (onEndInterview) {
+              onEndInterview();
+            }
+          }, waitTime);
+        } else if (shouldShowEndInterviewPopup(endDetection.confidence)) {
+          console.log('📋 Showing end interview popup');
+          setShowEndInterviewPopup(true);
+        }
       }
 
       // Call the transcription callback with AI response and audio
@@ -396,12 +444,7 @@ const VoiceRecorder: React.FC<VoiceRecorderProps> = ({
       setIsProcessing(false);
       setHasProcessedResponse(false); // Reset for next recording
       
-      // Stop audio monitoring after processing is complete
-      if (isListening) {
-        addDebugLog('info', 'Stopping audio monitoring after recording');
-        stopAudioMonitoring();
-      }
-      
+      // Don't stop audio monitoring - keep it active for next recording
       addDebugLog('info', 'Voice input process completed, processing state reset');
     }
   };
@@ -767,6 +810,19 @@ const VoiceRecorder: React.FC<VoiceRecorderProps> = ({
     addDebugLog('success', 'Voice recording stopped');
   };
 
+  // Handle interview end popup actions
+  const handleEndInterviewConfirm = () => {
+    setShowEndInterviewPopup(false);
+    if (onEndInterview) {
+      onEndInterview();
+    }
+  };
+
+  const handleEndInterviewCancel = () => {
+    setShowEndInterviewPopup(false);
+    setEndInterviewData(null);
+  };
+
   // Cleanup on unmount only
   useEffect(() => {
     return () => {
@@ -883,6 +939,19 @@ const VoiceRecorder: React.FC<VoiceRecorderProps> = ({
           </div>
         )}
       </div>
+
+      {/* Interview End Popup */}
+      {endInterviewData && (
+        <InterviewEndPopup
+          isOpen={showEndInterviewPopup}
+          onConfirm={handleEndInterviewConfirm}
+          onCancel={handleEndInterviewCancel}
+          onBackToTest={onBackToTest}
+          aiMessage={endInterviewData.aiMessage}
+          detectedPhrase={endInterviewData.detectedPhrase}
+          confidence={endInterviewData.confidence}
+        />
+      )}
     </div>
   );
 };
