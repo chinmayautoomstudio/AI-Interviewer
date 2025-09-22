@@ -112,9 +112,12 @@ const CandidateInterviewPage: React.FC = () => {
       }
 
       setSession(newSession);
+<<<<<<< HEAD
       
       // Navigate to the session-specific URL
       navigate(`/candidate/interview/${newSession.sessionId}`);
+=======
+>>>>>>> 9e36f4ac92ec622be38416b3fbe3090175a75215
     } catch (error) {
       console.error('Error starting interview:', error);
       setError('Failed to start interview');
