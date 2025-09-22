@@ -1255,8 +1255,7 @@ export class InterviewSystemService {
             duration_minutes,
             candidates!inner(
               id,
-              first_name,
-              last_name,
+              name,
               email
             ),
             job_descriptions!inner(
