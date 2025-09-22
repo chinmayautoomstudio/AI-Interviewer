@@ -1,34 +1,120 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import Card from '../components/ui/Card';
 import Button from '../components/ui/Button';
-import { BarChart3, TrendingUp, Users, Calendar, CheckCircle, Clock } from 'lucide-react';
+import LoadingSpinner from '../components/ui/LoadingSpinner';
+import { BarChart3, TrendingUp, Users, Calendar, CheckCircle, Clock, Eye } from 'lucide-react';
+import { InterviewSystemService } from '../services/interviewSystem';
 
 const ReportsPage: React.FC = () => {
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [statistics, setStatistics] = useState<any>(null);
+  const [reports, setReports] = useState<any[]>([]);
+
+  useEffect(() => {
+    loadReportsData();
+  }, []);
+
+  const loadReportsData = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+
+      // Load statistics and reports in parallel
+      const [statsResult, reportsResult] = await Promise.all([
+        InterviewSystemService.getInterviewStatistics(),
+        InterviewSystemService.getAllInterviewReports()
+      ]);
+
+      if (statsResult.error) {
+        setError(statsResult.error);
+      } else {
+        setStatistics(statsResult.data);
+      }
+
+      if (reportsResult.error) {
+        setError(reportsResult.error);
+      } else {
+        setReports(reportsResult.data);
+      }
+    } catch (error) {
+      console.error('Error loading reports data:', error);
+      setError('Failed to load reports data');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  };
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'suitable': return 'text-green-600 bg-green-100';
+      case 'not_suitable': return 'text-red-600 bg-red-100';
+      case 'conditional': return 'text-yellow-600 bg-yellow-100';
+      case 'needs_review': return 'text-blue-600 bg-blue-100';
+      default: return 'text-gray-600 bg-gray-100';
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="p-6 flex items-center justify-center min-h-96">
+        <LoadingSpinner size="lg" />
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="p-6">
+        <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+          <p className="text-red-800">Error: {error}</p>
+          <Button 
+            variant="primary" 
+            onClick={loadReportsData}
+            className="mt-2"
+          >
+            Retry
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
   const stats = [
     {
       title: 'Total Interviews',
-      value: '1,234',
+      value: statistics?.totalInterviews?.toString() || '0',
       change: '+12%',
       changeType: 'positive' as const,
       icon: Calendar,
     },
     {
       title: 'Completed Interviews',
-      value: '1,156',
+      value: statistics?.completedInterviews?.toString() || '0',
       change: '+8%',
       changeType: 'positive' as const,
       icon: CheckCircle,
     },
     {
       title: 'Pending Reviews',
-      value: '78',
+      value: statistics?.pendingReviews?.toString() || '0',
       change: '-5%',
       changeType: 'negative' as const,
       icon: Clock,
     },
     {
       title: 'Average Score',
-      value: '85%',
+      value: `${statistics?.averageScore || 0}%`,
       change: '+3%',
       changeType: 'positive' as const,
       icon: TrendingUp,
@@ -99,25 +185,49 @@ const ReportsPage: React.FC = () => {
       {/* Recent Reports */}
       <Card title="Recent Interview Reports">
         <div className="space-y-4">
-          {[1, 2, 3, 4, 5].map((item) => (
-            <div key={item} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
-              <div className="flex items-center space-x-4">
-                <div className="w-10 h-10 bg-gray-300 rounded-full flex items-center justify-center">
-                  <Users className="h-5 w-5 text-gray-600" />
-                </div>
-                <div>
-                  <p className="font-medium text-gray-900">John Smith {item}</p>
-                  <p className="text-sm text-gray-600">Senior Developer • Completed 2 hours ago</p>
-                </div>
-              </div>
-              <div className="flex items-center space-x-3">
-                <span className="text-lg font-bold text-gray-900">85%</span>
-                <Button variant="ghost" size="sm">
-                  View Report
-                </Button>
-              </div>
+          {reports.length === 0 ? (
+            <div className="text-center py-8">
+              <Users className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+              <p className="text-gray-500">No interview reports found</p>
+              <p className="text-sm text-gray-400">Reports will appear here after interviews are completed</p>
             </div>
-          ))}
+          ) : (
+            reports.map((report) => {
+              const session = report.interview_sessions;
+              const candidate = session?.candidates;
+              const job = session?.job_descriptions;
+              
+              return (
+                <div key={report.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                  <div className="flex items-center space-x-4">
+                    <div className="w-10 h-10 bg-gray-300 rounded-full flex items-center justify-center">
+                      <Users className="h-5 w-5 text-gray-600" />
+                    </div>
+                    <div>
+                      <p className="font-medium text-gray-900">
+                        {candidate ? `${candidate.first_name} ${candidate.last_name}` : 'Unknown Candidate'}
+                      </p>
+                      <p className="text-sm text-gray-600">
+                        {job?.title || 'Unknown Position'} • {formatDate(report.created_at)}
+                      </p>
+                      <div className="flex items-center space-x-2 mt-1">
+                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(report.suitability_status)}`}>
+                          {report.suitability_status.replace('_', ' ').toUpperCase()}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="flex items-center space-x-3">
+                    <span className="text-lg font-bold text-gray-900">{report.overall_score}%</span>
+                    <Button variant="ghost" size="sm">
+                      <Eye className="h-4 w-4 mr-1" />
+                      View Report
+                    </Button>
+                  </div>
+                </div>
+              );
+            })
+          )}
         </div>
       </Card>
     </div>

@@ -1239,4 +1239,101 @@ export class InterviewSystemService {
       return { error: 'Failed to cancel interview' };
     }
   }
+
+  // Get all interview reports with session and candidate details
+  static async getAllInterviewReports(): Promise<{ data: any[]; error?: string }> {
+    try {
+      const { data: reports, error } = await supabase
+        .from('interview_reports')
+        .select(`
+          *,
+          interview_sessions!inner(
+            session_id,
+            status,
+            started_at,
+            completed_at,
+            duration_minutes,
+            candidates!inner(
+              id,
+              first_name,
+              last_name,
+              email
+            ),
+            job_descriptions!inner(
+              id,
+              title,
+              department
+            )
+          )
+        `)
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        console.error('Error getting interview reports:', error);
+        return { data: [], error: 'Failed to get interview reports' };
+      }
+
+      return { data: reports || [] };
+    } catch (error) {
+      console.error('Error getting interview reports:', error);
+      return { data: [], error: 'Failed to get interview reports' };
+    }
+  }
+
+  // Get interview statistics
+  static async getInterviewStatistics(): Promise<{ data: any; error?: string }> {
+    try {
+      // Get total interviews
+      const { count: totalInterviews, error: totalError } = await supabase
+        .from('interview_sessions')
+        .select('*', { count: 'exact', head: true });
+
+      if (totalError) {
+        console.error('Error getting total interviews:', totalError);
+      }
+
+      // Get completed interviews
+      const { count: completedInterviews, error: completedError } = await supabase
+        .from('interview_sessions')
+        .select('*', { count: 'exact', head: true })
+        .eq('status', 'completed');
+
+      if (completedError) {
+        console.error('Error getting completed interviews:', completedError);
+      }
+
+      // Get pending reviews (interviews with reports but not reviewed)
+      const { count: pendingReviews, error: pendingError } = await supabase
+        .from('interview_reports')
+        .select('*', { count: 'exact', head: true })
+        .eq('suitability_status', 'needs_review');
+
+      if (pendingError) {
+        console.error('Error getting pending reviews:', pendingError);
+      }
+
+      // Get average score
+      const { data: avgScoreData, error: avgError } = await supabase
+        .from('interview_reports')
+        .select('overall_score');
+
+      let averageScore = 0;
+      if (!avgError && avgScoreData && avgScoreData.length > 0) {
+        const totalScore = avgScoreData.reduce((sum, report) => sum + report.overall_score, 0);
+        averageScore = Math.round(totalScore / avgScoreData.length);
+      }
+
+      return {
+        data: {
+          totalInterviews: totalInterviews || 0,
+          completedInterviews: completedInterviews || 0,
+          pendingReviews: pendingReviews || 0,
+          averageScore: averageScore
+        }
+      };
+    } catch (error) {
+      console.error('Error getting interview statistics:', error);
+      return { data: null, error: 'Failed to get interview statistics' };
+    }
+  }
 }
