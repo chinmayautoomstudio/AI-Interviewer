@@ -205,7 +205,7 @@ const ReportsPage: React.FC = () => {
                     </div>
                     <div>
                       <p className="font-medium text-gray-900">
-                        {candidate ? `${candidate.first_name} ${candidate.last_name}` : 'Unknown Candidate'}
+                        {candidate ? candidate.name : 'Unknown Candidate'}
                       </p>
                       <p className="text-sm text-gray-600">
                         {job?.title || 'Unknown Position'} • {formatDate(report.created_at)}
