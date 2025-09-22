@@ -43,6 +43,12 @@ class AmazonTranscribeService {
     const accessKeyId = process.env.REACT_APP_AWS_ACCESS_KEY_ID || '';
     const secretAccessKey = process.env.REACT_APP_AWS_SECRET_ACCESS_KEY || '';
 
+    // Debug logging for environment variables
+    console.log('🔍 AWS Environment Variables Check:');
+    console.log('REACT_APP_AWS_REGION:', region);
+    console.log('REACT_APP_AWS_ACCESS_KEY_ID:', accessKeyId ? `${accessKeyId.substring(0, 8)}...` : 'NOT SET');
+    console.log('REACT_APP_AWS_SECRET_ACCESS_KEY:', secretAccessKey ? `${secretAccessKey.substring(0, 8)}...` : 'NOT SET');
+
     if (accessKeyId && secretAccessKey) {
       this.config = {
         region,

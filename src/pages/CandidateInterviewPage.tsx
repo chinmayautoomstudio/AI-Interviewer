@@ -319,7 +319,7 @@ const CandidateInterviewPage: React.FC = () => {
             {session ? (
               <div className="h-[600px]">
                 <ChatInterface
-                  sessionId={session.sessionId || ''}
+                  sessionId={session.sessionId || sessionToken || ''}
                   session={session}
                   onSessionUpdate={handleSessionUpdate}
                 />
