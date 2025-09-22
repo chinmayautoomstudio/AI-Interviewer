@@ -163,7 +163,7 @@ const CandidateDashboardPage: React.FC = () => {
     if (dashboardData?.candidate.interview_id) {
       navigate(`/candidate/interview/${dashboardData.candidate.interview_id}`);
     } else {
-      navigate('/candidate/interview/session');
+      navigate('/candidate/interview/new');
     }
   };
 
