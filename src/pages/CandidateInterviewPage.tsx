@@ -75,7 +75,7 @@ const CandidateInterviewPage: React.FC = () => {
       }
 
       // Check if there's an existing session
-      if (sessionToken) {
+      if (sessionToken && sessionToken !== 'new') {
         const { data: existingSession, error: sessionError } = await InterviewSystemService.getInterviewSession(sessionToken);
         if (!sessionError && existingSession) {
           setSession(existingSession);
@@ -112,6 +112,9 @@ const CandidateInterviewPage: React.FC = () => {
       }
 
       setSession(newSession);
+      
+      // Navigate to the session-specific URL
+      navigate(`/candidate/interview/${newSession.sessionId}`);
     } catch (error) {
       console.error('Error starting interview:', error);
       setError('Failed to start interview');
