@@ -137,25 +137,6 @@ const LoginPage: React.FC = () => {
             </a>
           </div>
 
-          {/* Development credentials hint */}
-          <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-            <p className="text-blue-800 text-xs text-center">
-              <strong>Development Mode:</strong> Use chinmay.nayak@autoomstudio.com / Chinmay@2000
-            </p>
-            <button
-              type="button"
-              onClick={() => {
-                setFormData({
-                  email: 'chinmay.nayak@autoomstudio.com',
-                  password: 'Chinmay@2000',
-                  rememberMe: false,
-                });
-              }}
-              className="mt-2 w-full text-xs bg-blue-100 hover:bg-blue-200 text-blue-800 py-1 px-2 rounded"
-            >
-              Auto-fill Test Credentials
-            </button>
-          </div>
         </Card>
       </div>
     </div>
