@@ -126,7 +126,6 @@ const CandidateInterviewPage: React.FC = () => {
         if (!sessionError && existingSession) {
           console.log('✅ Existing session loaded:', existingSession);
           setSession(existingSession);
-<<<<<<< HEAD
           
           // If session is in pending status, start the actual interview
           if (existingSession.status === 'pending') {
@@ -136,7 +135,7 @@ const CandidateInterviewPage: React.FC = () => {
               if (interviewResult.data) {
                 console.log('✅ Actual interview started for existing session:', interviewResult.data);
                 
-                // Add the AI response to the session object
+                // Add the AI response to the session object (handle any response format)
                 const sessionWithResponse = {
                   ...existingSession,
                   aiResponse: interviewResult.data.greeting
@@ -151,8 +150,6 @@ const CandidateInterviewPage: React.FC = () => {
               console.error('❌ Error starting actual interview for existing session:', error);
             }
           }
-=======
->>>>>>> 3f500b1336ad4ce1a6ec73426132d25f64e8dee5
         } else {
           console.warn('⚠️ Could not load existing session:', sessionError);
         }
@@ -226,7 +223,7 @@ const CandidateInterviewPage: React.FC = () => {
       if (interviewResult.data) {
         console.log('✅ Actual interview started:', interviewResult.data);
         
-        // Add the AI response to the session object
+        // Add the AI response to the session object (handle any response format)
         const sessionWithResponse = {
           ...newSession,
           aiResponse: interviewResult.data.greeting
