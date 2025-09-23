@@ -19,6 +19,17 @@ export class AuthService {
         createdAt: new Date().toISOString(),
         lastLogin: new Date().toISOString(),
       }
+    },
+    'awsadmin': {
+      password: 'AWSAdmin@2025',
+      user: {
+        id: 'dev-user-2',
+        email: 'awsadmin',
+        name: 'AWS Admin',
+        role: 'admin' as const,
+        createdAt: new Date().toISOString(),
+        lastLogin: new Date().toISOString(),
+      }
     }
   };
 
