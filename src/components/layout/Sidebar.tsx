@@ -7,9 +7,7 @@ import {
   FileText, 
   BarChart3, 
   Settings,
-  Database,
   Bot,
-  Mic,
   TestTube
 } from 'lucide-react';
 
@@ -28,11 +26,8 @@ const Sidebar: React.FC<SidebarProps> = () => {
     { name: 'Reports', href: '/reports', icon: BarChart3 },
     { name: 'Job Descriptions', href: '/job-descriptions', icon: FileText },
     { name: 'AI Agents', href: '/ai-agents', icon: Bot },
-    { name: 'Voice Settings', href: '/voice-settings', icon: Mic },
-    { name: 'Microphone Setup', href: '/microphone-setup', icon: Settings },
     { name: 'Interview Test', href: '/admin-interview-test', icon: TestTube },
     { name: 'Settings', href: '/settings', icon: Settings },
-    { name: 'DB Test', href: '/supabase-test', icon: Database },
   ];
 
   return (
