@@ -331,6 +331,7 @@ export interface InterviewSession {
   questionsAnswered: number;
   createdAt: string;
   updatedAt: string;
+  aiResponse?: any; // AI response from n8n workflow
 }
 
 export interface InterviewMessage {

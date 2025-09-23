@@ -125,11 +125,12 @@ const CandidateInterviewPage: React.FC = () => {
         const { data: existingSession, error: sessionError } = await InterviewSystemService.getInterviewSession(sessionToken);
         if (!sessionError && existingSession) {
           console.log('✅ Existing session loaded:', existingSession);
+          console.log('🔍 Session status:', existingSession.status);
           setSession(existingSession);
           
-          // If session is in pending status, start the actual interview
-          if (existingSession.status === 'pending') {
-            console.log('🚀 Session is pending, starting actual interview...');
+          // If session is in pending status or doesn't have AI response, start the actual interview
+          if (existingSession.status === 'pending' || !existingSession.aiResponse) {
+            console.log('🚀 Session needs to start actual interview, status:', existingSession.status);
             try {
               const interviewResult = await InterviewSystemService.startActualInterview(existingSession.sessionId);
               if (interviewResult.data) {
@@ -149,6 +150,8 @@ const CandidateInterviewPage: React.FC = () => {
             } catch (error) {
               console.error('❌ Error starting actual interview for existing session:', error);
             }
+          } else {
+            console.log('✅ Session already has AI response, no need to start actual interview');
           }
         } else {
           console.warn('⚠️ Could not load existing session:', sessionError);

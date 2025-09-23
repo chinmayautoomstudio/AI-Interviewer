@@ -18,7 +18,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ sessionId, session, onSes
   const [newMessage, setNewMessage] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [isTyping, setIsTyping] = useState(false);
-  const [voiceMode, setVoiceMode] = useState(false);
+  const [voiceMode, setVoiceMode] = useState(true); // Default to voice-only
   const [isVoiceAvailable, setIsVoiceAvailable] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -354,24 +354,8 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ sessionId, session, onSes
       {/* Input */}
       {session.status === 'in_progress' && (
         <div className="border-t border-gray-200 p-4">
-          {/* Voice Mode Toggle */}
-          {isVoiceAvailable && (
-            <div className="mb-3 flex items-center justify-between">
-              <div className="flex items-center space-x-2">
-                <button
-                  onClick={toggleVoiceMode}
-                  className={`flex items-center space-x-2 px-3 py-1 rounded-lg text-sm transition-colors ${
-                    voiceMode 
-                      ? 'bg-blue-100 text-blue-700 border border-blue-300' 
-                      : 'bg-gray-100 text-gray-600 border border-gray-300'
-                  }`}
-                >
-                  {voiceMode ? <Mic className="h-4 w-4" /> : <MicOff className="h-4 w-4" />}
-                  <span>{voiceMode ? 'Voice Mode On' : 'Voice Mode Off'}</span>
-                </button>
-              </div>
-            </div>
-          )}
+          {/* Voice Mode Toggle - Hidden for voice-only interview */}
+          {/* Voice mode is always on for voice-only interviews */}
 
           {/* Voice Recorder */}
           {voiceMode && isVoiceAvailable && (
@@ -387,30 +371,32 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ sessionId, session, onSes
             </div>
           )}
 
-          {/* Text Input */}
-          <div className="flex space-x-2">
-            <input
-              ref={inputRef}
-              type="text"
-              value={newMessage}
-              onChange={(e) => setNewMessage(e.target.value)}
-              onKeyPress={handleKeyPress}
-              placeholder={voiceMode ? "Or type your answer here..." : "Type your answer here..."}
-              className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              disabled={isLoading}
-            />
-            <button
-              onClick={() => handleSendMessage()}
-              disabled={!newMessage.trim() || isLoading}
-              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
-            >
-              {isLoading ? (
-                <LoadingSpinner size="sm" />
-              ) : (
-                <Send className="h-4 w-4" />
-              )}
-            </button>
-          </div>
+          {/* Text Input - Hidden for voice-only mode */}
+          {!voiceMode && (
+            <div className="flex space-x-2">
+              <input
+                ref={inputRef}
+                type="text"
+                value={newMessage}
+                onChange={(e) => setNewMessage(e.target.value)}
+                onKeyPress={handleKeyPress}
+                placeholder="Type your answer here..."
+                className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                disabled={isLoading}
+              />
+              <button
+                onClick={() => handleSendMessage()}
+                disabled={!newMessage.trim() || isLoading}
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
+              >
+                {isLoading ? (
+                  <LoadingSpinner size="sm" />
+                ) : (
+                  <Send className="h-4 w-4" />
+                )}
+              </button>
+            </div>
+          )}
           <p className="text-xs text-gray-500 mt-2">
             Press Enter to send, Shift+Enter for new line
           </p>
