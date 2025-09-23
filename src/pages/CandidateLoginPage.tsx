@@ -1,57 +1,20 @@
-import React, { useState, useEffect } from 'react';
-import { Mic, CheckCircle, AlertCircle, User, Briefcase, Lock } from 'lucide-react';
+import React, { useState } from 'react';
+import { Mic, CheckCircle, AlertCircle } from 'lucide-react';
 import Button from '../components/ui/Button';
 import Input from '../components/ui/Input';
 import Card from '../components/ui/Card';
 import { CandidateAuthService } from '../services/candidateAuth';
-import { CandidateLoginRequest } from '../types';
-import { supabase } from '../services/supabase';
-
-interface JobDescription {
-  id: string;
-  job_description_id?: string;
-  title: string;
-  department: string;
-}
 
 const CandidateLoginPage: React.FC = () => {
-  const [formData, setFormData] = useState<CandidateLoginRequest>({
-    name: '',
-    email: '',
-    contact_number: '',
-    job_description_id: '',
+  const [formData, setFormData] = useState({
     username: '',
     password: ''
   });
-  const [jobDescriptions, setJobDescriptions] = useState<JobDescription[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
 
-  // Load job descriptions on component mount
-  useEffect(() => {
-    const loadJobDescriptions = async () => {
-      try {
-        const { data, error } = await supabase
-          .from('job_descriptions')
-          .select('id, job_description_id, title, department')
-          .eq('status', 'active')
-          .order('title');
-
-        if (error) {
-          console.error('Error loading job descriptions:', error);
-        } else {
-          setJobDescriptions(data || []);
-        }
-      } catch (error) {
-        console.error('Error loading job descriptions:', error);
-      }
-    };
-
-    loadJobDescriptions();
-  }, []);
-
-  const handleInputChange = (field: keyof CandidateLoginRequest, value: string) => {
+  const handleInputChange = (field: string, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
     // Clear errors when user starts typing
     if (error) setError(null);
@@ -65,14 +28,16 @@ const CandidateLoginPage: React.FC = () => {
     
     try {
       // Validate required fields
-      if (!formData.name.trim() || !formData.email.trim() || !formData.contact_number.trim() || 
-          !formData.job_description_id || !formData.username.trim() || !formData.password.trim()) {
-        setError('Please fill in all required fields');
+      if (!formData.username.trim() || !formData.password.trim()) {
+        setError('Please enter both username and password');
         return;
       }
 
-      // Authenticate candidate
-      const authResult = await CandidateAuthService.authenticateCandidate(formData);
+      // Authenticate candidate with simplified credentials
+      const authResult = await CandidateAuthService.authenticateCandidateSimple(
+        formData.username,
+        formData.password
+      );
       
       if (authResult.error) {
         setError(authResult.error);
@@ -132,76 +97,10 @@ const CandidateLoginPage: React.FC = () => {
               </div>
             )}
 
-            {/* Personal Information Section */}
-            <div className="space-y-4">
-              <h3 className="text-lg font-semibold text-gray-900 flex items-center">
-                <User className="h-5 w-5 mr-2 text-blue-600" />
-                Personal Information
-              </h3>
-              
-              <Input
-                label="Full Name"
-                type="text"
-                placeholder="Enter your full name"
-                value={formData.name}
-                onChange={(value) => handleInputChange('name', value)}
-                required
-              />
-
-              <Input
-                label="Email Address"
-                type="email"
-                placeholder="Enter your email"
-                value={formData.email}
-                onChange={(value) => handleInputChange('email', value)}
-                required
-              />
-
-              <Input
-                label="Contact Number"
-                type="tel"
-                placeholder="Enter your contact number"
-                value={formData.contact_number}
-                onChange={(value) => handleInputChange('contact_number', value)}
-                required
-              />
-            </div>
-
-            {/* Job Selection */}
-            <div className="space-y-4">
-              <h3 className="text-lg font-semibold text-gray-900 flex items-center">
-                <Briefcase className="h-5 w-5 mr-2 text-blue-600" />
-                Interview Details
-              </h3>
-              
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Job Position
-                </label>
-                <select
-                  value={formData.job_description_id}
-                  onChange={(e) => handleInputChange('job_description_id', e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  required
-                >
-                  <option value="">Select the job you're interviewing for</option>
-                  {jobDescriptions.map((job) => (
-                    <option key={job.id} value={job.job_description_id || job.id}>
-                      {job.title} - {job.department}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            </div>
-
             {/* Login Credentials */}
             <div className="space-y-4">
-              <h3 className="text-lg font-semibold text-gray-900 flex items-center">
-                <Lock className="h-5 w-5 mr-2 text-blue-600" />
-                Login Credentials
-              </h3>
               <p className="text-sm text-gray-600">
-                These credentials were sent to your email when the interview was scheduled.
+                Enter your credentials to access your interview.
               </p>
               
               <Input
