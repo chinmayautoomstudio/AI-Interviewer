@@ -33,6 +33,13 @@ const CandidateInterviewPage: React.FC = () => {
   }, [sessionToken]);
 
   const loadInterviewData = async () => {
+    console.log('🔍 loadInterviewData called with sessionToken:', sessionToken);
+    if (!sessionToken || sessionToken === 'new') {
+      console.log('✅ Skipping session load for new interview');
+      setLoading(false);
+      return;
+    }
+
     try {
       setLoading(true);
       setError(null);
@@ -111,9 +118,11 @@ const CandidateInterviewPage: React.FC = () => {
         return;
       }
 
+      console.log('✅ Session created successfully:', newSession);
       setSession(newSession);
       
       // Navigate to the session-specific URL
+      console.log('🔄 Navigating to session URL:', `/candidate/interview/${newSession.sessionId}`);
       navigate(`/candidate/interview/${newSession.sessionId}`);
     } catch (error) {
       console.error('Error starting interview:', error);
@@ -316,10 +325,10 @@ const CandidateInterviewPage: React.FC = () => {
 
           {/* Chat Interface */}
           <div className="lg:col-span-2">
-            {session ? (
+            {session && session.sessionId && sessionToken !== 'new' ? (
               <div className="h-[600px]">
                 <ChatInterface
-                  sessionId={session.sessionId || sessionToken || ''}
+                  sessionId={session.sessionId}
                   session={session}
                   onSessionUpdate={handleSessionUpdate}
                 />
