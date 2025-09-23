@@ -34,17 +34,12 @@ const CandidateInterviewPage: React.FC = () => {
 
   const loadInterviewData = async () => {
     console.log('🔍 loadInterviewData called with sessionToken:', sessionToken);
-    if (!sessionToken || sessionToken === 'new') {
-      console.log('✅ Skipping session load for new interview');
-      setLoading(false);
-      return;
-    }
-
+    
     try {
       setLoading(true);
       setError(null);
 
-      // Get candidate data from localStorage
+      // Always load candidate data from localStorage (regardless of session token)
       const candidateSession = localStorage.getItem('candidateSession');
       if (!candidateSession) {
         setError('Candidate session not found. Please login again.');
@@ -52,10 +47,14 @@ const CandidateInterviewPage: React.FC = () => {
       }
 
       const candidateData: CandidateUser = JSON.parse(candidateSession);
+      console.log('✅ Candidate data loaded:', candidateData);
+      console.log('🔍 Candidate primaryJobDescriptionId:', candidateData.primaryJobDescriptionId);
+      console.log('🔍 All candidate fields:', Object.keys(candidateData));
       setCandidate(candidateData);
 
       // Load job description
       if (candidateData.primaryJobDescriptionId) {
+        console.log('🔍 Loading job description for ID:', candidateData.primaryJobDescriptionId);
         const { data: jobData, error: jobError } = await supabase
           .from('job_descriptions')
           .select('*')
@@ -63,9 +62,31 @@ const CandidateInterviewPage: React.FC = () => {
           .single();
 
         if (jobError) {
-          console.error('Error loading job description:', jobError);
+          console.error('❌ Error loading job description:', jobError);
+          setError('Failed to load job description. Please contact support.');
+          return;
         } else {
+          console.log('✅ Job description loaded:', jobData);
           setJobDescription(jobData);
+        }
+      } else {
+        console.warn('⚠️ No primaryJobDescriptionId found for candidate, trying to find any active job description');
+        
+        // Fallback: try to get any active job description
+        const { data: fallbackJobData, error: fallbackError } = await supabase
+          .from('job_descriptions')
+          .select('*')
+          .eq('status', 'active')
+          .limit(1)
+          .single();
+
+        if (fallbackError || !fallbackJobData) {
+          console.error('❌ No job descriptions available:', fallbackError);
+          setError('No job description assigned and no active job descriptions available. Please contact support.');
+          return;
+        } else {
+          console.log('✅ Using fallback job description:', fallbackJobData);
+          setJobDescription(fallbackJobData);
         }
       }
 
@@ -78,19 +99,28 @@ const CandidateInterviewPage: React.FC = () => {
         .single();
 
       if (!agentError && agentData) {
+        console.log('✅ AI agent loaded:', agentData);
         setAiAgent(agentData);
+      } else {
+        console.warn('⚠️ No active AI agent found');
       }
 
-      // Check if there's an existing session
+      // Only load existing session if sessionToken is not 'new'
       if (sessionToken && sessionToken !== 'new') {
+        console.log('🔍 Loading existing session:', sessionToken);
         const { data: existingSession, error: sessionError } = await InterviewSystemService.getInterviewSession(sessionToken);
         if (!sessionError && existingSession) {
+          console.log('✅ Existing session loaded:', existingSession);
           setSession(existingSession);
+        } else {
+          console.warn('⚠️ Could not load existing session:', sessionError);
         }
+      } else {
+        console.log('✅ New interview session - no existing session to load');
       }
 
     } catch (error) {
-      console.error('Error loading interview data:', error);
+      console.error('❌ Error loading interview data:', error);
       setError('Failed to load interview data');
     } finally {
       setLoading(false);
