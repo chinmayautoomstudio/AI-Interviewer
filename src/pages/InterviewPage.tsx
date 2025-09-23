@@ -101,29 +101,29 @@ const InterviewPage: React.FC<InterviewPageProps> = ({
       // Mark greeting as processed immediately
       greetingProcessedRef.current = true;
       
-      // Note: Interview is already started in InterviewSetupPage, play the AI greeting that was passed
-      console.log('ℹ️ Interview already started in setup page, playing AI greeting...');
+      // Note: Interview is already started in InterviewSetupPage, play the AI response that was passed
+      console.log('ℹ️ Interview already started in setup page, playing AI response...');
       
-      // Check if we have the AI greeting from the session
-      if ((session as any).aiGreeting) {
-        console.log('✅ AI greeting found in session:', (session as any).aiGreeting);
+      // Check if we have the AI response from the session
+      if ((session as any).aiResponse) {
+        console.log('✅ AI response found in session:', (session as any).aiResponse);
         
         // Extract text content from AI response (handle different response formats)
         let aiText = '';
-        const greeting = (session as any).aiGreeting;
+        const response = (session as any).aiResponse;
         
-        if (typeof greeting === 'string') {
-          aiText = greeting;
-        } else if (greeting && typeof greeting === 'object') {
+        if (typeof response === 'string') {
+          aiText = response;
+        } else if (response && typeof response === 'object') {
           // Try to extract text from various possible fields
-          aiText = greeting.greeting || 
-                  greeting.message || 
-                  greeting.ai_response ||
-                  greeting.response ||
-                  greeting.output ||
-                  greeting.text ||
-                  greeting.content ||
-                  JSON.stringify(greeting);
+          aiText = response.output || 
+                  response.greeting || 
+                  response.message || 
+                  response.ai_response ||
+                  response.response ||
+                  response.text ||
+                  response.content ||
+                  JSON.stringify(response);
         }
         
         if (aiText) {
@@ -137,7 +137,7 @@ const InterviewPage: React.FC<InterviewPageProps> = ({
 
           // Convert AI response to speech and play it
           try {
-            console.log('🔊 Converting AI greeting to speech...');
+            console.log('🔊 Converting AI response to speech...');
             const { ttsManager } = await import('../services/ttsManager');
             const ttsResult = await ttsManager.textToSpeech({
               text: aiText,
@@ -145,9 +145,9 @@ const InterviewPage: React.FC<InterviewPageProps> = ({
             });
             
             if (ttsResult.audioUrl) {
-              console.log('🔊 Playing AI greeting:', ttsResult.audioUrl);
+              console.log('🔊 Playing AI response:', ttsResult.audioUrl);
               await playAudio(ttsResult.audioUrl);
-              console.log('✅ AI greeting played successfully');
+              console.log('✅ AI response played successfully');
               
               // If this was an ending message, end the interview after audio finishes
               if (shouldEndAfterAudio) {
@@ -166,13 +166,13 @@ const InterviewPage: React.FC<InterviewPageProps> = ({
               }
             }
           } catch (ttsError) {
-            console.warn('⚠️ TTS failed for AI greeting:', ttsError);
+            console.warn('⚠️ TTS failed for AI response:', ttsError);
           }
         } else {
-          console.log('⚠️ No text content found in AI greeting');
+          console.log('⚠️ No text content found in AI response');
         }
       } else {
-        console.log('⚠️ No AI greeting found in session');
+        console.log('⚠️ No AI response found in session');
       }
       
       // Mark greeting as processed since interview is already active
