@@ -160,9 +160,17 @@ const CandidateDashboardPage: React.FC = () => {
   };
 
   const handleStartInterview = () => {
-    if (dashboardData?.candidate.interview_id) {
+    console.log('🔍 Starting interview for candidate:', dashboardData?.candidate);
+    console.log('🔍 Interview ID:', dashboardData?.candidate.interview_id);
+    
+    if (dashboardData?.candidate.interview_id && 
+        dashboardData.candidate.interview_id !== 'undefined' && 
+        dashboardData.candidate.interview_id !== 'null' &&
+        dashboardData.candidate.interview_id.trim() !== '') {
+      console.log('🔄 Navigating to existing interview:', dashboardData.candidate.interview_id);
       navigate(`/candidate/interview/${dashboardData.candidate.interview_id}`);
     } else {
+      console.log('🔄 Navigating to new interview');
       navigate('/candidate/interview/new');
     }
   };

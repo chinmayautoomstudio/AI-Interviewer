@@ -1034,6 +1034,13 @@ export class InterviewSystemService {
   // Get interview session by ID
   static async getInterviewSession(sessionId: string): Promise<{ data: InterviewSession | null; error?: string }> {
     try {
+      // Validate sessionId before making the query
+      if (!sessionId || sessionId === 'undefined' || sessionId === 'null' || sessionId.trim() === '') {
+        console.warn('⚠️ Invalid sessionId provided:', sessionId);
+        return { data: null, error: 'Invalid session ID' };
+      }
+
+      console.log('🔍 Fetching interview session with ID:', sessionId);
       const { data: session, error } = await supabase
         .from('interview_sessions')
         .select('*')
@@ -1041,12 +1048,14 @@ export class InterviewSystemService {
         .single();
 
       if (error) {
+        console.error('❌ Error fetching session:', error);
         return { data: null, error: 'Session not found' };
       }
 
+      console.log('✅ Session fetched successfully:', session);
       return { data: session };
     } catch (error) {
-      console.error('Error getting interview session:', error);
+      console.error('❌ Error getting interview session:', error);
       return { data: null, error: 'Failed to get session' };
     }
   }
