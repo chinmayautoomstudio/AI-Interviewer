@@ -14,11 +14,8 @@ import CandidateLoginPage from './pages/CandidateLoginPage';
 import CandidateDashboardPage from './pages/CandidateDashboardPage';
 import CandidateInterviewPage from './pages/CandidateInterviewPage';
 import CandidateProfilePage from './pages/CandidateProfilePage';
-import SupabaseTestPage from './pages/SupabaseTestPage';
 import AIAgentsPage from './pages/AIAgentsPage';
-import VoiceSettingsPage from './pages/VoiceSettingsPage';
 import AdminInterviewTestPage from './pages/AdminInterviewTestPage';
-import MicrophoneSetupPage from './pages/MicrophoneSetupPage';
 import Header from './components/layout/Header';
 import Sidebar from './components/layout/Sidebar';
 import LoadingSpinner from './components/ui/LoadingSpinner';
@@ -63,11 +60,8 @@ const AppContent: React.FC = () => {
             <Route path="/job-descriptions/:id" element={<JobViewPage />} />
             <Route path="/job-descriptions/edit/:id" element={<JobDescriptionsPage />} />
             <Route path="/ai-agents" element={<AIAgentsPage />} />
-            <Route path="/voice-settings" element={<VoiceSettingsPage />} />
             <Route path="/admin-interview-test" element={<AdminInterviewTestPage />} />
-            <Route path="/microphone-setup" element={<MicrophoneSetupPage />} />
             <Route path="/settings" element={<SettingsPage />} />
-            <Route path="/supabase-test" element={<SupabaseTestPage />} />
         <Route path="/" element={<Navigate to="/dashboard" replace />} />
         <Route path="*" element={<Navigate to="/dashboard" replace />} />
           </Routes>
