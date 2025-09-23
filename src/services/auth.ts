@@ -7,47 +7,10 @@ export interface AuthResponse {
 }
 
 export class AuthService {
-  // Development credentials for testing
-  private static readonly DEV_CREDENTIALS = {
-    'chinmay.nayak@autoomstudio.com': {
-      password: 'Chinmay@2000',
-      user: {
-        id: 'dev-user-1',
-        email: 'chinmay.nayak@autoomstudio.com',
-        name: 'Chinmay Nayak',
-        role: 'admin' as const,
-        createdAt: new Date().toISOString(),
-        lastLogin: new Date().toISOString(),
-      }
-    },
-    'awsadmin': {
-      password: 'AWSAdmin@2025',
-      user: {
-        id: 'dev-user-2',
-        email: 'awsadmin',
-        name: 'AWS Admin',
-        role: 'admin' as const,
-        createdAt: new Date().toISOString(),
-        lastLogin: new Date().toISOString(),
-      }
-    }
-  };
-
   // Admin authentication
   static async signIn(email: string, password: string): Promise<AuthResponse> {
     try {
-      // Check development credentials first
-      if (this.DEV_CREDENTIALS[email as keyof typeof this.DEV_CREDENTIALS]) {
-        const devCreds = this.DEV_CREDENTIALS[email as keyof typeof this.DEV_CREDENTIALS];
-        
-        if (devCreds.password === password) {
-          return { user: devCreds.user, error: null };
-        } else {
-          return { user: null, error: 'Invalid password' };
-        }
-      }
-
-      // Try Supabase authentication
+      // Use Supabase authentication
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
