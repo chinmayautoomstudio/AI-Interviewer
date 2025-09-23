@@ -126,6 +126,30 @@ const CandidateInterviewPage: React.FC = () => {
         if (!sessionError && existingSession) {
           console.log('✅ Existing session loaded:', existingSession);
           setSession(existingSession);
+          
+          // If session is in pending status, start the actual interview
+          if (existingSession.status === 'pending') {
+            console.log('🚀 Session is pending, starting actual interview...');
+            try {
+              const interviewResult = await InterviewSystemService.startActualInterview(existingSession.sessionId);
+              if (interviewResult.data) {
+                console.log('✅ Actual interview started for existing session:', interviewResult.data);
+                
+                // Add the AI response to the session object
+                const sessionWithResponse = {
+                  ...existingSession,
+                  aiResponse: interviewResult.data.greeting
+                };
+                
+                console.log('🔄 Setting session with AI response...');
+                setSession(sessionWithResponse);
+              } else {
+                console.error('❌ Failed to start actual interview for existing session:', interviewResult.error);
+              }
+            } catch (error) {
+              console.error('❌ Error starting actual interview for existing session:', error);
+            }
+          }
         } else {
           console.warn('⚠️ Could not load existing session:', sessionError);
         }
@@ -192,11 +216,32 @@ const CandidateInterviewPage: React.FC = () => {
       console.log('🔄 Setting session state...');
       setSession(newSession);
       
-      // Navigate to the session-specific URL
-      const sessionUrl = `/candidate/interview/${newSession.sessionId}`;
-      console.log('🔄 Navigating to session URL:', sessionUrl);
-      navigate(sessionUrl);
-      console.log('✅ Navigation called successfully');
+      // Now start the actual interview (call n8n workflow)
+      console.log('🚀 Starting actual interview with n8n workflow...');
+      const interviewResult = await InterviewSystemService.startActualInterview(newSession.sessionId);
+      
+      if (interviewResult.data) {
+        console.log('✅ Actual interview started:', interviewResult.data);
+        
+        // Add the AI response to the session object
+        const sessionWithResponse = {
+          ...newSession,
+          aiResponse: interviewResult.data.greeting
+        };
+        
+        console.log('🔄 Setting session with AI response...');
+        setSession(sessionWithResponse);
+        
+        // Navigate to the session-specific URL
+        const sessionUrl = `/candidate/interview/${newSession.sessionId}`;
+        console.log('🔄 Navigating to session URL:', sessionUrl);
+        navigate(sessionUrl);
+        console.log('✅ Navigation called successfully');
+      } else {
+        console.error('❌ Failed to start actual interview:', interviewResult.error);
+        setError(interviewResult.error || 'Failed to start actual interview');
+        return;
+      }
     } catch (error) {
       console.error('❌ Error starting interview:', error);
       console.error('❌ Error details:', {
