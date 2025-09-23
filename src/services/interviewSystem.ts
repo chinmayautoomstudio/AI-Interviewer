@@ -315,9 +315,28 @@ export class InterviewSystemService {
       // This prevents duplicate webhook calls
       console.log('✅ Interview session created, webhook will be called by startActualInterview');
 
+      // Transform database fields to match TypeScript interface
+      const transformedSession: InterviewSession = {
+        id: session.id,
+        sessionId: session.session_id,
+        candidateId: session.candidate_id,
+        jobDescriptionId: session.job_description_id,
+        aiAgentId: session.ai_agent_id,
+        status: session.status,
+        startedAt: session.started_at,
+        completedAt: session.completed_at,
+        durationMinutes: session.duration_minutes,
+        totalQuestions: session.total_questions,
+        questionsAnswered: session.questions_answered,
+        createdAt: session.created_at,
+        updatedAt: session.updated_at
+      };
+
+      console.log('✅ Transformed session data:', transformedSession);
+
       // Return session data without greeting (will be fetched by startActualInterview)
       return { 
-        data: session
+        data: transformedSession
       };
     } catch (error) {
       console.error('Error starting interview:', error);
@@ -1053,7 +1072,26 @@ export class InterviewSystemService {
       }
 
       console.log('✅ Session fetched successfully:', session);
-      return { data: session };
+
+      // Transform database fields to match TypeScript interface
+      const transformedSession: InterviewSession = {
+        id: session.id,
+        sessionId: session.session_id,
+        candidateId: session.candidate_id,
+        jobDescriptionId: session.job_description_id,
+        aiAgentId: session.ai_agent_id,
+        status: session.status,
+        startedAt: session.started_at,
+        completedAt: session.completed_at,
+        durationMinutes: session.duration_minutes,
+        totalQuestions: session.total_questions,
+        questionsAnswered: session.questions_answered,
+        createdAt: session.created_at,
+        updatedAt: session.updated_at
+      };
+
+      console.log('✅ Transformed session data:', transformedSession);
+      return { data: transformedSession };
     } catch (error) {
       console.error('❌ Error getting interview session:', error);
       return { data: null, error: 'Failed to get session' };
