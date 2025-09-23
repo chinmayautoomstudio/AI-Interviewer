@@ -70,7 +70,83 @@ export class CandidateAuthService {
     }
   }
 
-  // Authenticate candidate
+  // Authenticate candidate with simplified credentials (username and password only)
+  static async authenticateCandidateSimple(username: string, password: string): Promise<CandidateAuthResponse> {
+    try {
+      // Find candidate by username only
+      const { data: candidate, error } = await supabase
+        .from('candidates')
+        .select('*')
+        .eq('username', username)
+        .single();
+
+      if (error || !candidate) {
+        return { 
+          candidate: null, 
+          error: 'Invalid username or password. Please check your credentials.' 
+        };
+      }
+
+      // Verify password
+      if (!candidate.password_hash || !this.verifyPassword(password, candidate.password_hash)) {
+        return { 
+          candidate: null, 
+          error: 'Invalid username or password. Please check your credentials.' 
+        };
+      }
+
+      // Check if candidate is active
+      if (candidate.status !== 'active') {
+        return { 
+          candidate: null, 
+          error: 'Your account is not active. Please contact support.' 
+        };
+      }
+
+      // Check if credentials were generated
+      if (!candidate.credentials_generated) {
+        return { 
+          candidate: null, 
+          error: 'Interview credentials have not been generated yet. Please contact support.' 
+        };
+      }
+
+      // Update last login
+      await supabase
+        .from('candidates')
+        .update({ 
+          updated_at: new Date().toISOString() 
+        })
+        .eq('id', candidate.id);
+
+      // Return candidate user object
+      const candidateUser: CandidateUser = {
+        id: candidate.id,
+        candidate_id: candidate.candidate_id,
+        email: candidate.email,
+        name: candidate.name,
+        phone: candidate.phone,
+        contact_number: candidate.contact_number,
+        username: candidate.username,
+        primaryJobDescriptionId: candidate.primary_job_description_id,
+        interviewId: candidate.interview_id,
+        interview_id: candidate.interview_id,
+        status: candidate.status,
+        createdAt: candidate.created_at,
+        lastLogin: new Date().toISOString()
+      };
+
+      return { candidate: candidateUser, error: null };
+    } catch (error) {
+      console.error('Error in authenticateCandidateSimple:', error);
+      return { 
+        candidate: null, 
+        error: error instanceof Error ? error.message : 'Authentication failed' 
+      };
+    }
+  }
+
+  // Authenticate candidate (original method with full validation)
   static async authenticateCandidate(loginData: CandidateLoginRequest): Promise<CandidateAuthResponse> {
     try {
       // First, find candidate by username and verify basic info
