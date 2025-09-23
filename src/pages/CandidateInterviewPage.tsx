@@ -126,6 +126,7 @@ const CandidateInterviewPage: React.FC = () => {
         if (!sessionError && existingSession) {
           console.log('✅ Existing session loaded:', existingSession);
           setSession(existingSession);
+<<<<<<< HEAD
           
           // If session is in pending status, start the actual interview
           if (existingSession.status === 'pending') {
@@ -150,6 +151,8 @@ const CandidateInterviewPage: React.FC = () => {
               console.error('❌ Error starting actual interview for existing session:', error);
             }
           }
+=======
+>>>>>>> 3f500b1336ad4ce1a6ec73426132d25f64e8dee5
         } else {
           console.warn('⚠️ Could not load existing session:', sessionError);
         }
