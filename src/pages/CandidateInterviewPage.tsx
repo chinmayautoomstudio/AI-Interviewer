@@ -105,8 +105,8 @@ const CandidateInterviewPage: React.FC = () => {
         console.warn('⚠️ No active AI agent found');
       }
 
-      // Only load existing session if sessionToken is not 'new'
-      if (sessionToken && sessionToken !== 'new') {
+      // Only load existing session if sessionToken is valid and not 'new'
+      if (sessionToken && sessionToken !== 'new' && sessionToken !== 'undefined') {
         console.log('🔍 Loading existing session:', sessionToken);
         const { data: existingSession, error: sessionError } = await InterviewSystemService.getInterviewSession(sessionToken);
         if (!sessionError && existingSession) {
@@ -117,6 +117,7 @@ const CandidateInterviewPage: React.FC = () => {
         }
       } else {
         console.log('✅ New interview session - no existing session to load');
+        console.log('🔍 SessionToken value:', sessionToken);
       }
 
     } catch (error) {
