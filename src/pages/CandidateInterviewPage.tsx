@@ -32,6 +32,20 @@ const CandidateInterviewPage: React.FC = () => {
     }
   }, [sessionToken]);
 
+  // Debug effect to log current state
+  useEffect(() => {
+    console.log('🔍 CandidateInterviewPage state update:', {
+      sessionToken,
+      candidate: candidate ? { id: candidate.id, name: candidate.name } : null,
+      jobDescription: jobDescription ? { id: jobDescription.id, title: jobDescription.title } : null,
+      aiAgent: aiAgent ? { id: aiAgent.id, name: aiAgent.name } : null,
+      session: session ? { sessionId: session.sessionId, status: session.status } : null,
+      loading,
+      error,
+      startingInterview
+    });
+  }, [sessionToken, candidate, jobDescription, aiAgent, session, loading, error, startingInterview]);
+
   const loadInterviewData = async () => {
     console.log('🔍 loadInterviewData called with sessionToken:', sessionToken);
     
@@ -129,36 +143,69 @@ const CandidateInterviewPage: React.FC = () => {
   };
 
   const handleStartInterview = async () => {
+    console.log('🚀 handleStartInterview called');
+    console.log('🔍 Current state:', {
+      candidate: candidate ? { id: candidate.id, name: candidate.name } : null,
+      jobDescription: jobDescription ? { id: jobDescription.id, title: jobDescription.title } : null,
+      aiAgent: aiAgent ? { id: aiAgent.id, name: aiAgent.name } : null,
+      startingInterview,
+      error
+    });
+
     if (!candidate || !jobDescription) {
+      console.error('❌ Missing required data:', {
+        candidate: !!candidate,
+        jobDescription: !!jobDescription
+      });
       setError('Missing candidate or job description data');
       return;
     }
 
+    console.log('✅ All required data present, starting interview...');
+
     try {
+      console.log('🔄 Setting startingInterview to true');
       setStartingInterview(true);
       setError(null);
 
-      const { data: newSession, error } = await InterviewSystemService.startInterview({
+      const interviewRequest = {
         candidateId: candidate.id,
         jobDescriptionId: jobDescription.id,
         aiAgentId: aiAgent?.id
+      };
+
+      console.log('📤 Calling InterviewSystemService.startInterview with:', interviewRequest);
+      const { data: newSession, error } = await InterviewSystemService.startInterview(interviewRequest);
+
+      console.log('📥 InterviewSystemService.startInterview response:', {
+        data: newSession,
+        error: error
       });
 
       if (error || !newSession) {
+        console.error('❌ Failed to start interview:', error);
         setError(error || 'Failed to start interview');
         return;
       }
 
       console.log('✅ Session created successfully:', newSession);
+      console.log('🔄 Setting session state...');
       setSession(newSession);
       
       // Navigate to the session-specific URL
-      console.log('🔄 Navigating to session URL:', `/candidate/interview/${newSession.sessionId}`);
-      navigate(`/candidate/interview/${newSession.sessionId}`);
+      const sessionUrl = `/candidate/interview/${newSession.sessionId}`;
+      console.log('🔄 Navigating to session URL:', sessionUrl);
+      navigate(sessionUrl);
+      console.log('✅ Navigation called successfully');
     } catch (error) {
-      console.error('Error starting interview:', error);
+      console.error('❌ Error starting interview:', error);
+      console.error('❌ Error details:', {
+        message: error instanceof Error ? error.message : 'Unknown error',
+        stack: error instanceof Error ? error.stack : undefined
+      });
       setError('Failed to start interview');
     } finally {
+      console.log('🔄 Setting startingInterview to false');
       setStartingInterview(false);
     }
   };
@@ -375,7 +422,10 @@ const CandidateInterviewPage: React.FC = () => {
                   </p>
                   <div className="space-y-4">
                     <Button
-                      onClick={handleStartInterview}
+                      onClick={() => {
+                        console.log('🖱️ Start Interview button clicked!');
+                        handleStartInterview();
+                      }}
                       disabled={startingInterview}
                       variant="primary"
                       size="lg"
