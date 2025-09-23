@@ -266,6 +266,23 @@ const CandidateInterviewPage: React.FC = () => {
     navigate('/candidate/dashboard');
   };
 
+  const handleEndInterview = async () => {
+    if (!session) return;
+    
+    try {
+      console.log('🛑 Ending interview session:', session.sessionId);
+      await InterviewSystemService.cancelInterview(session.sessionId);
+      console.log('✅ Interview ended successfully');
+      
+      // Navigate back to dashboard
+      navigate('/candidate/dashboard');
+    } catch (error) {
+      console.error('❌ Error ending interview:', error);
+      // Still navigate back even if there's an error
+      navigate('/candidate/dashboard');
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -457,6 +474,7 @@ const CandidateInterviewPage: React.FC = () => {
                   sessionId={session.sessionId}
                   session={session}
                   onSessionUpdate={handleSessionUpdate}
+                  onEndInterview={handleEndInterview}
                 />
               </div>
             ) : (

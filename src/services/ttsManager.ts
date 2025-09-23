@@ -148,9 +148,9 @@ class TTSManager {
     // Handle browser TTS special URL
     if (response.audioUrl === 'browser-tts://completed') {
       console.log('🔊 Browser TTS completed - no audio URL needed');
-      // For browser TTS, we don't need to return an audio URL since it plays directly
+      // For browser TTS, we return a special URL that the caller can detect
       return {
-        audioUrl: '', // Empty URL for browser TTS
+        audioUrl: 'browser-tts://completed', // Special URL for browser TTS
         duration: response.duration,
         voice: response.voice,
         language: response.language,

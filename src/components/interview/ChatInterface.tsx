@@ -1,25 +1,28 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Send, Bot, User, Clock, CheckCircle, AlertCircle, Mic, MicOff, Volume2 } from 'lucide-react';
+import { Send, Bot, User, Clock, CheckCircle, AlertCircle, Mic, MicOff, Volume2, Settings } from 'lucide-react';
 import { InterviewMessage, InterviewSession } from '../../types';
 import { InterviewSystemService } from '../../services/interviewSystem';
 import { elevenLabsService, STTResponse } from '../../services/elevenLabs';
 import LoadingSpinner from '../ui/LoadingSpinner';
 import VoiceRecorder from './VoiceRecorder';
 import VoicePlayer from './VoicePlayer';
+import VoiceSystemDebug from '../debug/VoiceSystemDebug';
 
 interface ChatInterfaceProps {
   sessionId: string;
   session: InterviewSession;
   onSessionUpdate: (session: InterviewSession) => void;
+  onEndInterview?: () => void;
 }
 
-const ChatInterface: React.FC<ChatInterfaceProps> = ({ sessionId, session, onSessionUpdate }) => {
+const ChatInterface: React.FC<ChatInterfaceProps> = ({ sessionId, session, onSessionUpdate, onEndInterview }) => {
   const [messages, setMessages] = useState<InterviewMessage[]>([]);
   const [newMessage, setNewMessage] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [isTyping, setIsTyping] = useState(false);
   const [voiceMode, setVoiceMode] = useState(true); // Default to voice-only
   const [isVoiceAvailable, setIsVoiceAvailable] = useState(false);
+  const [showDebug, setShowDebug] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -357,6 +360,17 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ sessionId, session, onSes
           {/* Voice Mode Toggle - Hidden for voice-only interview */}
           {/* Voice mode is always on for voice-only interviews */}
 
+          {/* Debug Button */}
+          <div className="mb-3 flex justify-center">
+            <button
+              onClick={() => setShowDebug(true)}
+              className="flex items-center space-x-2 px-3 py-1 text-sm bg-gray-100 text-gray-600 rounded-lg hover:bg-gray-200 transition-colors"
+            >
+              <Settings className="h-4 w-4" />
+              <span>Debug Voice System</span>
+            </button>
+          </div>
+
           {/* Voice Recorder */}
           {voiceMode && isVoiceAvailable && (
             <div className="mb-3">
@@ -368,6 +382,20 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ sessionId, session, onSes
                 language="en-US"
                 className="flex justify-center"
               />
+            </div>
+          )}
+
+          {/* End Interview Button */}
+          {onEndInterview && (
+            <div className="flex justify-center mt-4">
+              <button
+                onClick={onEndInterview}
+                disabled={isLoading}
+                className="px-6 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2 transition-colors"
+              >
+                <AlertCircle className="h-4 w-4" />
+                <span>End Interview</span>
+              </button>
             </div>
           )}
 
@@ -427,6 +455,11 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ sessionId, session, onSes
             </p>
           </div>
         </div>
+      )}
+
+      {/* Voice System Debug Modal */}
+      {showDebug && (
+        <VoiceSystemDebug onClose={() => setShowDebug(false)} />
       )}
     </div>
   );

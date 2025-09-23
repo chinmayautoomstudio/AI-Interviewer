@@ -139,12 +139,14 @@ const InterviewPage: React.FC<InterviewPageProps> = ({
           try {
             console.log('🔊 Converting AI response to speech...');
             const { ttsManager } = await import('../services/ttsManager');
+            console.log('🔍 TTS Manager imported:', ttsManager);
             const ttsResult = await ttsManager.textToSpeech({
               text: aiText,
               provider: 'auto'
             });
+            console.log('🔍 TTS Result:', ttsResult);
             
-            if (ttsResult.audioUrl) {
+            if (ttsResult.audioUrl && ttsResult.audioUrl !== 'browser-tts://completed') {
               console.log('🔊 Playing AI response:', ttsResult.audioUrl);
               await playAudio(ttsResult.audioUrl);
               console.log('✅ AI response played successfully');
@@ -166,7 +168,13 @@ const InterviewPage: React.FC<InterviewPageProps> = ({
               }
             }
           } catch (ttsError) {
-            console.warn('⚠️ TTS failed for AI response:', ttsError);
+            console.error('❌ TTS failed for AI response:', ttsError);
+            if (ttsError instanceof Error) {
+              console.error('❌ TTS Error details:', ttsError.message);
+              console.error('❌ TTS Error stack:', ttsError.stack);
+            } else {
+              console.error('❌ TTS Error details:', String(ttsError));
+            }
           }
         } else {
           console.log('⚠️ No text content found in AI response');
