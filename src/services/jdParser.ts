@@ -7,25 +7,26 @@ export interface JDParserRequest {
 export interface JDParserResponse {
   success: boolean;
   data?: {
-    title: string;
+    job_summary: string;
+    job_title: string;
     department: string;
     location: string;
-    employmentType: 'full-time' | 'part-time' | 'contract' | 'internship';
-    experienceLevel: 'entry' | 'mid' | 'senior' | 'lead' | 'executive';
-    salaryMin?: number;
-    salaryMax?: number;
-    currency: string;
-    description: string;
-    requirements: string[];
-    responsibilities: string[];
-    skills: string[];
-    qualifications: string[];
+    experience_level: 'entry-level' | 'mid-level' | 'senior-level';
+    employment_type: 'full-time' | 'part-time' | 'contract' | 'internship';
+    work_mode: 'remote' | 'on-site' | 'hybrid';
+    salary_range: string | null;
+    key_responsibilities: string[];
+    required_skills: string[];
+    preferred_skills: string[];
+    technical_stack: string[];
+    education_requirements: string;
+    company_culture: string;
+    growth_opportunities: string;
     benefits: string[];
-    companyName: string;
-    workMode: 'on-site' | 'remote' | 'hybrid';
-    jobCategory: string;
-    contactEmail?: string;
-    applicationDeadline?: string;
+    qualifications: {
+      minimum: string[];
+      preferred: string[];
+    };
   };
   error?: string;
   timestamp?: string;
@@ -84,7 +85,7 @@ class JDParserService {
       }
 
       // Additional validation
-      if (!result.data.title) {
+      if (!result.data.job_title) {
         return {
           success: false,
           error: 'Job title is required but not found in parsed data'

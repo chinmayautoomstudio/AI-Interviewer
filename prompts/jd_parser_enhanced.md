@@ -39,7 +39,26 @@ You MUST generate a single, valid JSON object. Do not add any text before or aft
 
 ```json
 {
-  "job_summary": "string"
+  "job_summary": "string",
+  "job_title": "string",
+  "department": "string",
+  "location": "string",
+  "experience_level": "entry-level|mid-level|senior-level",
+  "employment_type": "full-time|part-time|contract|internship",
+  "work_mode": "remote|on-site|hybrid",
+  "salary_range": "string or null",
+  "key_responsibilities": ["string"],
+  "required_skills": ["string"],
+  "preferred_skills": ["string"],
+  "technical_stack": ["string"],
+  "education_requirements": "string",
+  "company_culture": "string",
+  "growth_opportunities": "string",
+  "benefits": ["string"],
+  "qualifications": {
+    "minimum": ["string"],
+    "preferred": ["string"]
+  }
 }
 ```
 
@@ -47,43 +66,112 @@ You MUST generate a single, valid JSON object. Do not add any text before or aft
 
 ```json
 {
-  "job_summary": "Web Developer Trainee position focused on learning and collaboration in a dynamic tech environment. The role involves front-end and backend development using modern web technologies, website content management, and comprehensive testing and debugging processes. Candidates should possess basic knowledge of HTML, CSS, and JavaScript, with familiarity in React, Node.js, and database management being advantageous. The position requires excellent problem-solving skills, strong communication abilities, and a passion for continuous learning. The company offers a supportive and collaborative environment with real-world project experience, mentorship from senior developers, and opportunities for professional growth. This entry-level position is ideal for recent graduates or career changers looking to break into web development, with the expectation of learning industry best practices, contributing to live projects, and developing both technical and soft skills. The technical stack includes HTML5, CSS3, JavaScript (ES6+), React.js, Node.js, Express.js, MongoDB/PostgreSQL, Git version control, and various development tools. The role offers hands-on experience with modern development workflows, code reviews, and agile methodologies. The work environment is hybrid, allowing for both remote and on-site collaboration, with a small, tight-knit development team that values innovation and knowledge sharing. This position serves as an excellent stepping stone for individuals seeking to establish a career in full-stack web development while gaining practical experience in a real-world setting."
+  "job_summary": "Web Developer Trainee position focused on learning and collaboration in a dynamic tech environment. The role involves front-end and backend development using modern web technologies, website content management, and comprehensive testing and debugging processes. Candidates should possess basic knowledge of HTML, CSS, and JavaScript, with familiarity in React, Node.js, and database management being advantageous. The position requires excellent problem-solving skills, strong communication abilities, and a passion for continuous learning. The company offers a supportive and collaborative environment with real-world project experience, mentorship from senior developers, and opportunities for professional growth. This entry-level position is ideal for recent graduates or career changers looking to break into web development, with the expectation of learning industry best practices, contributing to live projects, and developing both technical and soft skills. The technical stack includes HTML5, CSS3, JavaScript (ES6+), React.js, Node.js, Express.js, MongoDB/PostgreSQL, Git version control, and various development tools. The role offers hands-on experience with modern development workflows, code reviews, and agile methodologies. The work environment is hybrid, allowing for both remote and on-site collaboration, with a small, tight-knit development team that values innovation and knowledge sharing. This position serves as an excellent stepping stone for individuals seeking to establish a career in full-stack web development while gaining practical experience in a real-world setting.",
+  "job_title": "Web Developer Trainee",
+  "department": "Development",
+  "location": "Bhubaneswar, Odisha",
+  "experience_level": "entry-level",
+  "employment_type": "full-time",
+  "work_mode": "hybrid",
+  "salary_range": "₹2.5L - ₹4L per annum",
+  "key_responsibilities": [
+    "Front-end and backend development using modern web technologies",
+    "Website content management and updates",
+    "Testing and debugging applications",
+    "Collaborating with senior developers on projects",
+    "Learning and implementing best practices"
+  ],
+  "required_skills": [
+    "Basic knowledge of HTML, CSS, and JavaScript",
+    "Problem-solving skills",
+    "Strong communication abilities",
+    "Passion for continuous learning"
+  ],
+  "preferred_skills": [
+    "Familiarity with React.js",
+    "Node.js experience",
+    "Database management knowledge",
+    "Git version control",
+    "Agile methodology understanding"
+  ],
+  "technical_stack": [
+    "HTML5",
+    "CSS3",
+    "JavaScript (ES6+)",
+    "React.js",
+    "Node.js",
+    "Express.js",
+    "MongoDB/PostgreSQL",
+    "Git"
+  ],
+  "education_requirements": "Bachelor's degree in Computer Science or related field preferred, but not mandatory",
+  "company_culture": "Supportive and collaborative environment with emphasis on learning and innovation",
+  "growth_opportunities": "Mentorship from senior developers, real-world project experience, and professional development opportunities",
+  "benefits": [
+    "Health insurance",
+    "Learning and development budget",
+    "Flexible working hours",
+    "Team building activities"
+  ],
+  "qualifications": {
+    "minimum": [
+      "Basic programming knowledge",
+      "Strong communication skills",
+      "Eagerness to learn"
+    ],
+    "preferred": [
+      "Computer Science degree",
+      "Previous coding experience",
+      "Portfolio of projects",
+      "Understanding of web development concepts"
+    ]
+  }
 }
 ```
 
 ## Important Guidelines
 
-1. **Comprehensiveness:** Cover all aspects of the job description in a single, flowing paragraph.
+1. **Comprehensiveness:** Extract all available information from the job description into the appropriate structured fields.
 
 2. **Clarity:** Use clear, professional language that another AI can easily understand and use for interview preparation.
 
 3. **Specificity:** Include specific technologies, tools, and requirements mentioned in the job description.
 
-4. **Structure:** Organize the information logically, flowing from job overview to responsibilities, qualifications, and company culture.
+4. **Structure:** Organize the information into the appropriate fields based on the output schema.
 
-5. **Length:** Aim for 3-4 sentences that provide comprehensive coverage without being overly verbose.
+5. **Accuracy:** Extract information exactly as it appears in the job description. Do not add information that is not present.
 
-6. **Accuracy:** Extract information exactly as it appears in the job description. Do not add information that is not present.
+6. **Professional Tone:** Maintain a professional, objective tone throughout all fields.
 
-7. **Professional Tone:** Maintain a professional, objective tone throughout the summary.
+7. **Field Mapping:** Map information to the most appropriate field. If information doesn't fit a specific field, include it in the job_summary.
+
+8. **Array Fields:** For array fields (skills, responsibilities, etc.), create individual items for each distinct point.
+
+9. **Null Values:** Use null for fields where information is not available in the job description.
+
+10. **Experience Level:** Choose the most appropriate level: "entry-level", "mid-level", or "senior-level" based on the requirements.
 
 ## Integration with AI Interviewer
 
-This job description summary will be used by the AI Interviewer Agent to:
+This structured job description data will be used by the AI Interviewer Agent to:
 
-1. **Understand Role Requirements:** Generate questions that test the specific skills and qualifications mentioned in the job description.
+1. **Understand Role Requirements:** Use `key_responsibilities` and `required_skills` to generate questions that test specific job requirements.
 
-2. **Assess Technical Fit:** Create technical questions based on the technologies and tools listed in the job requirements.
+2. **Assess Technical Fit:** Use `technical_stack` and `preferred_skills` to create technical questions based on the technologies and tools listed.
 
-3. **Evaluate Cultural Fit:** Develop behavioral questions that assess alignment with the company culture and work environment.
+3. **Evaluate Cultural Fit:** Use `company_culture` and `work_mode` to develop behavioral questions that assess alignment with company values.
 
-4. **Match Experience Level:** Tailor questions to the appropriate experience level (entry, mid, senior) for the position.
+4. **Match Experience Level:** Use `experience_level` to tailor questions to the appropriate level (entry, mid, senior) for the position.
 
-5. **Focus on Key Areas:** Prioritize questions around the most important responsibilities and qualifications.
+5. **Focus on Key Areas:** Use `qualifications.minimum` and `qualifications.preferred` to prioritize questions around the most important requirements.
 
-6. **Prepare Follow-up Questions:** Generate relevant follow-up questions based on the comprehensive understanding of the role.
+6. **Prepare Follow-up Questions:** Use all structured fields to generate relevant follow-up questions based on comprehensive role understanding.
 
-The `job_summary` field provides the AI Interviewer with detailed context to create targeted, relevant interview questions that accurately assess candidates' suitability for the specific position and company culture.
+7. **Salary and Benefits Discussion:** Use `salary_range` and `benefits` for compensation-related discussions.
+
+8. **Growth and Development:** Use `growth_opportunities` to discuss career advancement and learning paths.
+
+The structured fields provide the AI Interviewer with specific, actionable data to create targeted, relevant interview questions that accurately assess candidates' suitability for the specific position, company culture, and career growth potential.
 
 ## Error Handling
 
@@ -97,8 +185,29 @@ The `job_summary` field provides the AI Interviewer with detailed context to cre
 This prompt is designed to be used in n8n workflows for:
 
 1. **Automated JD Processing:** Process job descriptions uploaded through the admin panel
-2. **Real-time Analysis:** Generate summaries when job descriptions are created or updated
-3. **Interview Preparation:** Provide context for AI interview question generation
+2. **Real-time Analysis:** Generate structured data when job descriptions are created or updated
+3. **Interview Preparation:** Provide structured context for AI interview question generation
 4. **Candidate Matching:** Help assess candidate-job fit during the interview process
+5. **Database Population:** Populate multiple fields in the job_descriptions table with structured data
+6. **Search and Filtering:** Enable advanced search and filtering based on structured job data
 
-The generated summary will be stored in the `jd_summary` field of the `job_descriptions` table for use throughout the AI Interviewer platform.
+The generated structured data will be stored in multiple fields of the `job_descriptions` table:
+- `jd_summary` - for the comprehensive text summary
+- `job_title` - for the official job title
+- `department` - for the department/team
+- `location` - for the work location
+- `experience_level` - for the required experience level
+- `employment_type` - for the type of employment
+- `work_mode` - for remote/on-site/hybrid work
+- `salary_range` - for compensation information
+- `key_responsibilities` - for main job duties
+- `required_skills` - for mandatory skills
+- `preferred_skills` - for nice-to-have skills
+- `technical_stack` - for technologies and tools
+- `education_requirements` - for educational background
+- `company_culture` - for company values and environment
+- `growth_opportunities` - for career development
+- `benefits` - for employee benefits
+- `qualifications` - for minimum and preferred qualifications
+
+This structured approach enables more sophisticated matching, filtering, and interview question generation throughout the AI Interviewer platform.

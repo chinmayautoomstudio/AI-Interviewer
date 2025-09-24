@@ -133,7 +133,7 @@ const CandidateDashboardPage: React.FC = () => {
           department: 'N/A',
           location: 'N/A',
           employmentType: 'full-time' as const,
-          experienceLevel: 'entry' as const,
+          experienceLevel: 'entry-level' as const,
           description: 'No job description available. Please contact support.',
           requirements: [],
           responsibilities: [],

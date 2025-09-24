@@ -64,7 +64,7 @@ const JobDescriptionsPage: React.FC = () => {
     department: '',
     location: '',
     employmentType: 'full-time',
-    experienceLevel: 'mid',
+    experienceLevel: 'mid-level',
     salaryRange: undefined,
     description: '',
     requirements: [],
@@ -196,54 +196,50 @@ const JobDescriptionsPage: React.FC = () => {
       // Update form data with parsed information
       setFormData(prev => ({
         ...prev,
-        title: data.title || '',
+        title: data.job_title || '',
         department: data.department || '',
         location: data.location || '',
-        employmentType: data.employmentType || 'full-time',
-        experienceLevel: data.experienceLevel || 'mid',
-        description: data.description || '',
-        requirements: data.requirements || [],
-        responsibilities: data.responsibilities || [],
-        skills: data.skills || [],
-        qualifications: data.qualifications || [],
+        employmentType: data.employment_type || 'full-time',
+        experienceLevel: data.experience_level || 'mid-level',
+        description: data.job_summary || '',
+        requirements: data.required_skills || [],
+        responsibilities: data.key_responsibilities || [],
+        skills: data.technical_stack || [],
+        qualifications: data.qualifications?.minimum || [],
         benefits: data.benefits || []
       }));
 
       // Update additional fields
-      if (data.salaryMin || data.salaryMax) {
-        // Handle cases where salaryMin is null but salaryMax has value
-        if (data.salaryMin) {
-          setSalaryMin(data.salaryMin.toString());
-        } else {
-          setSalaryMin('0'); // Set to 0 if salaryMin is null
-        }
-        
-        if (data.salaryMax) {
-          setSalaryMax(data.salaryMax.toString());
-        }
-        
-        setSalaryCurrency(data.currency || 'INR');
+      if (data.salary_range) {
+        // Parse salary range from text (e.g., "₹2.5L - ₹4L per annum")
+        const salaryText = data.salary_range;
+        // For now, just set the salary range text - you can add parsing logic later
+        setSalaryMin('0');
+        setSalaryMax('0');
+        setSalaryCurrency('INR');
       }
 
-      if (data.companyName) {
-        setCompanyName(data.companyName);
-      }
+      // Note: The enhanced parser doesn't include these fields in the current structure
+      // You may need to add them to the prompt or handle them separately
+      // if (data.companyName) {
+      //   setCompanyName(data.companyName);
+      // }
 
-      if (data.workMode) {
-        setWorkMode(data.workMode);
-      }
+      // if (data.workMode) {
+      //   setWorkMode(data.workMode);
+      // }
 
-      if (data.jobCategory) {
-        setJobCategory(data.jobCategory);
-      }
+      // if (data.jobCategory) {
+      //   setJobCategory(data.jobCategory);
+      // }
 
-      if (data.contactEmail) {
-        setContactEmail(data.contactEmail);
-      }
+      // if (data.contactEmail) {
+      //   setContactEmail(data.contactEmail);
+      // }
 
-      if (data.applicationDeadline && data.applicationDeadline.trim() !== '') {
-        setApplicationDeadline(data.applicationDeadline);
-      }
+      // if (data.applicationDeadline && data.applicationDeadline.trim() !== '') {
+      //   setApplicationDeadline(data.applicationDeadline);
+      // }
 
       setSuccess('Job description parsed successfully using AI! Please review and adjust the fields as needed.');
     } catch (error) {
@@ -308,12 +304,24 @@ const JobDescriptionsPage: React.FC = () => {
       const job = jobs.find(j => j.id === jobId);
       
       if (job) {
+        // Map old experience level format to new format
+        const mapExperienceLevel = (level: string): 'entry-level' | 'mid-level' | 'senior-level' => {
+          switch (level) {
+            case 'entry': return 'entry-level';
+            case 'mid': return 'mid-level';
+            case 'senior': return 'senior-level';
+            case 'lead': return 'senior-level';
+            case 'executive': return 'senior-level';
+            default: return level as 'entry-level' | 'mid-level' | 'senior-level';
+          }
+        };
+
         setFormData({
           title: job.title,
           department: job.department,
           location: job.location,
           employmentType: job.employmentType,
-          experienceLevel: job.experienceLevel,
+          experienceLevel: mapExperienceLevel(job.experienceLevel),
           salaryRange: job.salaryRange,
           description: job.description,
           requirements: job.requirements || [],
@@ -355,7 +363,7 @@ const JobDescriptionsPage: React.FC = () => {
       department: '',
       location: '',
       employmentType: 'full-time',
-      experienceLevel: 'mid',
+      experienceLevel: 'mid-level',
       salaryRange: undefined,
       description: '',
       requirements: [],

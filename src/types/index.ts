@@ -77,7 +77,7 @@ export interface CreateJobDescriptionRequest {
   department: string;
   location: string;
   employmentType: 'full-time' | 'part-time' | 'contract' | 'internship';
-  experienceLevel: 'entry' | 'mid' | 'senior' | 'lead' | 'executive';
+  experienceLevel: 'entry-level' | 'mid-level' | 'senior-level';
   salaryRange?: {
     min: number;
     max: number;
@@ -104,14 +104,15 @@ export interface JobDescription {
   department: string;
   location: string;
   employmentType: 'full-time' | 'part-time' | 'contract' | 'internship';
-  experienceLevel: 'entry' | 'mid' | 'senior' | 'lead' | 'executive';
+  experienceLevel: 'entry-level' | 'mid-level' | 'senior-level';
   salaryRange?: {
     min: number;
     max: number;
     currency: string;
   };
+  salary_range?: string; // AI-parsed salary range as text
   description: string;
-  jd_summary?: string; // AI-generated summary from n8n workflow
+  jd_summary?: string; // AI-generated comprehensive summary from n8n workflow
   requirements: string[];
   responsibilities: string[];
   benefits: string[];
@@ -122,6 +123,16 @@ export interface JobDescription {
   createdAt: string;
   updatedAt: string;
   publishedAt?: string;
+  // Enhanced structured fields from AI parser
+  key_responsibilities?: string[]; // AI-extracted main responsibilities
+  required_skills?: string[]; // AI-extracted mandatory skills
+  preferred_skills?: string[]; // AI-extracted nice-to-have skills
+  technical_stack?: string[]; // AI-extracted technologies and tools
+  education_requirements?: string; // AI-extracted education requirements
+  company_culture?: string; // AI-extracted company culture
+  growth_opportunities?: string; // AI-extracted growth opportunities
+  qualifications_minimum?: string[]; // AI-extracted minimum qualifications
+  qualifications_preferred?: string[]; // AI-extracted preferred qualifications
   // Additional fields
   companyName?: string;
   workMode?: 'on-site' | 'remote' | 'hybrid';

@@ -1,36 +1,11 @@
 import { supabase } from './supabase';
-import { JobDescription } from '../types';
+import { JobDescription, CreateJobDescriptionRequest } from '../types';
 
 export interface JobDescriptionResponse {
   data: JobDescription[];
   error?: string;
 }
 
-export interface CreateJobDescriptionRequest {
-  title: string;
-  department: string;
-  location: string;
-  employmentType: 'full-time' | 'part-time' | 'contract' | 'internship';
-  experienceLevel: 'entry' | 'mid' | 'senior' | 'lead' | 'executive';
-  salaryRange?: {
-    min: number;
-    max: number;
-    currency: string;
-  };
-  description: string;
-  requirements: string[];
-  responsibilities: string[];
-  benefits: string[];
-  skills: string[];
-  qualifications: string[];
-  status?: 'draft' | 'active' | 'paused' | 'closed';
-  // Additional fields
-  companyName?: string;
-  workMode?: 'on-site' | 'remote' | 'hybrid';
-  jobCategory?: string;
-  contactEmail?: string;
-  applicationDeadline?: string;
-}
 
 export class JobDescriptionsService {
   // Get all job descriptions
@@ -278,6 +253,119 @@ export class JobDescriptionsService {
       return { 
         data: null, 
         error: error instanceof Error ? error.message : 'Failed to create job description' 
+      };
+    }
+  }
+
+  /**
+   * Create job description from enhanced AI parser response
+   */
+  static async createJobDescriptionFromParser(parserResponse: any): Promise<{ data: JobDescription | null; error?: string }> {
+    try {
+      if (!parserResponse.success || !parserResponse.data) {
+        return {
+          data: null,
+          error: 'Invalid parser response'
+        };
+      }
+
+      const parsedData = parserResponse.data;
+      
+      // Generate job description ID
+      const generateJobDescriptionId = (title: string): string => {
+        const words = title.trim().split(' ');
+        let abbreviation = 'JD';
+        
+        if (words.length >= 2) {
+          abbreviation = words[0].charAt(0).toUpperCase() + words[1].charAt(0).toUpperCase();
+        } else if (words.length === 1) {
+          abbreviation = words[0].substring(0, 3).toUpperCase();
+        }
+        
+        const timestamp = Date.now().toString().slice(-4);
+        return `AS-${abbreviation}-${timestamp}`;
+      };
+
+      const jobDescriptionId = generateJobDescriptionId(parsedData.job_title);
+
+      const { data, error } = await supabase
+        .from('job_descriptions')
+        .insert({
+          job_description_id: jobDescriptionId,
+          title: parsedData.job_title,
+          department: parsedData.department,
+          location: parsedData.location,
+          employment_type: parsedData.employment_type,
+          experience_level: parsedData.experience_level,
+          work_mode: parsedData.work_mode,
+          salary_range: parsedData.salary_range,
+          description: parsedData.job_summary, // Use the comprehensive summary as description
+          jd_summary: parsedData.job_summary,
+          requirements: parsedData.required_skills || [],
+          responsibilities: parsedData.key_responsibilities || [],
+          benefits: parsedData.benefits || [],
+          skills: parsedData.technical_stack || [],
+          qualifications: parsedData.qualifications?.minimum || [],
+          status: 'active',
+          created_by: (await supabase.auth.getUser()).data.user?.id || null,
+          // Enhanced structured fields
+          key_responsibilities: parsedData.key_responsibilities || [],
+          required_skills: parsedData.required_skills || [],
+          preferred_skills: parsedData.preferred_skills || [],
+          technical_stack: parsedData.technical_stack || [],
+          education_requirements: parsedData.education_requirements,
+          company_culture: parsedData.company_culture,
+          growth_opportunities: parsedData.growth_opportunities,
+          qualifications_minimum: parsedData.qualifications?.minimum || [],
+          qualifications_preferred: parsedData.qualifications?.preferred || [],
+        })
+        .select()
+        .single();
+
+      if (error) {
+        console.error('Error creating job description from parser:', error);
+        return { data: null, error: error.message };
+      }
+
+      const jobDescription: JobDescription = {
+        id: data.id,
+        job_description_id: data.job_description_id,
+        title: data.title,
+        department: data.department,
+        location: data.location,
+        employmentType: data.employment_type,
+        experienceLevel: data.experience_level,
+        salary_range: data.salary_range,
+        description: data.description,
+        jd_summary: data.jd_summary,
+        requirements: data.requirements || [],
+        responsibilities: data.responsibilities || [],
+        benefits: data.benefits || [],
+        skills: data.skills || [],
+        qualifications: data.qualifications || [],
+        status: data.status,
+        createdBy: data.created_by,
+        createdAt: data.created_at,
+        updatedAt: data.updated_at,
+        publishedAt: data.published_at,
+        // Enhanced structured fields from AI parser
+        key_responsibilities: data.key_responsibilities || [],
+        required_skills: data.required_skills || [],
+        preferred_skills: data.preferred_skills || [],
+        technical_stack: data.technical_stack || [],
+        education_requirements: data.education_requirements,
+        company_culture: data.company_culture,
+        growth_opportunities: data.growth_opportunities,
+        qualifications_minimum: data.qualifications_minimum || [],
+        qualifications_preferred: data.qualifications_preferred || [],
+      };
+
+      return { data: jobDescription };
+    } catch (error) {
+      console.error('Error creating job description from parser:', error);
+      return { 
+        data: null, 
+        error: error instanceof Error ? error.message : 'Failed to create job description from parser' 
       };
     }
   }
