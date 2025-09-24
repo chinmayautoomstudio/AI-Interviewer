@@ -52,7 +52,7 @@ const AppContent: React.FC = () => {
         <main className="flex-1">
           <Routes>
             <Route path="/dashboard" element={<DashboardPage />} />
-            <Route path="/interviews" element={<div>Interview page - use Admin Test for interview setup</div>} />
+            <Route path="/interviews" element={<Navigate to="/admin-interview-test" replace />} />
             <Route path="/candidates" element={<CandidatesPage />} />
             <Route path="/candidates/:id" element={<CandidateProfilePage />} />
             <Route path="/reports" element={<ReportsPage />} />

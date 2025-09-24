@@ -4,7 +4,7 @@ import { ArrowLeft, Clock, User, Briefcase, Bot, AlertCircle } from 'lucide-reac
 import Card from '../components/ui/Card';
 import Button from '../components/ui/Button';
 import LoadingSpinner from '../components/ui/LoadingSpinner';
-import ChatInterface from '../components/interview/ChatInterface';
+import InterviewPage from './InterviewPage';
 import { 
   InterviewSession, 
   CandidateUser, 
@@ -25,6 +25,7 @@ const CandidateInterviewPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [startingInterview, setStartingInterview] = useState(false);
+  const [interviewStarted, setInterviewStarted] = useState(false);
 
   useEffect(() => {
     if (sessionToken) {
@@ -128,9 +129,10 @@ const CandidateInterviewPage: React.FC = () => {
           console.log('🔍 Session status:', existingSession.status);
           setSession(existingSession);
           
-          // If session is in pending status or doesn't have AI response, start the actual interview
-          if (existingSession.status === 'pending' || !existingSession.aiResponse) {
+          // If session is in pending status and we haven't started the interview yet, start the actual interview
+          if (existingSession.status === 'pending' && !interviewStarted) {
             console.log('🚀 Session needs to start actual interview, status:', existingSession.status);
+            setInterviewStarted(true); // Mark as started to prevent duplicate calls
             try {
               const interviewResult = await InterviewSystemService.startActualInterview(existingSession.sessionId);
               if (interviewResult.data) {
@@ -144,14 +146,20 @@ const CandidateInterviewPage: React.FC = () => {
                 
                 console.log('🔄 Setting session with AI response...');
                 setSession(sessionWithResponse);
+                
               } else {
                 console.error('❌ Failed to start actual interview for existing session:', interviewResult.error);
+                setInterviewStarted(false); // Reset flag on error
               }
             } catch (error) {
               console.error('❌ Error starting actual interview for existing session:', error);
+              setInterviewStarted(false); // Reset flag on error
             }
+          } else if (existingSession.status === 'in_progress') {
+            console.log('✅ Session is already in progress, no need to start actual interview');
+            setInterviewStarted(true); // Mark as started since it's already in progress
           } else {
-            console.log('✅ Session already has AI response, no need to start actual interview');
+            console.log('✅ Session already processed, no need to start actual interview');
           }
         } else {
           console.warn('⚠️ Could not load existing session:', sessionError);
@@ -234,6 +242,7 @@ const CandidateInterviewPage: React.FC = () => {
         
         console.log('🔄 Setting session with AI response...');
         setSession(sessionWithResponse);
+        setInterviewStarted(true); // Mark as started to prevent duplicate calls
         
         // Navigate to the session-specific URL
         const sessionUrl = `/candidate/interview/${newSession.sessionId}`;
@@ -258,9 +267,6 @@ const CandidateInterviewPage: React.FC = () => {
     }
   };
 
-  const handleSessionUpdate = (updatedSession: InterviewSession) => {
-    setSession(updatedSession);
-  };
 
   const handleGoBack = () => {
     navigate('/candidate/dashboard');
@@ -449,14 +455,22 @@ const CandidateInterviewPage: React.FC = () => {
             )}
           </div>
 
-          {/* Chat Interface */}
+          {/* Interview Interface */}
           <div className="lg:col-span-2">
             {session && session.sessionId && sessionToken !== 'new' ? (
               <div className="h-[600px]">
-                <ChatInterface
-                  sessionId={session.sessionId}
+                <InterviewPage
                   session={session}
-                  onSessionUpdate={handleSessionUpdate}
+                  onEndInterview={() => {
+                    // Handle end interview
+                    InterviewSystemService.cancelInterview(session.sessionId).then(() => {
+                      navigate('/candidate/dashboard');
+                    }).catch((error) => {
+                      console.error('Error ending interview:', error);
+                      alert('Failed to end interview. Please try again.');
+                    });
+                  }}
+                  onBack={() => navigate('/candidate/dashboard')}
                 />
               </div>
             ) : (

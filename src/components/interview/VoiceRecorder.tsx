@@ -823,9 +823,26 @@ const VoiceRecorder: React.FC<VoiceRecorderProps> = ({
     setEndInterviewData(null);
   };
 
-  // Cleanup on unmount only
+  // Initialize microphone on mount and cleanup on unmount
   useEffect(() => {
+    // Initialize microphone when component mounts
+    const initializeMicrophone = async () => {
+      if (!isInitializedRef.current) {
+        console.log('🎤 Initializing microphone on component mount...');
+        try {
+          await startAudioMonitoring();
+          isInitializedRef.current = true;
+        } catch (error) {
+          console.error('❌ Failed to initialize microphone:', error);
+        }
+      }
+    };
+
+    initializeMicrophone();
+
+    // Cleanup on unmount
     return () => {
+      console.log('🧹 VoiceRecorder cleanup - stopping audio monitoring');
       stopAudioMonitoring();
       isInitializedRef.current = false;
       // Clean up MediaRecorder
@@ -835,7 +852,7 @@ const VoiceRecorder: React.FC<VoiceRecorderProps> = ({
         audioChunksRef.current = [];
       }
     };
-  }, []); // Empty dependency array - only cleanup on unmount
+  }, []); // Empty dependency array - only run on mount/unmount
 
   return (
     <div className={`voice-recorder ${className}`}>

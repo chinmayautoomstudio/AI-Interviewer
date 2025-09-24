@@ -371,6 +371,28 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ sessionId, session, onSes
             </div>
           )}
 
+          {/* End Interview Button */}
+          <div className="flex justify-center mt-4">
+            <button
+              onClick={() => {
+                if (window.confirm('Are you sure you want to end the interview? This action cannot be undone.')) {
+                  // Mark interview as completed
+                  InterviewSystemService.cancelInterview(sessionId).then(() => {
+                    // Navigate back to dashboard or show completion message
+                    window.location.href = '/candidate/dashboard';
+                  }).catch((error) => {
+                    console.error('Error ending interview:', error);
+                    alert('Failed to end interview. Please try again.');
+                  });
+                }
+              }}
+              className="px-6 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors duration-200 flex items-center space-x-2"
+            >
+              <AlertCircle className="h-4 w-4" />
+              <span>End Interview</span>
+            </button>
+          </div>
+
           {/* Text Input - Hidden for voice-only mode */}
           {!voiceMode && (
             <div className="flex space-x-2">

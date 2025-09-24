@@ -1098,6 +1098,58 @@ export class InterviewSystemService {
     }
   }
 
+  // Add interview message (for AI responses)
+  static async addInterviewMessage(request: { sessionId: string; messageType: string; content: string; timestamp: string }): Promise<{ data: InterviewMessage | null; error?: string }> {
+    try {
+      // Get the interview session ID first
+      const { data: session, error: sessionError } = await supabase
+        .from('interview_sessions')
+        .select('id')
+        .eq('session_id', request.sessionId)
+        .single();
+
+      if (sessionError || !session) {
+        return { data: null, error: 'Session not found' };
+      }
+
+      // Save message to database
+      const { data: message, error: messageError } = await supabase
+        .from('interview_messages')
+        .insert({
+          interview_session_id: session.id,
+          message_type: request.messageType,
+          content: request.content,
+          sender: 'ai',
+          timestamp: request.timestamp
+        })
+        .select()
+        .single();
+
+      if (messageError) {
+        console.error('Error adding interview message:', messageError);
+        return { data: null, error: 'Failed to save message' };
+      }
+
+      // Transform the message to match InterviewMessage interface
+      const interviewMessage: InterviewMessage = {
+        id: message.id,
+        interviewSessionId: session.id,
+        messageType: message.message_type as 'question' | 'answer' | 'system' | 'error' | 'instruction' | 'voice_input' | 'voice_response',
+        content: message.content,
+        sender: message.sender as 'ai' | 'candidate' | 'system',
+        timestamp: message.timestamp,
+        audioUrl: message.audio_url,
+        audioDuration: message.audio_duration,
+        originalAudioTranscript: message.original_audio_transcript
+      };
+
+      return { data: interviewMessage };
+    } catch (error: any) {
+      console.error('Error adding interview message:', error);
+      return { data: null, error: error.message };
+    }
+  }
+
   // Get interview messages for a session
   static async getInterviewMessages(sessionId: string): Promise<{ data: InterviewMessage[]; error?: string }> {
     try {

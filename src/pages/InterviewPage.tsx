@@ -98,85 +98,86 @@ const InterviewPage: React.FC<InterviewPageProps> = ({
         return;
       }
       
-      // Mark greeting as processed immediately
+      // Mark greeting as processed immediately to prevent duplicates
       greetingProcessedRef.current = true;
       
-      // Note: Interview is already started in InterviewSetupPage, play the AI response that was passed
+      // Note: Interview is already started in setup page, play the AI response that was passed
       console.log('ℹ️ Interview already started in setup page, playing AI response...');
       
-      // Check if we have the AI response from the session
-      if ((session as any).aiResponse) {
-        console.log('✅ AI response found in session:', (session as any).aiResponse);
-        
-        // Extract text content from AI response (handle different response formats)
-        let aiText = '';
-        const response = (session as any).aiResponse;
-        
-        if (typeof response === 'string') {
-          aiText = response;
-        } else if (response && typeof response === 'object') {
-          // Try to extract text from various possible fields
-          aiText = response.output || 
-                  response.greeting || 
-                  response.message || 
-                  response.ai_response ||
-                  response.response ||
-                  response.text ||
-                  response.content ||
-                  JSON.stringify(response);
-        }
-        
-        if (aiText) {
-          // Check if the AI greeting indicates the interview is ending
-          const endDetection = detectInterviewEnd(aiText);
-          let shouldEndAfterAudio = false;
-          if (endDetection.isEnding && shouldAutoEndInterview(endDetection.confidence)) {
-            console.log('🎯 Interview end detected in greeting, will auto-end after audio finishes');
-            shouldEndAfterAudio = true;
+      // Add a delay to ensure the page is fully loaded before playing AI response
+      setTimeout(async () => {
+        // Check if we have the AI response from the session (handle both aiResponse and aiGreeting)
+        const aiResponse = (session as any).aiResponse || (session as any).aiGreeting;
+        if (aiResponse) {
+          console.log('✅ AI response found in session:', aiResponse);
+          
+          // Extract text content from AI response (handle different response formats)
+          let aiText = '';
+          const response = aiResponse;
+          
+          if (typeof response === 'string') {
+            aiText = response;
+          } else if (response && typeof response === 'object') {
+            // Try to extract text from various possible fields
+            aiText = response.output || 
+                    response.greeting || 
+                    response.message || 
+                    response.ai_response ||
+                    response.response ||
+                    response.text ||
+                    response.content ||
+                    JSON.stringify(response);
           }
-
-          // Convert AI response to speech and play it
-          try {
-            console.log('🔊 Converting AI response to speech...');
-            const { ttsManager } = await import('../services/ttsManager');
-            const ttsResult = await ttsManager.textToSpeech({
-              text: aiText,
-              provider: 'auto'
-            });
-            
-            if (ttsResult.audioUrl) {
-              console.log('🔊 Playing AI response:', ttsResult.audioUrl);
-              await playAudio(ttsResult.audioUrl);
-              console.log('✅ AI response played successfully');
-              
-              // If this was an ending message, end the interview after audio finishes
-              if (shouldEndAfterAudio) {
-                console.log('🔊 AI ending message finished, ending interview');
-                setTimeout(() => {
-                  endInterview();
-                }, 1000); // Small delay after audio ends
-              }
-            } else {
-              console.log('🔊 Browser TTS is playing directly');
-              // For browser TTS, wait a bit longer since we can't detect when it ends
-              if (shouldEndAfterAudio) {
-                setTimeout(() => {
-                  endInterview();
-                }, 5000); // Wait 5 seconds for browser TTS
-              }
+          
+          if (aiText) {
+            // Check if the AI greeting indicates the interview is ending
+            const endDetection = detectInterviewEnd(aiText);
+            let shouldEndAfterAudio = false;
+            if (endDetection.isEnding && shouldAutoEndInterview(endDetection.confidence)) {
+              console.log('🎯 Interview end detected in greeting, will auto-end after audio finishes');
+              shouldEndAfterAudio = true;
             }
-          } catch (ttsError) {
-            console.warn('⚠️ TTS failed for AI response:', ttsError);
+
+            // Convert AI response to speech and play it
+            try {
+              console.log('🔊 Converting AI response to speech...');
+              const { ttsManager } = await import('../services/ttsManager');
+              const ttsResult = await ttsManager.textToSpeech({
+                text: aiText,
+                provider: 'auto'
+              });
+              
+              if (ttsResult.audioUrl) {
+                console.log('🔊 Playing AI response:', ttsResult.audioUrl);
+                await playAudio(ttsResult.audioUrl);
+                console.log('✅ AI response played successfully');
+                
+                // If this was an ending message, end the interview after audio finishes
+                if (shouldEndAfterAudio) {
+                  console.log('🔊 AI ending message finished, ending interview');
+                  setTimeout(() => {
+                    endInterview();
+                  }, 1000); // Small delay after audio ends
+                }
+              } else {
+                console.log('🔊 Browser TTS is playing directly');
+                // For browser TTS, wait a bit longer since we can't detect when it ends
+                if (shouldEndAfterAudio) {
+                  setTimeout(() => {
+                    endInterview();
+                  }, 5000); // Wait 5 seconds for browser TTS
+                }
+              }
+            } catch (ttsError) {
+              console.warn('⚠️ TTS failed for AI response:', ttsError);
+            }
+          } else {
+            console.log('⚠️ No text content found in AI response');
           }
         } else {
-          console.log('⚠️ No text content found in AI response');
+          console.log('⚠️ No AI response found in session');
         }
-      } else {
-        console.log('⚠️ No AI response found in session');
-      }
-      
-      // Mark greeting as processed since interview is already active
-      greetingProcessedRef.current = true;
+      }, 1000); // Wait 1 second for page to fully load
     };
 
     // Start the interview with AI Agent after a short delay to ensure page is fully loaded
