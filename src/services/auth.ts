@@ -20,12 +20,23 @@ export class AuthService {
         lastLogin: new Date().toISOString(),
       }
     },
-    'awsadmin': {
+    'awsadmin@test.com': {
       password: 'AWSAdmin@2025',
       user: {
         id: 'dev-user-2',
-        email: 'awsadmin',
+        email: 'awsadmin@test.com',
         name: 'AWS Admin',
+        role: 'admin' as const,
+        createdAt: new Date().toISOString(),
+        lastLogin: new Date().toISOString(),
+      }
+    },
+    'admin@test.com': {
+      password: 'Admin@2025',
+      user: {
+        id: 'dev-user-3',
+        email: 'admin@test.com',
+        name: 'Admin Dashboard',
         role: 'admin' as const,
         createdAt: new Date().toISOString(),
         lastLogin: new Date().toISOString(),
@@ -60,7 +71,7 @@ export class AuthService {
       if (data.user) {
         // Get admin user details
         const { data: adminUser, error: adminError } = await supabase
-          .from('admin_users')
+          .from('users')
           .select('*')
           .eq('email', email)
           .single();
@@ -71,7 +82,7 @@ export class AuthService {
 
         // Update last login
         await supabase
-          .from('admin_users')
+          .from('users')
           .update({ last_login: new Date().toISOString() })
           .eq('id', adminUser.id);
 
@@ -113,7 +124,7 @@ export class AuthService {
       }
 
       const { data: adminUser, error } = await supabase
-        .from('admin_users')
+        .from('users')
         .select('*')
         .eq('email', authUser.email)
         .single();

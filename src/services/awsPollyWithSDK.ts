@@ -39,8 +39,8 @@ class AmazonPollyWithSDK {
     const region = process.env.REACT_APP_AWS_REGION || 'us-east-1';
     
     console.log('🔍 AWS Polly Environment Variables Check:');
-    console.log('REACT_APP_AWS_ACCESS_KEY_ID:', accessKeyId ? `${accessKeyId.substring(0, 8)}...` : 'NOT SET');
-    console.log('REACT_APP_AWS_SECRET_ACCESS_KEY:', secretAccessKey ? `${secretAccessKey.substring(0, 8)}...` : 'NOT SET');
+    console.log('REACT_APP_AWS_ACCESS_KEY_ID:', accessKeyId ? '***CONFIGURED***' : 'NOT SET');
+    console.log('REACT_APP_AWS_SECRET_ACCESS_KEY:', secretAccessKey ? '***CONFIGURED***' : 'NOT SET');
     console.log('REACT_APP_AWS_REGION:', region);
 
     // Initialize AWS Polly

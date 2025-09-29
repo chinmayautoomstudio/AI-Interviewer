@@ -496,7 +496,7 @@ const AdminInterviewTestPage: React.FC = () => {
                 {selectedJob && (
                   <div className="mt-2 pt-2 border-t border-purple-200">
                     <p className="text-xs text-purple-600">
-                      <span className="font-medium">Voice:</span> {getVoiceForJobType(selectedJob.title).name} ({getVoiceForJobType(selectedJob.title).gender})
+                      <span className="font-medium">Voice:</span> {getVoiceForJobType(selectedJob.title).gender} voice configured
                     </p>
                   </div>
                 )}

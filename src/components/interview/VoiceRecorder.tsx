@@ -906,7 +906,7 @@ const VoiceRecorder: React.FC<VoiceRecorderProps> = ({
 
         {/* User Tip */}
         <div className="text-xs text-gray-500 text-center max-w-md">
-          Click "Start Recording" to begin, then click "Stop Recording" when finished. You control when to start and stop!
+          Click to start recording your response
         </div>
 
         {/* Debug Toggle */}

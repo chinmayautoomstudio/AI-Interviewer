@@ -326,8 +326,8 @@ const InterviewPage: React.FC<InterviewPageProps> = ({
           </div>
           
           <div className="text-center text-gray-600 mb-6">
-            <p className="text-sm">🎤 <strong>Voice Mode Active</strong> - Use the voice recorder below to respond to the interviewer.</p>
-            <p className="text-xs text-gray-500 mt-1">Speak naturally and the AI will respond with voice.</p>
+            <p className="text-sm">🎤 <strong>Voice Interview Active</strong></p>
+            <p className="text-xs text-gray-500 mt-1">Click to record your response</p>
           </div>
           
           <div className="flex justify-center">

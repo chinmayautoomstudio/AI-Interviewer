@@ -47,6 +47,10 @@ class JDParserService {
         };
       }
 
+      console.log('🔍 JD Parser webhook URL:', this.webhookUrl);
+      console.log('🔍 JD Parser request payload:', { jobDescription: jobDescription.trim() });
+      console.log('🔍 JD Parser version: 2.0 - Direct Object Support');
+
       const response = await fetch(this.webhookUrl, {
         method: 'POST',
         headers: {
@@ -57,24 +61,57 @@ class JDParserService {
         }),
       });
 
+      console.log('🔍 JD Parser response status:', response.status);
+      console.log('🔍 JD Parser response headers:', Object.fromEntries(response.headers.entries()));
+
       if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+        const errorText = await response.text();
+        console.error('JD Parser HTTP error response:', errorText);
+        throw new Error(`HTTP error! status: ${response.status}, response: ${errorText}`);
       }
 
       const responseData = await response.json();
+      console.log('🔍 JD Parser raw response:', responseData);
+      console.log('🔍 JD Parser response type:', typeof responseData);
+      console.log('🔍 JD Parser is array:', Array.isArray(responseData));
+      console.log('🔍 JD Parser has job_title:', responseData && responseData.job_title);
       
-      // Handle array response from n8n webhook
-      let result: JDParserResponse;
+      // Handle direct object response from n8n webhook
+      let parsedData;
       if (Array.isArray(responseData) && responseData.length > 0) {
-        result = responseData[0];
+        // Handle array format (legacy)
+        parsedData = responseData[0];
+        console.log('🔍 JD Parser extracted data from array:', parsedData);
+      } else if (responseData && typeof responseData === 'object' && responseData.job_title) {
+        // Handle direct object format (current)
+        parsedData = responseData;
+        console.log('🔍 JD Parser using direct object data:', parsedData);
       } else {
-        result = responseData;
+        console.error('JD Parser error: Invalid response format. Expected object with job_title or array:', typeof responseData);
+        console.error('JD Parser responseData:', responseData);
+        return {
+          success: false,
+          error: 'Invalid response format - expected object with job data or array'
+        };
       }
       
-      if (!result.success) {
-        console.error('JD Parser error:', result.error);
-        return result;
+      // Validate that we have the required data structure
+      if (!parsedData || typeof parsedData !== 'object') {
+        console.error('JD Parser error: Invalid data format', parsedData);
+        return {
+          success: false,
+          error: 'Invalid data format from parser'
+        };
       }
+      
+      // Create the result object with the parsed data
+      const result: JDParserResponse = {
+        success: true,
+        data: parsedData,
+        timestamp: new Date().toISOString()
+      };
+      
+      console.log('🔍 JD Parser final result:', result);
 
       // Validate the parsed data
       if (!result.data) {
@@ -84,7 +121,7 @@ class JDParserService {
         };
       }
 
-      // Additional validation
+      // Additional validation - check for required fields
       if (!result.data.job_title) {
         return {
           success: false,
@@ -92,9 +129,22 @@ class JDParserService {
         };
       }
 
+      if (!result.data.job_summary) {
+        return {
+          success: false,
+          error: 'Job summary is required but not found in parsed data'
+        };
+      }
+
+      console.log('✅ JD Parser validation passed');
       return result;
     } catch (error) {
       console.error('Error parsing job description:', error);
+      console.error('Error details:', {
+        message: error instanceof Error ? error.message : 'Unknown error',
+        stack: error instanceof Error ? error.stack : undefined,
+        type: typeof error
+      });
       return {
         success: false,
         error: error instanceof Error ? error.message : 'Failed to parse job description'
