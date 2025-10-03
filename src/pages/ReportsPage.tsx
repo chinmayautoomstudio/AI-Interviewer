@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import Card from '../components/ui/Card';
 import Button from '../components/ui/Button';
 import LoadingSpinner from '../components/ui/LoadingSpinner';
@@ -6,6 +7,7 @@ import { BarChart3, TrendingUp, Users, Calendar, CheckCircle, Clock, Eye } from 
 import { InterviewSystemService } from '../services/interviewSystem';
 
 const ReportsPage: React.FC = () => {
+  const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [statistics, setStatistics] = useState<any>(null);
@@ -63,6 +65,10 @@ const ReportsPage: React.FC = () => {
       case 'needs_review': return 'text-blue-600 bg-blue-100';
       default: return 'text-gray-600 bg-gray-100';
     }
+  };
+
+  const handleViewReport = (reportId: string) => {
+    navigate(`/reports/${reportId}`);
   };
 
   if (loading) {
@@ -219,7 +225,11 @@ const ReportsPage: React.FC = () => {
                   </div>
                   <div className="flex items-center space-x-3">
                     <span className="text-lg font-bold text-gray-900">{report.overall_score}%</span>
-                    <Button variant="ghost" size="sm">
+                    <Button 
+                      variant="ghost" 
+                      size="sm"
+                      onClick={() => handleViewReport(report.id)}
+                    >
                       <Eye className="h-4 w-4 mr-1" />
                       View Report
                     </Button>

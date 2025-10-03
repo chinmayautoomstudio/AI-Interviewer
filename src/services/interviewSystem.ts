@@ -1296,6 +1296,46 @@ export class InterviewSystemService {
     }
   }
 
+  // Get interview report by report ID with full details
+  static async getInterviewReportById(reportId: string): Promise<{ data: any | null; error?: string }> {
+    try {
+      const { data: report, error } = await supabase
+        .from('interview_reports')
+        .select(`
+          *,
+          interview_sessions!inner(
+            session_id,
+            status,
+            started_at,
+            completed_at,
+            duration_minutes,
+            candidates!inner(
+              id,
+              name,
+              email
+            ),
+            job_descriptions!inner(
+              id,
+              title,
+              department
+            )
+          )
+        `)
+        .eq('id', reportId)
+        .single();
+
+      if (error) {
+        console.error('Error getting interview report by ID:', error);
+        return { data: null, error: 'Report not found' };
+      }
+
+      return { data: report };
+    } catch (error) {
+      console.error('Error getting interview report by ID:', error);
+      return { data: null, error: 'Failed to get report' };
+    }
+  }
+
   // Get all interview sessions for a candidate
   static async getCandidateInterviews(candidateId: string): Promise<{ data: InterviewSession[]; error?: string }> {
     try {

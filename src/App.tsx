@@ -16,6 +16,7 @@ import CandidateInterviewPage from './pages/CandidateInterviewPage';
 import CandidateProfilePage from './pages/CandidateProfilePage';
 import AIAgentsPage from './pages/AIAgentsPage';
 import AdminInterviewTestPage from './pages/AdminInterviewTestPage';
+import InterviewReportPage from './pages/InterviewReportPage';
 import Header from './components/layout/Header';
 import Sidebar from './components/layout/Sidebar';
 import LoadingSpinner from './components/ui/LoadingSpinner';
@@ -56,6 +57,7 @@ const AppContent: React.FC = () => {
             <Route path="/candidates" element={<CandidatesPage />} />
             <Route path="/candidates/:id" element={<CandidateProfilePage />} />
             <Route path="/reports" element={<ReportsPage />} />
+            <Route path="/reports/:reportId" element={<InterviewReportPage />} />
             <Route path="/job-descriptions" element={<JobDescriptionsPage />} />
             <Route path="/job-descriptions/:id" element={<JobViewPage />} />
             <Route path="/job-descriptions/edit/:id" element={<JobDescriptionsPage />} />
