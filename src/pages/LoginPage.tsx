@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Eye, EyeOff, Bot, Users, Mic, BarChart3, Sparkles } from 'lucide-react';
+import { Eye, EyeOff, Users, Mic, BarChart3, Sparkles } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 
 const LoginPage: React.FC = () => {
@@ -43,61 +43,66 @@ const LoginPage: React.FC = () => {
       {/* Left Panel - Promotional Section */}
       <div className="hidden lg:flex lg:w-1/2 relative overflow-hidden">
         {/* Background with gradient and patterns */}
-        <div className="absolute inset-0 bg-gradient-to-br from-ai-teal via-ai-teal-light to-ai-orange"></div>
+        <div className="absolute inset-0 bg-gradient-to-b from-ai-teal to-ai-orange"></div>
         <div className="absolute inset-0 opacity-20" style={{
           backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.1'%3E%3Ccircle cx='30' cy='30' r='2'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`
         }}></div>
         
-        {/* Frosted glass overlay */}
-        <div className="absolute inset-0 backdrop-blur-sm bg-white/10"></div>
-        
-        {/* Content */}
-        <div className="relative z-10 flex flex-col justify-center items-center p-12 text-center">
-          <div className="max-w-md">
-            {/* Main tagline */}
-            <div className="mb-8">
-              <div className="flex items-center justify-center mb-4">
-                <Bot className="h-8 w-8 text-white mr-3" />
-                <span className="text-4xl font-bold text-white">AI</span>
+        {/* Glass effect container */}
+        <div className="absolute inset-0 flex items-center justify-center p-12">
+          <div className="w-full max-w-lg">
+            {/* Glass effect box */}
+            <div className="backdrop-blur-md bg-white/20 border border-white/30 rounded-2xl p-8 shadow-2xl">
+              {/* Logo */}
+              <div className="flex items-center justify-center mb-6">
+                <img 
+                  src="/AI-Interviewer-logo.png" 
+                  alt="AI Interviewer" 
+                  className="h-12 w-auto"
+                />
               </div>
-              <h1 className="text-5xl font-bold text-white mb-2 leading-tight">
-                Interviewer
-              </h1>
-              <p className="text-xl text-white/90 font-medium">
-                <span className="text-ai-orange-light">Intelligent</span> platform
-              </p>
-              <p className="text-xl text-white/90 font-medium">
-                for <span className="font-bold">hiring.</span>
-              </p>
-            </div>
-            
-            {/* Subtitle */}
-            <div className="mb-8">
-              <p className="text-white/80 text-lg leading-relaxed">
-                "You will never know everything."
-              </p>
-              <p className="text-white/80 text-lg leading-relaxed">
-                "But you will know more."
-              </p>
-            </div>
-            
-            {/* Features */}
-            <div className="grid grid-cols-2 gap-4 text-white/90">
-              <div className="flex items-center space-x-2">
-                <Mic className="h-5 w-5 text-ai-orange-light" />
-                <span className="text-sm">Voice Interviews</span>
+              
+              {/* Main tagline */}
+              <div className="text-center mb-8">
+                <h1 className="text-4xl font-bold text-white mb-2 leading-tight">
+                  AI Interviewer
+                </h1>
+                <p className="text-lg text-white/90 font-medium">
+                  <span className="text-ai-orange-light">Intelligent</span> platform
+                </p>
+                <p className="text-lg text-white/90 font-medium">
+                  for <span className="font-bold text-white">hiring.</span>
+                </p>
               </div>
-              <div className="flex items-center space-x-2">
-                <BarChart3 className="h-5 w-5 text-ai-orange-light" />
-                <span className="text-sm">Smart Analytics</span>
+              
+              {/* Quote */}
+              <div className="text-center mb-8">
+                <p className="text-white/80 text-base leading-relaxed">
+                  "You will never know everything."
+                </p>
+                <p className="text-white/80 text-base leading-relaxed">
+                  "But you will know more."
+                </p>
               </div>
-              <div className="flex items-center space-x-2">
-                <Users className="h-5 w-5 text-ai-orange-light" />
-                <span className="text-sm">Candidate Management</span>
-              </div>
-              <div className="flex items-center space-x-2">
-                <Sparkles className="h-5 w-5 text-ai-orange-light" />
-                <span className="text-sm">AI-Powered</span>
+              
+              {/* Features */}
+              <div className="grid grid-cols-2 gap-3 text-white/90">
+                <div className="flex items-center space-x-2">
+                  <Mic className="h-4 w-4 text-ai-orange-light" />
+                  <span className="text-sm">Voice Interviews</span>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <BarChart3 className="h-4 w-4 text-ai-orange-light" />
+                  <span className="text-sm">Smart Analytics</span>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <Users className="h-4 w-4 text-ai-orange-light" />
+                  <span className="text-sm">Candidate Management</span>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <Sparkles className="h-4 w-4 text-ai-orange-light" />
+                  <span className="text-sm">AI-Powered</span>
+                </div>
               </div>
             </div>
           </div>
@@ -109,8 +114,12 @@ const LoginPage: React.FC = () => {
         <div className="w-full max-w-md">
           {/* Logo */}
           <div className="mb-8">
-            <div className="w-12 h-12 bg-ai-teal rounded-xl flex items-center justify-center mb-4">
-              <Bot className="h-6 w-6 text-white" />
+            <div className="mb-4">
+              <img 
+                src="/AI-Interviewer-logo.png" 
+                alt="AI Interviewer" 
+                className="h-10 w-auto"
+              />
             </div>
             <h2 className="text-2xl font-bold text-gray-900 mb-1">
               Hey, hello 👋
