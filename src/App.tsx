@@ -17,6 +17,7 @@ import CandidateProfilePage from './pages/CandidateProfilePage';
 import AIAgentsPage from './pages/AIAgentsPage';
 import AdminInterviewTestPage from './pages/AdminInterviewTestPage';
 import InterviewReportPage from './pages/InterviewReportPage';
+import PrivacyPolicyPage from './pages/PrivacyPolicyPage';
 import Header from './components/layout/Header';
 import Sidebar from './components/layout/Sidebar';
 import LoadingSpinner from './components/ui/LoadingSpinner';
@@ -39,6 +40,7 @@ const AppContent: React.FC = () => {
         <Route path="/candidate" element={<CandidateLoginPage />} />
         <Route path="/candidate/dashboard" element={<CandidateDashboardPage />} />
         <Route path="/candidate/interview/:sessionToken" element={<CandidateInterviewPage />} />
+        <Route path="/privacy-policy" element={<PrivacyPolicyPage />} />
         <Route path="*" element={<Navigate to="/login" replace />} />
       </Routes>
     );
@@ -64,6 +66,7 @@ const AppContent: React.FC = () => {
             <Route path="/ai-agents" element={<AIAgentsPage />} />
             <Route path="/admin-interview-test" element={<AdminInterviewTestPage />} />
             <Route path="/settings" element={<SettingsPage />} />
+            <Route path="/privacy-policy" element={<PrivacyPolicyPage />} />
         <Route path="/" element={<Navigate to="/dashboard" replace />} />
         <Route path="*" element={<Navigate to="/dashboard" replace />} />
           </Routes>
