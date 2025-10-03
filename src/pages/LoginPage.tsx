@@ -181,25 +181,25 @@ const LoginPage: React.FC = () => {
                   </div>
                 </form>
 
-                {/* Footer Links */}
-                <div className="mt-8 text-center space-y-4">
-                  <p className="text-sm text-gray-600">
-                    Don't have an account?{' '}
-                    <button type="button" className="text-ai-teal hover:text-ai-teal-dark font-medium">
-                      Contact your administrator
-                    </button>
-                  </p>
-                  
-                  <div className="pt-4 border-t border-gray-200">
-                    <p className="text-sm text-gray-600 mb-2">Are you a candidate?</p>
-                    <a 
-                      href="/candidate" 
-                      className="text-ai-teal hover:text-ai-teal-dark font-medium text-sm"
-                    >
-                      Access Interview Portal →
-                    </a>
-                  </div>
-                </div>
+          {/* Footer Links */}
+          <div className="mt-8 text-center space-y-4">
+            <p className="text-sm text-gray-600">
+              Don't have an account?{' '}
+              <a href="/register" className="text-ai-teal hover:text-ai-teal-dark font-medium">
+                Create one here
+              </a>
+            </p>
+            
+            <div className="pt-4 border-t border-gray-200">
+              <p className="text-sm text-gray-600 mb-2">Are you a candidate?</p>
+              <a 
+                href="/candidate" 
+                className="text-ai-teal hover:text-ai-teal-dark font-medium text-sm"
+              >
+                Access Interview Portal →
+              </a>
+            </div>
+          </div>
               </div>
             </div>
           </div>

@@ -18,6 +18,7 @@ import AIAgentsPage from './pages/AIAgentsPage';
 import AdminInterviewTestPage from './pages/AdminInterviewTestPage';
 import InterviewReportPage from './pages/InterviewReportPage';
 import PrivacyPolicyPage from './pages/PrivacyPolicyPage';
+import RegisterPage from './pages/RegisterPage';
 import Header from './components/layout/Header';
 import Sidebar from './components/layout/Sidebar';
 import LoadingSpinner from './components/ui/LoadingSpinner';
@@ -37,6 +38,7 @@ const AppContent: React.FC = () => {
     return (
       <Routes>
         <Route path="/login" element={<LoginPage />} />
+        <Route path="/register" element={<RegisterPage />} />
         <Route path="/candidate" element={<CandidateLoginPage />} />
         <Route path="/candidate/dashboard" element={<CandidateDashboardPage />} />
         <Route path="/candidate/interview/:sessionToken" element={<CandidateInterviewPage />} />
