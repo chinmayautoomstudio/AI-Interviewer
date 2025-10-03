@@ -8,11 +8,11 @@ const Card: React.FC<CardProps> = ({
   actions,
 }) => {
   return (
-    <div className={`bg-white rounded-lg shadow-sm border border-gray-200 ${className}`}>
+    <div className={`bg-white rounded-lg shadow-sm border border-ai-teal/20 ${className}`}>
       {(title || actions) && (
-        <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
+        <div className="px-6 py-4 border-b border-ai-teal/20 flex items-center justify-between">
           {title && (
-            <h3 className="text-lg font-semibold text-gray-900">{title}</h3>
+            <h3 className="text-lg font-semibold text-ai-teal">{title}</h3>
           )}
           {actions && (
             <div className="flex items-center space-x-2">

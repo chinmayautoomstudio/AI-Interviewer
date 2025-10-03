@@ -2,6 +2,20 @@
 @tailwind components;
 @tailwind utilities;
 
+/* AI Interviewer Custom Color Variables */
+:root {
+  --ai-teal: #00a19d;
+  --ai-cream: #fff8e5;
+  --ai-orange: #ffb344;
+  --ai-coral: #e05d5d;
+  --ai-teal-dark: #008a87;
+  --ai-teal-light: #33b3af;
+  --ai-orange-dark: #e6a23d;
+  --ai-orange-light: #ffc266;
+  --ai-coral-dark: #d14a4a;
+  --ai-coral-light: #e67e7e;
+}
+
 body {
   margin: 0;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
@@ -9,9 +23,46 @@ body {
     sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  background-color: var(--ai-cream);
+  color: #374151;
 }
 
 code {
   font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
     monospace;
+}
+
+/* Custom AI Interviewer Components */
+@layer components {
+  .btn-primary {
+    @apply bg-ai-teal hover:bg-ai-teal-dark text-white font-medium py-2 px-4 rounded-lg transition-colors duration-200;
+  }
+  
+  .btn-secondary {
+    @apply bg-ai-orange hover:bg-ai-orange-dark text-white font-medium py-2 px-4 rounded-lg transition-colors duration-200;
+  }
+  
+  .btn-danger {
+    @apply bg-ai-coral hover:bg-ai-coral-dark text-white font-medium py-2 px-4 rounded-lg transition-colors duration-200;
+  }
+  
+  .card-ai {
+    @apply bg-white border border-gray-200 rounded-lg shadow-sm p-6;
+  }
+  
+  .input-ai {
+    @apply border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-ai-teal focus:border-ai-teal transition-colors duration-200;
+  }
+  
+  .text-primary {
+    @apply text-ai-teal;
+  }
+  
+  .text-accent {
+    @apply text-ai-orange;
+  }
+  
+  .text-danger {
+    @apply text-ai-coral;
+  }
 }

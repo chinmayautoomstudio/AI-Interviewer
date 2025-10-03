@@ -174,8 +174,8 @@ const InterviewReportPage: React.FC = () => {
   if (error || !report) {
     return (
       <div className="p-6">
-        <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-          <p className="text-red-800">Error: {error || 'Report not found'}</p>
+        <div className="bg-ai-coral/10 border border-ai-coral/20 rounded-lg p-4">
+          <p className="text-ai-coral-dark">Error: {error || 'Report not found'}</p>
           <Button 
             variant="primary" 
             onClick={() => navigate('/reports')}
@@ -205,7 +205,7 @@ const InterviewReportPage: React.FC = () => {
             Back to Reports
           </Button>
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">Interview Report</h1>
+            <h1 className="text-2xl font-bold text-ai-teal">Interview Report</h1>
             <p className="text-gray-600">Detailed analysis and evaluation</p>
           </div>
         </div>
@@ -226,14 +226,14 @@ const InterviewReportPage: React.FC = () => {
         <Card title="Candidate Information">
           <div className="space-y-3">
             <div className="flex items-center space-x-3">
-              <User className="h-5 w-5 text-gray-400" />
+              <User className="h-5 w-5 text-ai-teal" />
               <div>
                 <p className="font-medium text-gray-900">{report.interview_sessions.candidates.name}</p>
                 <p className="text-sm text-gray-600">{report.interview_sessions.candidates.email}</p>
               </div>
             </div>
             <div className="flex items-center space-x-3">
-              <Target className="h-5 w-5 text-gray-400" />
+              <Target className="h-5 w-5 text-ai-teal" />
               <div>
                 <p className="font-medium text-gray-900">{report.interview_sessions.job_descriptions.title}</p>
                 <p className="text-sm text-gray-600">{report.interview_sessions.job_descriptions.department}</p>

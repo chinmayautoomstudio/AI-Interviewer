@@ -75,7 +75,7 @@ const DashboardPage: React.FC = () => {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Dashboard</h1>
+          <h1 className="text-2xl font-bold text-ai-teal">Dashboard</h1>
           <p className="text-gray-600">Welcome back! Here's what's happening with your interviews.</p>
         </div>
         <Button variant="primary">
@@ -95,14 +95,14 @@ const DashboardPage: React.FC = () => {
                   <p className="text-sm font-medium text-gray-600">{stat.title}</p>
                   <p className="text-2xl font-bold text-gray-900">{stat.value}</p>
                   <p className={`text-sm ${
-                    stat.changeType === 'positive' ? 'text-green-600' : 'text-red-600'
+                    stat.changeType === 'positive' ? 'text-ai-teal' : 'text-ai-coral'
                   }`}>
                     <TrendingUp className="inline h-3 w-3 mr-1" />
                     {stat.change} from last month
                   </p>
                 </div>
-                <div className="p-3 bg-blue-100 rounded-lg">
-                  <Icon className="h-6 w-6 text-blue-600" />
+                <div className="p-3 bg-ai-teal/10 rounded-lg">
+                  <Icon className="h-6 w-6 text-ai-teal" />
                 </div>
               </div>
             </Card>

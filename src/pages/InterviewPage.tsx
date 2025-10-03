@@ -263,7 +263,7 @@ const InterviewPage: React.FC<InterviewPageProps> = ({
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-ai-cream">
       <div className="max-w-4xl mx-auto px-4 py-6">
         {/* Header */}
         <div className="mb-6">
@@ -271,18 +271,18 @@ const InterviewPage: React.FC<InterviewPageProps> = ({
             <div className="flex items-center space-x-3">
               <button
                 onClick={onBack}
-                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                className="p-2 hover:bg-ai-teal/10 rounded-lg transition-colors"
               >
-                <ArrowLeft className="h-5 w-5 text-gray-600" />
+                <ArrowLeft className="h-5 w-5 text-ai-teal" />
               </button>
               <div>
-                <h1 className="text-xl font-bold text-gray-900">Live Interview</h1>
+                <h1 className="text-xl font-bold text-ai-teal">Live Interview</h1>
                 <p className="text-sm text-gray-600">Session: {session.sessionId}</p>
               </div>
             </div>
             
             <div className="flex items-center space-x-4">
-              <div className="flex items-center space-x-2 text-gray-600">
+              <div className="flex items-center space-x-2 text-ai-teal">
                 <Clock className="h-4 w-4" />
                 <span className="text-sm font-medium">{formatDuration(interviewDuration)}</span>
               </div>
@@ -290,7 +290,7 @@ const InterviewPage: React.FC<InterviewPageProps> = ({
               <button
                 onClick={endInterview}
                 disabled={isLoading}
-                className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:bg-gray-400 transition-colors"
+                className="px-4 py-2 bg-ai-coral text-white rounded-lg hover:bg-ai-coral-dark disabled:bg-gray-400 transition-colors shadow-sm"
               >
                 {isLoading ? <LoadingSpinner size="sm" /> : 'End Interview'}
               </button>
@@ -300,15 +300,15 @@ const InterviewPage: React.FC<InterviewPageProps> = ({
 
         {/* Error Display */}
         {error && (
-          <div className="mb-4 bg-red-50 border border-red-200 rounded-lg p-4">
+          <div className="mb-4 bg-ai-coral/10 border border-ai-coral/20 rounded-lg p-4">
             <div className="flex items-center space-x-2">
-              <div className="text-red-600">⚠️</div>
+              <div className="text-ai-coral">⚠️</div>
               <div>
-                <h3 className="text-red-800 font-medium">Error</h3>
-                <p className="text-red-700 text-sm mt-1">{error}</p>
+                <h3 className="text-ai-coral-dark font-medium">Error</h3>
+                <p className="text-ai-coral text-sm mt-1">{error}</p>
                 <button
                   onClick={() => setError(null)}
-                  className="mt-2 px-3 py-1 bg-red-600 text-white text-sm rounded hover:bg-red-700 transition-colors"
+                  className="mt-2 px-3 py-1 bg-ai-coral text-white text-sm rounded hover:bg-ai-coral-dark transition-colors"
                 >
                   Dismiss
                 </button>
@@ -319,13 +319,13 @@ const InterviewPage: React.FC<InterviewPageProps> = ({
 
 
         {/* Voice Interface */}
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+        <div className="bg-white rounded-lg shadow-sm border border-ai-teal/20 p-6">
           <div className="flex items-center space-x-2 mb-4">
-            <Mic className="h-5 w-5 text-blue-600" />
-            <h3 className="font-semibold text-gray-900">Voice Interview</h3>
+            <Mic className="h-5 w-5 text-ai-teal" />
+            <h3 className="font-semibold text-ai-teal">Voice Interview</h3>
           </div>
           
-          <div className="text-center text-gray-600 mb-6">
+          <div className="text-center text-ai-teal mb-6">
             <p className="text-sm">🎤 <strong>Voice Interview Active</strong></p>
             <p className="text-xs text-gray-500 mt-1">Click to record your response</p>
           </div>

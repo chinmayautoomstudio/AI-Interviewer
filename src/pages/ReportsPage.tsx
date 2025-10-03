@@ -82,8 +82,8 @@ const ReportsPage: React.FC = () => {
   if (error) {
     return (
       <div className="p-6">
-        <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-          <p className="text-red-800">Error: {error}</p>
+        <div className="bg-ai-coral/10 border border-ai-coral/20 rounded-lg p-4">
+          <p className="text-ai-coral-dark">Error: {error}</p>
           <Button 
             variant="primary" 
             onClick={loadReportsData}
@@ -132,7 +132,7 @@ const ReportsPage: React.FC = () => {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Reports & Analytics</h1>
+          <h1 className="text-2xl font-bold text-ai-teal">Reports & Analytics</h1>
           <p className="text-gray-600">Comprehensive insights into your interview process</p>
         </div>
         <Button variant="primary">

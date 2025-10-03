@@ -858,17 +858,17 @@ const VoiceRecorder: React.FC<VoiceRecorderProps> = ({
     <div className={`voice-recorder ${className}`}>
       <div className="flex flex-col items-center space-y-4">
         {/* Audio Level Indicator */}
-        <div className="w-16 h-16 rounded-full border-4 border-gray-300 flex items-center justify-center relative">
+        <div className="w-16 h-16 rounded-full border-4 border-ai-teal/30 flex items-center justify-center relative">
           <div 
-            className="absolute inset-0 rounded-full bg-green-500 opacity-0 transition-opacity duration-150"
+            className="absolute inset-0 rounded-full bg-ai-orange opacity-0 transition-opacity duration-150"
             style={{ 
               opacity: audioLevel > 0.1 ? Math.min(audioLevel * 2, 1) : 0 
             }}
           />
           {isSTTRunning ? (
-            <MicOff className="w-8 h-8 text-red-500" />
+            <MicOff className="w-8 h-8 text-ai-coral" />
           ) : (
-            <Mic className="w-8 h-8 text-gray-600" />
+            <Mic className="w-8 h-8 text-ai-teal" />
           )}
         </div>
 
@@ -899,7 +899,7 @@ const VoiceRecorder: React.FC<VoiceRecorderProps> = ({
 
         {/* Status Text */}
         {interimText && (
-          <div className="text-sm text-gray-600 text-center max-w-md">
+          <div className="text-sm text-ai-teal text-center max-w-md">
             <span className="font-medium">Interim:</span> {interimText}
           </div>
         )}
@@ -912,7 +912,7 @@ const VoiceRecorder: React.FC<VoiceRecorderProps> = ({
         {/* Debug Toggle */}
         <button
           onClick={() => setDebugMode(!debugMode)}
-          className="mt-4 px-3 py-1 text-xs bg-gray-200 hover:bg-gray-300 rounded transition-colors"
+          className="mt-4 px-3 py-1 text-xs bg-ai-teal/10 hover:bg-ai-teal/20 text-ai-teal rounded transition-colors"
         >
           {debugMode ? 'Hide Debug' : 'Show Debug'}
         </button>
