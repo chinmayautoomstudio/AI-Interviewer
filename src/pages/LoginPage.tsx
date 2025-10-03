@@ -65,7 +65,7 @@ const LoginPage: React.FC = () => {
                     alt="AI Interviewer" 
                     className="h-8 w-auto"
                   />
-                  <span className="text-ai-teal font-bold text-lg">AI INTERVIEWER</span>
+                  <span className="text-white font-bold text-lg">AI INTERVIEWER</span>
                 </div>
                 
                 {/* Welcome Content */}
@@ -73,15 +73,10 @@ const LoginPage: React.FC = () => {
                   <h1 className="text-4xl lg:text-5xl font-bold text-white mb-6 leading-tight">
                     Hello, welcome!
                   </h1>
-                  <p className="text-white/90 text-lg leading-relaxed mb-8">
+                  <p className="text-white/90 text-lg leading-relaxed">
                     Transform your hiring process with AI-powered interviews. 
                     Get intelligent insights and make better hiring decisions.
                   </p>
-                  
-                  {/* View More Button */}
-                  <button className="w-fit bg-white/20 border border-ai-teal/30 text-ai-teal px-6 py-3 rounded-xl font-medium hover:bg-white/30 transition-all duration-200">
-                    View more
-                  </button>
                 </div>
                 
                 {/* Social Links */}
