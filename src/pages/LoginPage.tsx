@@ -40,21 +40,13 @@ const LoginPage: React.FC = () => {
 
   return (
     <div className="min-h-screen relative overflow-hidden">
-      {/* Abstract Background */}
-      <div className="absolute inset-0 bg-gradient-to-br from-ai-teal via-purple-600 to-ai-coral"></div>
-      
-      {/* Abstract Shapes */}
-      <div className="absolute inset-0">
-        {/* Large organic shapes */}
-        <div className="absolute top-0 right-0 w-96 h-96 bg-ai-teal-dark/30 rounded-full blur-3xl transform translate-x-32 -translate-y-32"></div>
-        <div className="absolute bottom-0 left-0 w-80 h-80 bg-ai-coral/20 rounded-full blur-3xl transform -translate-x-20 translate-y-20"></div>
-        <div className="absolute top-1/2 left-1/4 w-64 h-64 bg-purple-500/25 rounded-full blur-2xl"></div>
-        
-        {/* Dot pattern overlay */}
-        <div className="absolute inset-0 opacity-30" style={{
-          backgroundImage: `radial-gradient(circle at 1px 1px, rgba(255,255,255,0.3) 1px, transparent 0)`,
-          backgroundSize: '20px 20px'
-        }}></div>
+      {/* Abstract Background Image */}
+      <div 
+        className="absolute inset-0 bg-cover bg-center bg-no-repeat"
+        style={{ backgroundImage: `url('/background-login.jpeg')` }}
+      >
+        {/* Subtle overlay for better text readability */}
+        <div className="absolute inset-0 bg-black/20"></div>
       </div>
 
       {/* Main Content Container */}
