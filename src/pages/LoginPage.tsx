@@ -161,7 +161,7 @@ const LoginPage: React.FC = () => {
                     <button
                       type="submit"
                       disabled={loading}
-                      className="flex-1 bg-ai-teal text-white font-medium py-3 px-4 rounded-xl hover:bg-ai-teal-dark transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
+                      className="flex-1 bg-gradient-to-r from-ai-teal to-ai-teal-light text-white font-medium py-3 px-4 rounded-xl hover:from-ai-teal-dark hover:to-ai-teal transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
                     >
                       {loading ? (
                         <div className="flex items-center justify-center">
