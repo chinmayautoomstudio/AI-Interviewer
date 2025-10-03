@@ -24,7 +24,7 @@ import {
 } from 'lucide-react';
 import { JobDescription, CreateJobDescriptionRequest, Candidate } from '../types';
 import { getJobDescriptions, deleteJobDescription, createJobDescription, updateJobDescription } from '../services/jobDescriptions';
-import { getJobApplicationStats, createJobApplication } from '../services/candidateJobApplications';
+import { getJobApplicationStats, createJobApplication, getApplicationsForJob } from '../services/candidateJobApplications';
 import { getCandidates } from '../services/candidates';
 import JDParserService from '../services/jdParser';
 
@@ -404,11 +404,21 @@ const JobDescriptionsPage: React.FC = () => {
     setSelectedJobForAssignment(job);
     setIsAssignModalOpen(true);
     
-    // Load candidates
+    // Load candidates and filter out already assigned ones
     try {
       setCandidatesLoading(true);
-      const candidatesData = await getCandidates();
-      setCandidates(candidatesData);
+      const [candidatesData, applicationsData] = await Promise.all([
+        getCandidates(),
+        getApplicationsForJob(job.id)
+      ]);
+      
+      // Filter out candidates who are already assigned to this job
+      const assignedCandidateIds = applicationsData.map(app => app.candidateId);
+      const availableCandidates = candidatesData.filter(candidate => 
+        !assignedCandidateIds.includes(candidate.id)
+      );
+      
+      setCandidates(availableCandidates);
     } catch (err) {
       console.error('Error loading candidates:', err);
       setError('Failed to load candidates');
@@ -1250,7 +1260,10 @@ const JobDescriptionsPage: React.FC = () => {
           ) : candidates.length === 0 ? (
             <div className="text-center py-8">
               <Users className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-              <p className="text-gray-600">No candidates available to assign.</p>
+              <p className="text-gray-600">No available candidates to assign.</p>
+              <p className="text-sm text-gray-500 mt-2">
+                All candidates may already be assigned to this job.
+              </p>
             </div>
           ) : (
             <div className="space-y-3 max-h-96 overflow-y-auto">
