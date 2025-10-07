@@ -5,7 +5,6 @@ import { AuthProvider, useAuth } from './contexts/AuthContext';
 import LoginPage from './pages/LoginPage';
 import DashboardPage from './pages/DashboardPage';
 import CandidatesPage from './pages/CandidatesPage';
-import InterviewPage from './pages/InterviewPage';
 import ReportsPage from './pages/ReportsPage';
 import JobDescriptionsPage from './pages/JobDescriptionsPage';
 import JobViewPage from './pages/JobViewPage';

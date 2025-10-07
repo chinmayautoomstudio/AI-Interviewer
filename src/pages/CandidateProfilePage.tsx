@@ -16,13 +16,14 @@ import {
   MapPin,
   Clock,
   User,
-  Download,
   Edit,
   Trash2,
   Eye
 } from 'lucide-react';
 import { Candidate } from '../types';
 import { getCandidateById, deleteCandidate } from '../services/candidates';
+import ResumeViewerModal from '../components/modals/ResumeViewerModal';
+import ResumeThumbnail from '../components/ui/ResumeThumbnail';
 
 const CandidateProfilePage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -32,6 +33,9 @@ const CandidateProfilePage: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  
+  // Resume viewer state
+  const [isResumeViewerOpen, setIsResumeViewerOpen] = useState(false);
 
   useEffect(() => {
     if (id) {
@@ -95,11 +99,14 @@ const CandidateProfilePage: React.FC = () => {
     }
   };
 
-  const handleDownloadResume = () => {
-    if (candidate?.resumeUrl || candidate?.resume_url) {
-      window.open(candidate.resumeUrl || candidate.resume_url, '_blank');
-    }
+  const handleResumeClick = () => {
+    setIsResumeViewerOpen(true);
   };
+
+  const closeResumeViewer = () => {
+    setIsResumeViewerOpen(false);
+  };
+
 
   const handleEditCandidate = () => {
     navigate(`/candidates/edit/${id}`);
@@ -225,6 +232,7 @@ const CandidateProfilePage: React.FC = () => {
               </div>
             </div>
           </Card>
+
 
           {/* Resume Summary */}
           {candidate.summary && (
@@ -413,21 +421,23 @@ const CandidateProfilePage: React.FC = () => {
 
         {/* Sidebar */}
         <div className="space-y-6">
-          {/* Resume Download */}
+          {/* Resume Thumbnail */}
           {(candidate.resumeUrl || candidate.resume_url) && (
             <Card>
               <div className="flex items-center space-x-2 mb-4">
                 <FileText className="h-5 w-5 text-gray-600" />
                 <h3 className="font-semibold text-gray-900">Resume</h3>
               </div>
-              <Button 
-                variant="primary" 
-                onClick={handleDownloadResume}
-                className="w-full"
-              >
-                <Download className="h-4 w-4 mr-2" />
-                Download Resume
-              </Button>
+              <div className="flex justify-center">
+                <ResumeThumbnail
+                  candidate={candidate}
+                  onClick={handleResumeClick}
+                  size="lg"
+                />
+              </div>
+              <p className="text-xs text-gray-500 text-center mt-2">
+                Click to view full resume
+              </p>
             </Card>
           )}
 
@@ -502,6 +512,13 @@ const CandidateProfilePage: React.FC = () => {
         cancelText="Cancel"
         variant="danger"
         isLoading={isDeleting}
+      />
+
+      {/* Resume Viewer Modal */}
+      <ResumeViewerModal
+        isOpen={isResumeViewerOpen}
+        onClose={closeResumeViewer}
+        candidate={candidate}
       />
     </div>
   );

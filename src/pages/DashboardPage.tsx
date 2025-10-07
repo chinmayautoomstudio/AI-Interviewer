@@ -78,10 +78,6 @@ const DashboardPage: React.FC = () => {
           .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
           .slice(0, 5);
         
-        // Debug: Log the structure of the first report to understand the data format
-        if (recent.length > 0) {
-          console.log('📊 Sample interview report data structure:', recent[0]);
-        }
         
         setRecentInterviews(recent);
       }

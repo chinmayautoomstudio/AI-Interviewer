@@ -2,11 +2,9 @@ import React, { useState, useEffect } from 'react';
 import Modal from '../ui/Modal';
 import Input from '../ui/Input';
 import Button from '../ui/Button';
-import LoadingSpinner from '../ui/LoadingSpinner';
 import { Upload, UserPlus, X, FileText, CheckCircle, AlertCircle } from 'lucide-react';
 import { N8nService } from '../../services/n8n';
 import { getJobDescriptions } from '../../services/jobDescriptions';
-import { createJobApplication } from '../../services/candidateJobApplications';
 import { AddCandidateRequest, ResumeUploadResponse, JobDescription } from '../../types';
 
 interface AdvancedAddCandidateModalProps {
@@ -105,22 +103,7 @@ const AdvancedAddCandidateModal: React.FC<AdvancedAddCandidateModalProps> = ({
           return;
         }
 
-        // Create candidate with extracted data
-        const candidateData: AddCandidateRequest = {
-          name: uploadResponse.extractedData?.name || '',
-          email: uploadResponse.extractedData?.email || '',
-          phone: uploadResponse.extractedData?.phone || '',
-          skills: uploadResponse.extractedData?.skills || [],
-          experience: typeof uploadResponse.extractedData?.experience === 'string' 
-            ? uploadResponse.extractedData.experience 
-            : '',
-          education: typeof uploadResponse.extractedData?.education === 'string' 
-            ? uploadResponse.extractedData.education 
-            : '',
-          primaryJobDescriptionId: selectedJobDescriptionId || '',
-        };
-
-        // Here you would call the actual candidate creation service
+        // Here you would call the actual candidate creation service with extracted data
         // For now, we'll simulate success
         await new Promise(resolve => setTimeout(resolve, 1000));
         

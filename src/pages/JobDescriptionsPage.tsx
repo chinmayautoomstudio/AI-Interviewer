@@ -5,7 +5,6 @@ import Button from '../components/ui/Button';
 import Modal from '../components/ui/Modal';
 import ConfirmDialog from '../components/ui/ConfirmDialog';
 import LoadingSpinner from '../components/ui/LoadingSpinner';
-import AddJobDescriptionModal, { JobDescriptionFormData } from '../components/modals/AddJobDescriptionModal';
 import { 
   Briefcase, 
   Plus, 
@@ -34,13 +33,9 @@ const JobDescriptionsPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const isEditMode = id && window.location.pathname.includes('/edit/');
   const [isAddModalOpen, setIsAddModalOpen] = useState(!!isEditMode);
-  const [isNewJobModalOpen, setIsNewJobModalOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [submitError, setSubmitError] = useState<string | null>(null);
-  const [submitSuccess, setSubmitSuccess] = useState<string | null>(null);
   
   // Job descriptions data state
   const [jobDescriptions, setJobDescriptions] = useState<JobDescription[]>([]);
@@ -478,38 +473,6 @@ const JobDescriptionsPage: React.FC = () => {
     }
   };
 
-  const handleNewJobSubmit = async (data: JobDescriptionFormData) => {
-    setIsSubmitting(true);
-    setSubmitError(null);
-    setSubmitSuccess(null);
-
-    try {
-      // Here you would typically call a service to create the job description
-      // For now, we'll simulate the API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      setSubmitSuccess('Job description created successfully!');
-      
-      // Refresh job descriptions data
-      loadJobDescriptions();
-      
-      // Close modal after a short delay
-      setTimeout(() => {
-        setIsNewJobModalOpen(false);
-        setSubmitSuccess(null);
-      }, 1500);
-    } catch (error) {
-      setSubmitError('Failed to create job description. Please try again.');
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  const closeNewJobModal = () => {
-    setIsNewJobModalOpen(false);
-    setSubmitError(null);
-    setSubmitSuccess(null);
-  };
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -573,16 +536,10 @@ const JobDescriptionsPage: React.FC = () => {
             <RefreshCw className={`h-4 w-4 mr-2 ${jobDescriptionsLoading ? 'animate-spin' : ''}`} />
             Refresh
           </Button>
-          <div className="flex space-x-2">
-            <Button variant="outline" onClick={() => setIsNewJobModalOpen(true)}>
-              <Plus className="h-4 w-4 mr-2" />
-              Quick Add
-            </Button>
-            <Button variant="primary" onClick={() => setIsAddModalOpen(true)}>
-              <Plus className="h-4 w-4 mr-2" />
-              Add Job Description
-            </Button>
-          </div>
+          <Button variant="primary" onClick={() => setIsAddModalOpen(true)}>
+            <Plus className="h-4 w-4 mr-2" />
+            Add Job Description
+          </Button>
         </div>
       </div>
 
@@ -634,11 +591,7 @@ const JobDescriptionsPage: React.FC = () => {
                 {searchQuery ? 'No job descriptions match your search.' : 'Get started by creating a new job description.'}
               </p>
               {!searchQuery && (
-                <div className="flex space-x-2 mt-4">
-                  <Button variant="outline" onClick={() => setIsNewJobModalOpen(true)}>
-                    <Plus className="h-4 w-4 mr-2" />
-                    Quick Add
-                  </Button>
+                <div className="mt-4">
                   <Button variant="primary" onClick={() => setIsAddModalOpen(true)}>
                     <Plus className="h-4 w-4 mr-2" />
                     Add First Job Description
@@ -1266,15 +1219,6 @@ const JobDescriptionsPage: React.FC = () => {
         </div>
       </Modal>
 
-      {/* New Add Job Description Modal */}
-      <AddJobDescriptionModal
-        isOpen={isNewJobModalOpen}
-        onClose={closeNewJobModal}
-        onSubmit={handleNewJobSubmit}
-        isSubmitting={isSubmitting}
-        submitError={submitError}
-        submitSuccess={submitSuccess}
-      />
 
       {/* Delete Confirmation Dialog */}
       <ConfirmDialog

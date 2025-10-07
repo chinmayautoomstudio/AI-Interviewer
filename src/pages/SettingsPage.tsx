@@ -2,7 +2,7 @@ import React from 'react';
 import Card from '../components/ui/Card';
 import Button from '../components/ui/Button';
 import Input from '../components/ui/Input';
-import { Settings, User, Bell, Shield, Database, Mic, HelpCircle } from 'lucide-react';
+import { User, Bell, Shield, Database, Mic, HelpCircle } from 'lucide-react';
 
 const SettingsPage: React.FC = () => {
   return (
@@ -68,22 +68,22 @@ const SettingsPage: React.FC = () => {
                 <Input
                   label="Full Name"
                   value="Chinmay Nayak"
-                  onChange={() => {}}
+                  onChange={() => {}} // TODO: Implement form handling
                 />
                 <Input
                   label="Email"
                   value="chinmay.nayak@autoomstudio.com"
-                  onChange={() => {}}
+                  onChange={() => {}} // TODO: Implement form handling
                 />
                 <Input
                   label="Role"
                   value="Administrator"
-                  onChange={() => {}}
+                  onChange={() => {}} // TODO: Implement form handling
                 />
                 <Input
                   label="Department"
                   value="Engineering"
-                  onChange={() => {}}
+                  onChange={() => {}} // TODO: Implement form handling
                 />
               </div>
 
