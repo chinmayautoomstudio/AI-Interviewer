@@ -1,200 +1,361 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { 
   Users, 
   Calendar, 
   CheckCircle, 
   Clock, 
   TrendingUp,
-  Mic,
-  Headphones
+  FileText
 } from 'lucide-react';
 import Card from '../components/ui/Card';
 import Button from '../components/ui/Button';
+import LoadingSpinner from '../components/ui/LoadingSpinner';
+import AdvancedAddJobDescriptionModal from '../components/modals/AdvancedAddJobDescriptionModal';
+import AdvancedAddCandidateModal from '../components/modals/AdvancedAddCandidateModal';
+import { InterviewSystemService } from '../services/interviewSystem';
+import { getCandidates } from '../services/candidates';
+import { getJobDescriptions } from '../services/jobDescriptions';
 
 const DashboardPage: React.FC = () => {
+  const navigate = useNavigate();
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [dashboardData, setDashboardData] = useState({
+    totalCandidates: 0,
+    totalJobDescriptions: 0,
+    totalInterviews: 0,
+    completedInterviews: 0,
+    pendingReviews: 0,
+    interviewsToday: 0,
+    averageScore: 0
+  });
+  const [recentInterviews, setRecentInterviews] = useState<any[]>([]);
+
+  // Modal states
+  const [isAddJobModalOpen, setIsAddJobModalOpen] = useState(false);
+  const [isAddCandidateModalOpen, setIsAddCandidateModalOpen] = useState(false);
+
+  useEffect(() => {
+    loadDashboardData();
+  }, []);
+
+  const loadDashboardData = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+
+      // Load all data in parallel
+      const [candidatesResult, jobDescriptionsResult, interviewStatsResult, reportsResult] = await Promise.all([
+        getCandidates(),
+        getJobDescriptions(),
+        InterviewSystemService.getInterviewStatistics(),
+        InterviewSystemService.getAllInterviewReports()
+      ]);
+
+      // Calculate interviews today (interviews created today)
+      const today = new Date().toISOString().split('T')[0];
+      const { supabase } = await import('../services/supabase');
+      const { count: todayInterviews } = await supabase
+        .from('interview_sessions')
+        .select('*', { count: 'exact', head: true })
+        .gte('created_at', `${today}T00:00:00.000Z`)
+        .lte('created_at', `${today}T23:59:59.999Z`);
+
+      setDashboardData({
+        totalCandidates: candidatesResult.length,
+        totalJobDescriptions: jobDescriptionsResult.length,
+        totalInterviews: interviewStatsResult.data?.totalInterviews || 0,
+        completedInterviews: interviewStatsResult.data?.completedInterviews || 0,
+        pendingReviews: interviewStatsResult.data?.pendingReviews || 0,
+        interviewsToday: todayInterviews || 0,
+        averageScore: interviewStatsResult.data?.averageScore || 0
+      });
+
+      // Get recent interview reports (last 5)
+      if (reportsResult.data && reportsResult.data.length > 0) {
+        const recent = reportsResult.data
+          .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+          .slice(0, 5);
+        
+        // Debug: Log the structure of the first report to understand the data format
+        if (recent.length > 0) {
+          console.log('📊 Sample interview report data structure:', recent[0]);
+        }
+        
+        setRecentInterviews(recent);
+      }
+
+    } catch (err) {
+      console.error('Error loading dashboard data:', err);
+      setError('Failed to load dashboard data');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const stats = [
     {
       title: 'Total Candidates',
-      value: '1,234',
+      value: dashboardData.totalCandidates.toLocaleString(),
       change: '+12%',
       changeType: 'positive' as const,
       icon: Users,
     },
     {
       title: 'Interviews Today',
-      value: '24',
+      value: dashboardData.interviewsToday.toString(),
       change: '+8%',
       changeType: 'positive' as const,
       icon: Calendar,
     },
     {
       title: 'Completed Interviews',
-      value: '156',
+      value: dashboardData.completedInterviews.toString(),
       change: '+23%',
       changeType: 'positive' as const,
       icon: CheckCircle,
     },
     {
       title: 'Pending Reviews',
-      value: '12',
+      value: dashboardData.pendingReviews.toString(),
       change: '-5%',
       changeType: 'negative' as const,
       icon: Clock,
     },
   ];
 
-  const recentInterviews = [
-    {
-      id: 1,
-      candidate: 'John Smith',
-      position: 'Senior Developer',
-      status: 'completed',
-      score: 85,
-      time: '2 hours ago',
-    },
-    {
-      id: 2,
-      candidate: 'Sarah Johnson',
-      position: 'Product Manager',
-      status: 'in_progress',
-      score: null,
-      time: '30 minutes ago',
-    },
-    {
-      id: 3,
-      candidate: 'Mike Chen',
-      position: 'UX Designer',
-      status: 'scheduled',
-      score: null,
-      time: 'Tomorrow 2:00 PM',
-    },
-  ];
+  const handleQuickAction = (action: string) => {
+    switch (action) {
+      case 'add-job':
+        setIsAddJobModalOpen(true);
+        break;
+      case 'add-candidate':
+        setIsAddCandidateModalOpen(true);
+        break;
+      case 'schedule-interview':
+        navigate('/admin-interview-test');
+        break;
+      case 'review-results':
+        navigate('/reports');
+        break;
+      default:
+        break;
+    }
+  };
+
+  const handleModalSuccess = () => {
+    // Refresh dashboard data when modals complete successfully
+    loadDashboardData();
+  };
+
+
+  const formatTimeAgo = (dateString: string) => {
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffInMinutes = Math.floor((now.getTime() - date.getTime()) / (1000 * 60));
+    
+    if (diffInMinutes < 60) {
+      return `${diffInMinutes} minutes ago`;
+    } else if (diffInMinutes < 1440) {
+      const hours = Math.floor(diffInMinutes / 60);
+      return `${hours} hour${hours > 1 ? 's' : ''} ago`;
+    } else {
+      const days = Math.floor(diffInMinutes / 1440);
+      return `${days} day${days > 1 ? 's' : ''} ago`;
+    }
+  };
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'suitable': return 'bg-green-100 text-green-800';
+      case 'not_suitable': return 'bg-red-100 text-red-800';
+      case 'conditional': return 'bg-yellow-100 text-yellow-800';
+      case 'needs_review': return 'bg-blue-100 text-blue-800';
+      default: return 'bg-gray-100 text-gray-800';
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="p-6 flex items-center justify-center min-h-96">
+        <LoadingSpinner size="lg" />
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="p-6">
+        <div className="bg-ai-coral/10 border border-ai-coral/20 rounded-lg p-4">
+          <p className="text-ai-coral-dark">Error: {error}</p>
+          <Button 
+            variant="primary" 
+            onClick={loadDashboardData}
+            className="mt-2"
+          >
+            Retry
+          </Button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="p-6 space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-ai-teal">Dashboard</h1>
-          <p className="text-gray-600">Welcome back! Here's what's happening with your interviews.</p>
-        </div>
-        <Button variant="primary">
-          <Mic className="h-4 w-4 mr-2" />
-          Start New Interview
-        </Button>
+      <div>
+        <h1 className="text-2xl font-bold text-ai-teal">Dashboard</h1>
+        <p className="text-gray-600">Welcome back! Here's what's happening with your interviews.</p>
       </div>
 
-      {/* Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        {stats.map((stat) => {
-          const Icon = stat.icon;
-          return (
-            <Card key={stat.title} className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-gray-600">{stat.title}</p>
-                  <p className="text-2xl font-bold text-gray-900">{stat.value}</p>
-                  <p className={`text-sm ${
-                    stat.changeType === 'positive' ? 'text-ai-teal' : 'text-ai-coral'
-                  }`}>
-                    <TrendingUp className="inline h-3 w-3 mr-1" />
-                    {stat.change} from last month
-                  </p>
-                </div>
-                <div className="p-3 bg-ai-teal/10 rounded-lg">
-                  <Icon className="h-6 w-6 text-ai-teal" />
-                </div>
-              </div>
-            </Card>
-          );
-        })}
-      </div>
-
-      {/* Main Content Grid */}
+      {/* Middle Section - Split Layout */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Recent Interviews */}
-        <div className="lg:col-span-2">
-          <Card title="Recent Interviews">
-            <div className="space-y-4">
-              {recentInterviews.map((interview) => (
-                <div key={interview.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
-                  <div className="flex items-center space-x-4">
-                    <div className="w-10 h-10 bg-gray-300 rounded-full flex items-center justify-center">
-                      <span className="text-sm font-medium text-gray-600">
-                        {interview.candidate.split(' ').map(n => n[0]).join('')}
-                      </span>
-                    </div>
-                    <div>
-                      <p className="font-medium text-gray-900">{interview.candidate}</p>
-                      <p className="text-sm text-gray-600">{interview.position}</p>
-                    </div>
-                  </div>
-                  <div className="text-right">
-                    <div className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                      interview.status === 'completed' 
-                        ? 'bg-green-100 text-green-800'
-                        : interview.status === 'in_progress'
-                        ? 'bg-blue-100 text-blue-800'
-                        : 'bg-yellow-100 text-yellow-800'
-                    }`}>
-                      {interview.status.replace('_', ' ')}
-                    </div>
-                    {interview.score && (
-                      <p className="text-sm text-gray-600 mt-1">Score: {interview.score}%</p>
-                    )}
-                    <p className="text-xs text-gray-500 mt-1">{interview.time}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </Card>
-        </div>
-
-        {/* Quick Actions */}
-        <div className="space-y-6">
+        {/* Left Side - Quick Actions */}
+        <div className="lg:col-span-1">
           <Card title="Quick Actions">
             <div className="space-y-3">
-              <Button variant="outline" className="w-full justify-start">
+              <Button 
+                variant="outline" 
+                className="w-full justify-start"
+                onClick={() => handleQuickAction('add-job')}
+              >
+                <FileText className="h-4 w-4 mr-2" />
+                Add New Job Description
+              </Button>
+              <Button 
+                variant="outline" 
+                className="w-full justify-start"
+                onClick={() => handleQuickAction('add-candidate')}
+              >
                 <Users className="h-4 w-4 mr-2" />
                 Add New Candidate
               </Button>
-              <Button variant="outline" className="w-full justify-start">
+              <Button 
+                variant="outline" 
+                className="w-full justify-start"
+                onClick={() => handleQuickAction('schedule-interview')}
+              >
                 <Calendar className="h-4 w-4 mr-2" />
                 Schedule Interview
               </Button>
-              <Button variant="outline" className="w-full justify-start">
+              <Button 
+                variant="outline" 
+                className="w-full justify-start"
+                onClick={() => handleQuickAction('review-results')}
+              >
                 <CheckCircle className="h-4 w-4 mr-2" />
                 Review Results
               </Button>
             </div>
           </Card>
+        </div>
 
-          {/* Audio Status */}
-          <Card title="Audio Status">
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-2">
-                  <Mic className="h-4 w-4 text-gray-600" />
-                  <span className="text-sm text-gray-600">Microphone</span>
-                </div>
-                <span className="text-sm text-green-600 font-medium">Connected</span>
-              </div>
-              <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-2">
-                  <Headphones className="h-4 w-4 text-gray-600" />
-                  <span className="text-sm text-gray-600">Speaker</span>
-                </div>
-                <span className="text-sm text-green-600 font-medium">Connected</span>
-              </div>
-              <div className="pt-2 border-t border-gray-200">
-                <Button variant="ghost" size="sm" className="w-full">
-                  Test Audio
-                </Button>
-              </div>
-            </div>
-          </Card>
+        {/* Right Side - Stats Grid */}
+        <div className="lg:col-span-2">
+          <div className="grid grid-cols-2 gap-4">
+            {stats.map((stat) => {
+              const Icon = stat.icon;
+              return (
+                <Card key={stat.title} className="p-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-xs font-medium text-gray-600">{stat.title}</p>
+                      <p className="text-xl font-bold text-gray-900">{stat.value}</p>
+                      <p className={`text-xs ${
+                        stat.changeType === 'positive' ? 'text-ai-teal' : 'text-ai-coral'
+                      }`}>
+                        <TrendingUp className="inline h-3 w-3 mr-1" />
+                        {stat.change}
+                      </p>
+                    </div>
+                    <div className="p-2 bg-ai-teal/10 rounded-lg">
+                      <Icon className="h-5 w-5 text-ai-teal" />
+                    </div>
+                  </div>
+                </Card>
+              );
+            })}
+          </div>
         </div>
       </div>
+
+      {/* Recent Interview Reports - Full width */}
+      <div>
+        <Card title="Recent Interview Reports">
+          <div className="space-y-4">
+            {recentInterviews.length > 0 ? (
+              recentInterviews.map((report) => (
+                <div key={report.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
+                  <div className="flex items-center space-x-4">
+                    <div className="w-12 h-12 bg-gradient-to-br from-ai-teal to-ai-teal-light rounded-full flex items-center justify-center">
+                      <span className="text-sm font-medium text-white">
+                        {report.interview_sessions?.candidates?.name ? 
+                          report.interview_sessions.candidates.name.split(' ').map((n: string) => n[0]).join('') : 
+                          'N/A'
+                        }
+                      </span>
+                    </div>
+                    <div className="flex-1">
+                      <p className="font-medium text-gray-900">{report.interview_sessions?.candidates?.name || 'Unknown Candidate'}</p>
+                      <p className="text-sm text-gray-600">{report.interview_sessions?.job_descriptions?.title || 'Unknown Position'}</p>
+                      <div className="flex items-center space-x-4 mt-1">
+                        <span className="text-xs text-gray-500">
+                          <FileText className="h-3 w-3 inline mr-1" />
+                          Report #{report.id.slice(-8)}
+                        </span>
+                        <span className="text-xs text-gray-500">
+                          {formatTimeAgo(report.created_at)}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="flex items-center space-x-3">
+                    <div className="text-right">
+                      <div className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(report.suitability_status)}`}>
+                        {report.suitability_status ? report.suitability_status.replace('_', ' ') : 'Unknown'}
+                      </div>
+                      {report.overall_score && (
+                        <p className="text-sm font-semibold text-gray-900 mt-1">
+                          {report.overall_score}/10
+                        </p>
+                      )}
+                    </div>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => navigate(`/reports/${report.id}`)}
+                      className="text-ai-teal border-ai-teal hover:bg-ai-teal hover:text-white"
+                    >
+                      View Report
+                    </Button>
+                  </div>
+                </div>
+              ))
+            ) : (
+              <div className="text-center py-8 text-gray-500">
+                <FileText className="h-12 w-12 mx-auto mb-4 text-gray-300" />
+                <p>No interview reports found</p>
+                <p className="text-sm">Complete some interviews to see reports here</p>
+              </div>
+            )}
+          </div>
+        </Card>
+      </div>
+
+      {/* Advanced Add Job Description Modal */}
+      <AdvancedAddJobDescriptionModal
+        isOpen={isAddJobModalOpen}
+        onClose={() => setIsAddJobModalOpen(false)}
+        onSuccess={handleModalSuccess}
+      />
+
+      {/* Advanced Add Candidate Modal */}
+      <AdvancedAddCandidateModal
+        isOpen={isAddCandidateModalOpen}
+        onClose={() => setIsAddCandidateModalOpen(false)}
+        onSuccess={handleModalSuccess}
+      />
     </div>
   );
 };

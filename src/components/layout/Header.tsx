@@ -43,6 +43,9 @@ const Header: React.FC<HeaderProps> = ({ user, onLogout }) => {
           <button onClick={() => navigate('/reports')} className="text-gray-600 hover:text-ai-teal transition-colors font-medium">
             Reports
           </button>
+          <button onClick={() => navigate('/help')} className="text-gray-600 hover:text-ai-teal transition-colors font-medium">
+            Help
+          </button>
         </nav>
 
         {/* User Actions */}

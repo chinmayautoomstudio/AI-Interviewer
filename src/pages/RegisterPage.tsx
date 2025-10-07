@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Eye, EyeOff, User, Lock, Building } from 'lucide-react';
+import { RegistrationService } from '../services/registration';
 
 const RegisterPage: React.FC = () => {
   const [formData, setFormData] = useState({
@@ -15,6 +16,7 @@ const RegisterPage: React.FC = () => {
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
@@ -71,6 +73,7 @@ const RegisterPage: React.FC = () => {
     e.preventDefault();
     setLoading(true);
     setError(null);
+    setSuccess(null);
 
     if (!validateForm()) {
       setLoading(false);
@@ -78,22 +81,29 @@ const RegisterPage: React.FC = () => {
     }
 
     try {
-      // Here you would typically call your registration API
-      // For now, we'll simulate a successful registration
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      
-      // After successful registration, you might want to:
-      // 1. Show a success message
-      // 2. Redirect to login page
-      // 3. Or automatically log them in
-      
-      alert('Registration successful! Please contact your administrator to activate your account.');
-      
-      // Redirect to login page
-      window.location.href = '/login';
-      
-    } catch (error) {
-      setError('Registration failed. Please try again.');
+      // Call the registration service
+      const result = await RegistrationService.registerUser({
+        firstName: formData.firstName,
+        lastName: formData.lastName,
+        email: formData.email,
+        password: formData.password,
+        company: formData.company,
+        phone: formData.phone,
+        location: formData.location
+      });
+
+      if (result.success) {
+        setSuccess('Registration successful! Please log in with your new credentials.');
+        setTimeout(() => {
+          // Redirect to login page after successful registration
+          window.location.href = '/login';
+        }, 2000);
+      } else {
+        setError(result.error || 'Registration failed. Please try again.');
+      }
+
+    } catch (err: any) {
+      setError(err.message || 'Registration failed. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -163,6 +173,12 @@ const RegisterPage: React.FC = () => {
                   {error && (
                     <div className="bg-ai-coral/10 border border-ai-coral/20 rounded-lg p-4">
                       <p className="text-ai-coral-dark text-sm">{error}</p>
+                    </div>
+                  )}
+
+                  {success && (
+                    <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                      <p className="text-green-800 text-sm">{success}</p>
                     </div>
                   )}
                   
@@ -307,12 +323,16 @@ const RegisterPage: React.FC = () => {
                     />
                     <label className="ml-2 text-sm text-gray-600">
                       I agree to the{' '}
-                      <a href="/terms" className="text-ai-teal hover:text-ai-teal-dark">
+                      <a href="/terms-and-conditions" className="text-ai-teal hover:text-ai-teal-dark">
                         Terms and Conditions
-                      </a>{' '}
-                      and{' '}
+                      </a>
+                      ,{' '}
                       <a href="/privacy-policy" className="text-ai-teal hover:text-ai-teal-dark">
                         Privacy Policy
+                      </a>
+                      , and{' '}
+                      <a href="/disclaimer" className="text-ai-teal hover:text-ai-teal-dark">
+                        Disclaimer
                       </a>
                     </label>
                   </div>

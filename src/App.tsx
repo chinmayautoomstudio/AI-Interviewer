@@ -18,6 +18,9 @@ import AIAgentsPage from './pages/AIAgentsPage';
 import AdminInterviewTestPage from './pages/AdminInterviewTestPage';
 import InterviewReportPage from './pages/InterviewReportPage';
 import PrivacyPolicyPage from './pages/PrivacyPolicyPage';
+import TermsAndConditionsPage from './pages/TermsAndConditionsPage';
+import DisclaimerPage from './pages/DisclaimerPage';
+import HelpSupportPage from './pages/HelpSupportPage';
 import RegisterPage from './pages/RegisterPage';
 import Header from './components/layout/Header';
 import Sidebar from './components/layout/Sidebar';
@@ -43,6 +46,9 @@ const AppContent: React.FC = () => {
         <Route path="/candidate/dashboard" element={<CandidateDashboardPage />} />
         <Route path="/candidate/interview/:sessionToken" element={<CandidateInterviewPage />} />
         <Route path="/privacy-policy" element={<PrivacyPolicyPage />} />
+        <Route path="/terms-and-conditions" element={<TermsAndConditionsPage />} />
+        <Route path="/disclaimer" element={<DisclaimerPage />} />
+        <Route path="/help" element={<HelpSupportPage />} />
         <Route path="*" element={<Navigate to="/login" replace />} />
       </Routes>
     );
@@ -69,6 +75,9 @@ const AppContent: React.FC = () => {
             <Route path="/admin-interview-test" element={<AdminInterviewTestPage />} />
             <Route path="/settings" element={<SettingsPage />} />
             <Route path="/privacy-policy" element={<PrivacyPolicyPage />} />
+            <Route path="/terms-and-conditions" element={<TermsAndConditionsPage />} />
+            <Route path="/disclaimer" element={<DisclaimerPage />} />
+            <Route path="/help" element={<HelpSupportPage />} />
         <Route path="/" element={<Navigate to="/dashboard" replace />} />
         <Route path="*" element={<Navigate to="/dashboard" replace />} />
           </Routes>

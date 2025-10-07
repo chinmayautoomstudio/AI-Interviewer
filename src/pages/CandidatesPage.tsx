@@ -6,6 +6,7 @@ import Modal from '../components/ui/Modal';
 import ConfirmDialog from '../components/ui/ConfirmDialog';
 import Input from '../components/ui/Input';
 import LoadingSpinner from '../components/ui/LoadingSpinner';
+import AddCandidateModal, { CandidateFormData } from '../components/modals/AddCandidateModal';
 import { Users, Plus, Filter, Search, Mail, Phone, Upload, FileText, UserPlus, X, CheckCircle, AlertCircle, Eye, RefreshCw, Trash2 } from 'lucide-react';
 import { N8nService } from '../services/n8n';
 import { getCandidates, deleteCandidate } from '../services/candidates';
@@ -18,10 +19,14 @@ const CandidatesPage: React.FC = () => {
   const [searchParams] = useSearchParams();
   const assignToJobId = searchParams.get('assignToJob');
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [isNewCandidateModalOpen, setIsNewCandidateModalOpen] = useState(false);
   const [addMethod, setAddMethod] = useState<'upload' | 'manual' | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
+  const [submitSuccess, setSubmitSuccess] = useState<string | null>(null);
   
   // Candidates data state
   const [candidates, setCandidates] = useState<Candidate[]>([]);
@@ -101,6 +106,43 @@ const CandidatesPage: React.FC = () => {
     setAddMethod(null);
     setError(null);
     setSuccess(null);
+  };
+
+  const handleQuickAddCandidate = () => {
+    setIsNewCandidateModalOpen(true);
+  };
+
+  const handleNewCandidateSubmit = async (data: CandidateFormData) => {
+    setIsSubmitting(true);
+    setSubmitError(null);
+    setSubmitSuccess(null);
+
+    try {
+      // Here you would typically call a service to create the candidate
+      // For now, we'll simulate the API call
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      setSubmitSuccess('Candidate added successfully!');
+      
+      // Refresh candidates data
+      loadCandidates();
+      
+      // Close modal after a short delay
+      setTimeout(() => {
+        setIsNewCandidateModalOpen(false);
+        setSubmitSuccess(null);
+      }, 1500);
+    } catch (error) {
+      setSubmitError('Failed to add candidate. Please try again.');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const closeNewCandidateModal = () => {
+    setIsNewCandidateModalOpen(false);
+    setSubmitError(null);
+    setSubmitSuccess(null);
   };
 
   const handleMethodSelect = (method: 'upload' | 'manual') => {
@@ -275,10 +317,16 @@ const CandidatesPage: React.FC = () => {
             <RefreshCw className={`h-4 w-4 mr-2 ${candidatesLoading ? 'animate-spin' : ''}`} />
             Refresh
           </Button>
-          <Button variant="primary" onClick={handleAddCandidate}>
-            <Plus className="h-4 w-4 mr-2" />
-            Add Candidate
-          </Button>
+          <div className="flex space-x-2">
+            <Button variant="outline" onClick={handleQuickAddCandidate}>
+              <UserPlus className="h-4 w-4 mr-2" />
+              Quick Add
+            </Button>
+            <Button variant="primary" onClick={handleAddCandidate}>
+              <Plus className="h-4 w-4 mr-2" />
+              Add Candidate
+            </Button>
+          </div>
         </div>
       </div>
 
@@ -655,6 +703,16 @@ const CandidatesPage: React.FC = () => {
           )}
         </div>
       </Modal>
+
+      {/* New Add Candidate Modal */}
+      <AddCandidateModal
+        isOpen={isNewCandidateModalOpen}
+        onClose={closeNewCandidateModal}
+        onSubmit={handleNewCandidateSubmit}
+        isSubmitting={isSubmitting}
+        submitError={submitError}
+        submitSuccess={submitSuccess}
+      />
 
       {/* Delete Confirmation Dialog */}
       <ConfirmDialog

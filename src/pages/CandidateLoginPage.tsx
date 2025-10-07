@@ -237,6 +237,27 @@ const CandidateLoginPage: React.FC = () => {
                       </a>
                     </p>
                   </div>
+
+                  {/* Legal Links */}
+                  <div className="pt-4 border-t border-gray-200">
+                    <div className="flex justify-center space-x-4 text-xs text-gray-500">
+                      <a href="/terms-and-conditions" className="hover:text-ai-teal transition-colors">
+                        Terms & Conditions
+                      </a>
+                      <span>•</span>
+                      <a href="/privacy-policy" className="hover:text-ai-teal transition-colors">
+                        Privacy Policy
+                      </a>
+                      <span>•</span>
+                      <a href="/disclaimer" className="hover:text-ai-teal transition-colors">
+                        Disclaimer
+                      </a>
+                      <span>•</span>
+                      <a href="/help" className="hover:text-ai-teal transition-colors">
+                        Help
+                      </a>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>

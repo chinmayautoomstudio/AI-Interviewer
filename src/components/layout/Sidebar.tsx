@@ -21,12 +21,12 @@ const Sidebar: React.FC<SidebarProps> = () => {
   const currentPath = location.pathname;
   const navigation = [
     { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
-    { name: 'Interviews', href: '/interviews', icon: Calendar },
+    { name: 'Open Role - JD', href: '/job-descriptions', icon: FileText },
     { name: 'Candidates', href: '/candidates', icon: Users },
-    { name: 'Reports', href: '/reports', icon: BarChart3 },
-    { name: 'Job Descriptions', href: '/job-descriptions', icon: FileText },
+    { name: 'Interviewer', href: '/interviews', icon: Calendar },
     { name: 'AI Agents', href: '/ai-agents', icon: Bot },
-    { name: 'Interview Test', href: '/admin-interview-test', icon: TestTube },
+    { name: 'Reports', href: '/reports', icon: BarChart3 },
+    { name: 'Test', href: '/admin-interview-test', icon: TestTube },
     { name: 'Settings', href: '/settings', icon: Settings },
   ];
 

@@ -2,7 +2,7 @@ import React from 'react';
 import Card from '../components/ui/Card';
 import Button from '../components/ui/Button';
 import Input from '../components/ui/Input';
-import { Settings, User, Bell, Shield, Database, Mic } from 'lucide-react';
+import { Settings, User, Bell, Shield, Database, Mic, HelpCircle } from 'lucide-react';
 
 const SettingsPage: React.FC = () => {
   return (
@@ -26,6 +26,7 @@ const SettingsPage: React.FC = () => {
                 { name: 'Security', icon: Shield },
                 { name: 'Audio Settings', icon: Mic },
                 { name: 'Database', icon: Database },
+                { name: 'Help & Support', icon: HelpCircle },
               ].map((item) => {
                 const Icon = item.icon;
                 return (
@@ -192,6 +193,86 @@ const SettingsPage: React.FC = () => {
                 <Button variant="primary">
                   Save System Settings
                 </Button>
+              </div>
+            </div>
+          </Card>
+
+          {/* Help & Support */}
+          <Card title="Help & Support">
+            <div className="space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-4">
+                  <h4 className="font-medium text-gray-900">Contact Support</h4>
+                  <div className="space-y-3">
+                    <div className="flex items-center space-x-3">
+                      <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+                        <span className="text-blue-600 text-sm font-medium">📧</span>
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium text-gray-900">Email Support</p>
+                        <p className="text-xs text-gray-600">support@ai-interviewer.com</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center space-x-3">
+                      <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
+                        <span className="text-green-600 text-sm font-medium">💬</span>
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium text-gray-900">Live Chat</p>
+                        <p className="text-xs text-gray-600">Available 9 AM - 6 PM EST</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center space-x-3">
+                      <div className="w-8 h-8 bg-purple-100 rounded-full flex items-center justify-center">
+                        <span className="text-purple-600 text-sm font-medium">📞</span>
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium text-gray-900">Phone Support</p>
+                        <p className="text-xs text-gray-600">+1 (555) 123-4567</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="space-y-4">
+                  <h4 className="font-medium text-gray-900">Quick Links</h4>
+                  <div className="space-y-2">
+                    <Button variant="outline" size="sm" className="w-full justify-start">
+                      <HelpCircle className="h-4 w-4 mr-2" />
+                      User Guide
+                    </Button>
+                    <Button variant="outline" size="sm" className="w-full justify-start">
+                      <HelpCircle className="h-4 w-4 mr-2" />
+                      FAQ
+                    </Button>
+                    <Button variant="outline" size="sm" className="w-full justify-start">
+                      <HelpCircle className="h-4 w-4 mr-2" />
+                      Video Tutorials
+                    </Button>
+                    <Button variant="outline" size="sm" className="w-full justify-start">
+                      <HelpCircle className="h-4 w-4 mr-2" />
+                      System Status
+                    </Button>
+                  </div>
+                </div>
+              </div>
+
+              <div className="border-t pt-6">
+                <h4 className="font-medium text-gray-900 mb-4">Frequently Asked Questions</h4>
+                <div className="space-y-3">
+                  <div className="border border-gray-200 rounded-lg p-4">
+                    <h5 className="font-medium text-gray-900 text-sm">How do I schedule an interview?</h5>
+                    <p className="text-xs text-gray-600 mt-1">Go to the Interviewer section and click "Schedule New Interview" to set up a new interview session.</p>
+                  </div>
+                  <div className="border border-gray-200 rounded-lg p-4">
+                    <h5 className="font-medium text-gray-900 text-sm">How do I add a new candidate?</h5>
+                    <p className="text-xs text-gray-600 mt-1">Navigate to the Candidates section and use the "Add Candidate" button to create a new candidate profile.</p>
+                  </div>
+                  <div className="border border-gray-200 rounded-lg p-4">
+                    <h5 className="font-medium text-gray-900 text-sm">Where can I view interview reports?</h5>
+                    <p className="text-xs text-gray-600 mt-1">All interview reports are available in the Reports section, where you can view detailed analysis and scores.</p>
+                  </div>
+                </div>
               </div>
             </div>
           </Card>
