@@ -2,6 +2,7 @@ import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 // import './utils/testConnection'; // Auto-test Supabase connection - disabled to prevent errors
 import { AuthProvider, useAuth } from './contexts/AuthContext';
+import { LayoutProvider } from './contexts/LayoutContext';
 import LoginPage from './pages/LoginPage';
 import DashboardPage from './pages/DashboardPage';
 import CandidatesPage from './pages/CandidatesPage';
@@ -60,7 +61,7 @@ const AppContent: React.FC = () => {
       <Header user={user} onLogout={signOut} />
       <div className="flex">
         <Sidebar />
-        <main className="flex-1">
+        <main className="flex-1 lg:ml-0">
           <Routes>
             <Route path="/dashboard" element={<DashboardPage />} />
             <Route path="/interviews" element={<InterviewManagementPage />} />
@@ -91,9 +92,11 @@ const AppContent: React.FC = () => {
 function App() {
   return (
     <AuthProvider>
-      <Router>
-        <AppContent />
-      </Router>
+      <LayoutProvider>
+        <Router>
+          <AppContent />
+        </Router>
+      </LayoutProvider>
     </AuthProvider>
   );
 }
