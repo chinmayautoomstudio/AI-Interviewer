@@ -4,6 +4,10 @@ export interface JDParserRequest {
   jobDescription: string;
 }
 
+export interface JDFileUploadRequest {
+  file: File;
+}
+
 export interface JDParserResponse {
   success: boolean;
   data?: {
@@ -11,10 +15,11 @@ export interface JDParserResponse {
     job_title: string;
     department: string;
     location: string;
-    experience_level: 'entry-level' | 'mid-level' | 'senior-level';
+    experience_level: 'entry' | 'mid' | 'senior' | 'lead' | 'executive';
     employment_type: 'full-time' | 'part-time' | 'contract' | 'internship';
     work_mode: 'remote' | 'on-site' | 'hybrid';
     salary_range: string | null;
+    company_name?: string;
     key_responsibilities: string[];
     required_skills: string[];
     preferred_skills: string[];
@@ -33,7 +38,97 @@ export interface JDParserResponse {
 }
 
 class JDParserService {
-  private static webhookUrl = process.env.REACT_APP_N8N_JD_PARSER_WEBHOOK || 'https://home.ausomemgr.com/webhook-test/parse-job-description';
+  private static webhookUrl = process.env.REACT_APP_N8N_JD_PARSER_WEBHOOK || 'https://home.ausomemgr.com/webhook/parse-job-description';
+  private static fileUploadWebhookUrl = process.env.REACT_APP_N8N_JD_FILE_UPLOAD_WEBHOOK || 'https://home.ausomemgr.com/webhook/parse-job-description-file';
+
+
+
+  /**
+   * Upload and parse job description file using AI agent
+   */
+  static async uploadAndParseJobDescriptionFile(file: File): Promise<JDParserResponse> {
+    try {
+      if (!file) {
+        return {
+          success: false,
+          error: 'File is required'
+        };
+      }
+
+      // Validate file type
+      if (file.type !== 'application/pdf') {
+        return {
+          success: false,
+          error: 'Only PDF files are supported'
+        };
+      }
+
+      // Validate file size (max 10MB)
+      if (file.size > 10 * 1024 * 1024) {
+        return {
+          success: false,
+          error: 'File size must be less than 10MB'
+        };
+      }
+
+      console.log('📁 JD File Upload webhook URL:', this.fileUploadWebhookUrl);
+      console.log('📁 Uploading file:', file.name, 'Size:', file.size, 'bytes');
+
+      // Create FormData for file upload
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('filename', file.name);
+
+      const response = await fetch(this.fileUploadWebhookUrl, {
+        method: 'POST',
+        body: formData,
+      });
+
+      console.log('📁 JD File Upload response status:', response.status);
+      console.log('📁 JD File Upload response headers:', Object.fromEntries(response.headers.entries()));
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const responseData = await response.json();
+      console.log('📁 JD File Upload raw response:', responseData);
+
+      // Handle the response format
+      let parsedData;
+      if (Array.isArray(responseData)) {
+        // If response is an array, take the first element
+        parsedData = responseData[0];
+      } else if (responseData && typeof responseData === 'object') {
+        // If response is a direct object
+        parsedData = responseData;
+      } else {
+        throw new Error('Invalid response format from JD file upload webhook');
+      }
+
+      if (parsedData && parsedData.job_title) {
+        return {
+          success: true,
+          data: parsedData,
+          timestamp: new Date().toISOString()
+        };
+      } else {
+        return {
+          success: false,
+          error: 'Failed to extract job description data from file',
+          timestamp: new Date().toISOString()
+        };
+      }
+
+    } catch (error) {
+      console.error('📁 JD File Upload error:', error);
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Failed to upload and parse job description file',
+        timestamp: new Date().toISOString()
+      };
+    }
+  }
 
   /**
    * Parse job description using AI agent

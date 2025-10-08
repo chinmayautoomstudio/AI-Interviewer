@@ -6,9 +6,9 @@ import Modal from '../components/ui/Modal';
 import ConfirmDialog from '../components/ui/ConfirmDialog';
 import Input from '../components/ui/Input';
 import LoadingSpinner from '../components/ui/LoadingSpinner';
-import { Users, Plus, Filter, Search, Mail, Phone, Upload, FileText, UserPlus, X, CheckCircle, AlertCircle, Eye, RefreshCw, Trash2 } from 'lucide-react';
+import { Users, Plus, Filter, Search, Mail, Phone, Upload, FileText, UserPlus, X, CheckCircle, AlertCircle, Eye, RefreshCw, Trash2, Calendar, Star, Briefcase, User, ChevronDown, ChevronRight } from 'lucide-react';
 import { N8nService } from '../services/n8n';
-import { getCandidates, deleteCandidate } from '../services/candidates';
+import { CandidatesService, deleteCandidate } from '../services/candidates';
 import { getJobDescriptions } from '../services/jobDescriptions';
 import { createJobApplication } from '../services/candidateJobApplications';
 import { AddCandidateRequest, ResumeUploadResponse, Candidate, JobDescription } from '../types';
@@ -31,12 +31,14 @@ const CandidatesPage: React.FC = () => {
   
   // Job descriptions state
   const [jobDescriptions, setJobDescriptions] = useState<JobDescription[]>([]);
-  const [jobDescriptionsLoading, setJobDescriptionsLoading] = useState(false);
   
   // Delete confirmation state
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [candidateToDelete, setCandidateToDelete] = useState<Candidate | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
+  
+  // Table view state
+  const [expandedCandidate, setExpandedCandidate] = useState<string | null>(null);
   
   
   // Form states
@@ -63,8 +65,12 @@ const CandidatesPage: React.FC = () => {
     try {
       setCandidatesLoading(true);
       setCandidatesError(null);
-      const candidatesData = await getCandidates();
-      setCandidates(candidatesData);
+      const response = await CandidatesService.getCandidatesWithStats();
+      if (response.error) {
+        setCandidatesError(response.error);
+      } else {
+        setCandidates(response.data);
+      }
     } catch (err) {
       console.error('Error loading candidates:', err);
       setCandidatesError(err instanceof Error ? err.message : 'Failed to load candidates');
@@ -75,14 +81,30 @@ const CandidatesPage: React.FC = () => {
 
   const loadJobDescriptions = async () => {
     try {
-      setJobDescriptionsLoading(true);
       const jobDescriptionsData = await getJobDescriptions();
       setJobDescriptions(jobDescriptionsData);
     } catch (err) {
       console.error('Error loading job descriptions:', err);
-    } finally {
-      setJobDescriptionsLoading(false);
     }
+  };
+
+  // Helper functions for table display
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'applied': return 'bg-blue-100 text-blue-800';
+      case 'under_review': return 'bg-yellow-100 text-yellow-800';
+      case 'shortlisted': return 'bg-green-100 text-green-800';
+      case 'interview_scheduled': return 'bg-purple-100 text-purple-800';
+      case 'interviewed': return 'bg-indigo-100 text-indigo-800';
+      case 'selected': return 'bg-green-100 text-green-800';
+      case 'rejected': return 'bg-red-100 text-red-800';
+      default: return 'bg-gray-100 text-gray-800';
+    }
+  };
+
+
+  const toggleCandidateExpansion = (candidateId: string) => {
+    setExpandedCandidate(expandedCandidate === candidateId ? null : candidateId);
   };
 
   // Filter candidates based on search query
@@ -350,65 +372,178 @@ const CandidatesPage: React.FC = () => {
           </div>
         </Card>
       ) : (
-        <div className="space-y-4">
-          {filteredCandidates.map((candidate) => (
-            <Card key={candidate.id}>
-              <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-4">
-                  <div className="w-12 h-12 bg-gray-300 rounded-full flex items-center justify-center">
-                    <Users className="h-6 w-6 text-gray-600" />
+        <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+          {/* Table Header */}
+          <div className="bg-gray-50 px-6 py-3 border-b border-gray-200">
+            <div className="grid grid-cols-12 gap-4 text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <div className="col-span-3">Candidate</div>
+              <div className="col-span-2">Applied Jobs</div>
+              <div className="col-span-1">Status</div>
+              <div className="col-span-2">Interview Status</div>
+              <div className="col-span-2">Final Rating</div>
+              <div className="col-span-2">Actions</div>
+            </div>
+          </div>
+
+          {/* Table Body */}
+          <div className="divide-y divide-gray-200">
+            {filteredCandidates.map((candidate) => (
+              <div key={candidate.id}>
+                {/* Main Row */}
+                <div 
+                  className="grid grid-cols-12 gap-4 px-6 py-4 hover:bg-gray-50 cursor-pointer transition-colors"
+                  onClick={() => toggleCandidateExpansion(candidate.id)}
+                >
+                  {/* Candidate Info */}
+                  <div className="col-span-3 flex items-center space-x-3">
+                    <div className="w-10 h-10 bg-ai-teal/10 rounded-full flex items-center justify-center">
+                      <User className="h-5 w-5 text-ai-teal" />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-sm font-medium text-gray-900 truncate">
+                        {candidate.name || 'Unknown Name'}
+                      </p>
+                      <p className="text-sm text-gray-500 truncate">
+                        {candidate.email || 'No email'}
+                      </p>
+                    </div>
+                    {expandedCandidate === candidate.id ? (
+                      <ChevronDown className="h-4 w-4 text-gray-400" />
+                    ) : (
+                      <ChevronRight className="h-4 w-4 text-gray-400" />
+                    )}
                   </div>
-                  <div className="flex-1">
-                    <h3 className="font-medium text-gray-900">{candidate.name || 'Unknown Name'}</h3>
-                    <div className="flex items-center space-x-4 text-sm text-gray-600">
-                      <div className="flex items-center space-x-1">
-                        <Mail className="h-3 w-3" />
-                        <span>{candidate.email || 'No email'}</span>
-                      </div>
-                      {(candidate.phone || candidate.contact_number) && (
-                        <div className="flex items-center space-x-1">
-                          <Phone className="h-3 w-3" />
-                          <span>{candidate.phone || candidate.contact_number}</span>
-                        </div>
-                      )}
+
+                  {/* Applied Jobs */}
+                  <div className="col-span-2 flex items-center">
+                    <div className="flex items-center space-x-1">
+                      <Briefcase className="h-4 w-4 text-gray-400" />
+                      <span className="text-sm text-gray-900">
+                        {candidate.applicationCount || 0} jobs
+                      </span>
                     </div>
                   </div>
-                  
+
+                  {/* Status */}
+                  <div className="col-span-1 flex items-center">
+                    <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
+                      candidate.latestApplicationStatus ? getStatusColor(candidate.latestApplicationStatus) : 'bg-gray-100 text-gray-800'
+                    }`}>
+                      {candidate.latestApplicationStatus ? candidate.latestApplicationStatus.replace('_', ' ') : 'Applied'}
+                    </span>
+                  </div>
+
+                  {/* Interview Status */}
+                  <div className="col-span-2 flex items-center">
+                    <div className="flex items-center space-x-1">
+                      <Calendar className="h-4 w-4 text-gray-400" />
+                      <span className={`text-sm font-medium ${
+                        candidate.hasInterviews 
+                          ? 'text-green-600' 
+                          : 'text-gray-500'
+                      }`}>
+                        {candidate.hasInterviews ? 'Interview Taken' : 'Not Taken'}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Final Rating */}
+                  <div className="col-span-2 flex items-center">
+                    <div className="flex items-center space-x-1">
+                      <Star className="h-4 w-4 text-gray-400" />
+                      <span className="text-sm text-gray-900">
+                        {candidate.averageScore !== null && candidate.averageScore !== undefined 
+                          ? `${candidate.averageScore.toFixed(1)}/10` 
+                          : 'N/A'
+                        }
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Actions */}
+                  <div className="col-span-2 flex items-center space-x-2">
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={(e: React.MouseEvent) => {
+                        e.stopPropagation();
+                        (candidate.candidate_id || candidate.id) && navigate(`/candidates/${candidate.candidate_id || candidate.id}`);
+                      }}
+                      disabled={!candidate.candidate_id && !candidate.id}
+                    >
+                      <Eye className="h-3 w-3" />
+                    </Button>
+                    <Button 
+                      variant="ghost" 
+                      size="sm"
+                      onClick={(e: React.MouseEvent) => {
+                        e.stopPropagation();
+                        handleDeleteClick(candidate);
+                      }}
+                      className="text-red-600 hover:text-red-700"
+                    >
+                      <Trash2 className="h-3 w-3" />
+                    </Button>
+                  </div>
                 </div>
-                <div className="flex items-center space-x-3">
-                  <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                    candidate.status === 'active' ? 'bg-green-100 text-green-800' :
-                    candidate.status === 'inactive' ? 'bg-gray-100 text-gray-800' :
-                    candidate.status === 'archived' ? 'bg-red-100 text-red-800' :
-                    candidate.status === 'completed' ? 'bg-green-100 text-green-800' :
-                    'bg-gray-100 text-gray-800'
-                  }`}>
-                    {(candidate.status || 'unknown').replace('_', ' ').toUpperCase()}
-                  </span>
-                  <Button 
-                    variant="outline" 
-                    size="sm"
-                    onClick={() => (candidate.candidate_id || candidate.id) && navigate(`/candidates/${candidate.candidate_id || candidate.id}`)}
-                    disabled={!candidate.candidate_id && !candidate.id}
-                  >
-                    <Eye className="h-4 w-4 mr-1" />
-                    View Profile
-                  </Button>
-                  <Button variant="ghost" size="sm">
-                    Schedule Interview
-                  </Button>
-                  <Button 
-                    variant="ghost" 
-                    size="sm"
-                    onClick={() => handleDeleteClick(candidate)}
-                    className="text-red-600 hover:text-red-700"
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
-                </div>
+
+                {/* Expanded Row */}
+                {expandedCandidate === candidate.id && (
+                  <div className="px-6 py-4 bg-gray-50 border-t border-gray-200">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                      {/* Applied Jobs Details */}
+                      <div>
+                        <h4 className="text-sm font-medium text-gray-900 mb-2">Applied Jobs</h4>
+                        <div className="space-y-1">
+                          {candidate.appliedJobs && candidate.appliedJobs.length > 0 ? (
+                            candidate.appliedJobs.map((job, index) => (
+                              <div key={index} className="text-sm text-gray-600 bg-white px-2 py-1 rounded border">
+                                {job}
+                              </div>
+                            ))
+                          ) : (
+                            <p className="text-sm text-gray-500">No jobs applied</p>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Interview Information */}
+                      <div>
+                        <h4 className="text-sm font-medium text-gray-900 mb-2">Interview Details</h4>
+                        <div className="space-y-1">
+                          <div className="flex items-center space-x-2 text-sm text-gray-600">
+                            <Calendar className="h-3 w-3" />
+                            <span>Interviews: {candidate.interviewCount || 0}</span>
+                          </div>
+                          <div className="flex items-center space-x-2 text-sm text-gray-600">
+                            <Star className="h-3 w-3" />
+                            <span>Final Rating: {candidate.averageScore !== null && candidate.averageScore !== undefined ? `${candidate.averageScore.toFixed(1)}/10` : 'N/A'}</span>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Contact Information */}
+                      <div>
+                        <h4 className="text-sm font-medium text-gray-900 mb-2">Contact Information</h4>
+                        <div className="space-y-1">
+                          <div className="flex items-center space-x-2 text-sm text-gray-600">
+                            <Mail className="h-3 w-3" />
+                            <span>{candidate.email || 'No email'}</span>
+                          </div>
+                          {(candidate.phone || candidate.contact_number) && (
+                            <div className="flex items-center space-x-2 text-sm text-gray-600">
+                              <Phone className="h-3 w-3" />
+                              <span>{candidate.phone || candidate.contact_number}</span>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
-            </Card>
-          ))}
+            ))}
+          </div>
         </div>
       )}
 

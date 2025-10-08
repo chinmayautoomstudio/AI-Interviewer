@@ -70,6 +70,14 @@ export interface Candidate {
   created_at: string;
   updatedAt: string;
   updated_at: string;
+  // Statistics fields (added for enhanced table view)
+  appliedJobs?: string[]; // Job titles this candidate has applied for
+  interviewCount?: number; // Number of interviews taken
+  averageScore?: number | null; // Average interview score
+  lastInterviewDate?: string | null; // Date of last interview
+  applicationCount?: number; // Total number of applications
+  hasInterviews?: boolean; // Whether candidate has taken any interviews
+  latestApplicationStatus?: string | null; // Latest application status
 }
 
 export interface CreateJobDescriptionRequest {
@@ -77,7 +85,7 @@ export interface CreateJobDescriptionRequest {
   department: string;
   location: string;
   employmentType: 'full-time' | 'part-time' | 'contract' | 'internship';
-  experienceLevel: 'entry-level' | 'mid-level' | 'senior-level';
+  experienceLevel: 'entry' | 'mid' | 'senior' | 'lead' | 'executive';
   salaryRange?: {
     min: number;
     max: number;
@@ -104,7 +112,7 @@ export interface JobDescription {
   department: string;
   location: string;
   employmentType: 'full-time' | 'part-time' | 'contract' | 'internship';
-  experienceLevel: 'entry-level' | 'mid-level' | 'senior-level';
+  experienceLevel: 'entry' | 'mid' | 'senior' | 'lead' | 'executive';
   salaryRange?: {
     min: number;
     max: number;
@@ -307,7 +315,7 @@ export interface ButtonProps {
   disabled?: boolean;
   loading?: boolean;
   children: React.ReactNode;
-  onClick?: () => void;
+  onClick?: (e: React.MouseEvent<HTMLButtonElement>) => void;
   type?: 'button' | 'submit' | 'reset';
   className?: string;
 }

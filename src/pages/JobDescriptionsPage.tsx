@@ -20,19 +20,24 @@ import {
   Calendar,
   RefreshCw,
   AlertCircle,
-  UserPlus
+  UserPlus,
+  Upload
 } from 'lucide-react';
 import { JobDescription, CreateJobDescriptionRequest, Candidate } from '../types';
 import { getJobDescriptions, deleteJobDescription, createJobDescription, updateJobDescription } from '../services/jobDescriptions';
 import { getJobApplicationStats, createJobApplication, getApplicationsForJob } from '../services/candidateJobApplications';
 import { getCandidates } from '../services/candidates';
 import JDParserService from '../services/jdParser';
+import AdvancedAddJobDescriptionModal from '../components/modals/AdvancedAddJobDescriptionModal';
 
 const JobDescriptionsPage: React.FC = () => {
   const navigate = useNavigate();
   const { id } = useParams<{ id: string }>();
   const isEditMode = id && window.location.pathname.includes('/edit/');
   const [isAddModalOpen, setIsAddModalOpen] = useState(!!isEditMode);
+  const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [selectedJobForEdit, setSelectedJobForEdit] = useState<JobDescription | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
@@ -64,7 +69,7 @@ const JobDescriptionsPage: React.FC = () => {
     department: '',
     location: '',
     employmentType: 'full-time',
-    experienceLevel: 'mid-level',
+    experienceLevel: 'mid',
     salaryRange: undefined,
     description: '',
     requirements: [],
@@ -200,7 +205,7 @@ const JobDescriptionsPage: React.FC = () => {
         department: data.department || '',
         location: data.location || '',
         employmentType: data.employment_type || 'full-time',
-        experienceLevel: data.experience_level || 'mid-level',
+        experienceLevel: data.experience_level || 'mid',
         description: data.job_summary || '',
         requirements: data.required_skills || [],
         responsibilities: data.key_responsibilities || [],
@@ -305,14 +310,17 @@ const JobDescriptionsPage: React.FC = () => {
       
       if (job) {
         // Map old experience level format to new format
-        const mapExperienceLevel = (level: string): 'entry-level' | 'mid-level' | 'senior-level' => {
+        const mapExperienceLevel = (level: string): 'entry' | 'mid' | 'senior' | 'lead' | 'executive' => {
           switch (level) {
-            case 'entry': return 'entry-level';
-            case 'mid': return 'mid-level';
-            case 'senior': return 'senior-level';
-            case 'lead': return 'senior-level';
-            case 'executive': return 'senior-level';
-            default: return level as 'entry-level' | 'mid-level' | 'senior-level';
+            case 'entry-level': return 'entry';
+            case 'mid-level': return 'mid';
+            case 'senior-level': return 'senior';
+            case 'entry': return 'entry';
+            case 'mid': return 'mid';
+            case 'senior': return 'senior';
+            case 'lead': return 'lead';
+            case 'executive': return 'executive';
+            default: return level as 'entry' | 'mid' | 'senior' | 'lead' | 'executive';
           }
         };
 
@@ -363,7 +371,7 @@ const JobDescriptionsPage: React.FC = () => {
       department: '',
       location: '',
       employmentType: 'full-time',
-      experienceLevel: 'mid-level',
+      experienceLevel: 'mid',
       salaryRange: undefined,
       description: '',
       requirements: [],
@@ -456,6 +464,16 @@ const JobDescriptionsPage: React.FC = () => {
     setAssigningCandidate(null);
   };
 
+  const handleEditClick = (job: JobDescription) => {
+    setSelectedJobForEdit(job);
+    setIsEditModalOpen(true);
+  };
+
+  const closeEditModal = () => {
+    setIsEditModalOpen(false);
+    setSelectedJobForEdit(null);
+  };
+
   const handleDeleteConfirm = async () => {
     if (!jobToDelete?.id) return;
 
@@ -536,6 +554,10 @@ const JobDescriptionsPage: React.FC = () => {
             <RefreshCw className={`h-4 w-4 mr-2 ${jobDescriptionsLoading ? 'animate-spin' : ''}`} />
             Refresh
           </Button>
+          <Button variant="outline" onClick={() => setIsUploadModalOpen(true)}>
+            <Upload className="h-4 w-4 mr-2" />
+            Upload JD
+          </Button>
           <Button variant="primary" onClick={() => setIsAddModalOpen(true)}>
             <Plus className="h-4 w-4 mr-2" />
             Add Job Description
@@ -591,7 +613,11 @@ const JobDescriptionsPage: React.FC = () => {
                 {searchQuery ? 'No job descriptions match your search.' : 'Get started by creating a new job description.'}
               </p>
               {!searchQuery && (
-                <div className="mt-4">
+                <div className="mt-4 flex items-center space-x-3">
+                  <Button variant="outline" onClick={() => setIsUploadModalOpen(true)}>
+                    <Upload className="h-4 w-4 mr-2" />
+                    Upload JD File
+                  </Button>
                   <Button variant="primary" onClick={() => setIsAddModalOpen(true)}>
                     <Plus className="h-4 w-4 mr-2" />
                     Add First Job Description
@@ -676,7 +702,7 @@ const JobDescriptionsPage: React.FC = () => {
                     <Button 
                       variant="outline" 
                       size="sm"
-                      onClick={() => navigate(`/job-descriptions/edit/${job.id}`)}
+                      onClick={() => handleEditClick(job)}
                     >
                       <Edit className="h-4 w-4" />
                     </Button>
@@ -1314,6 +1340,27 @@ const JobDescriptionsPage: React.FC = () => {
           </div>
         </div>
       </Modal>
+
+      {/* Upload JD Modal */}
+      <AdvancedAddJobDescriptionModal
+        isOpen={isUploadModalOpen}
+        onClose={() => setIsUploadModalOpen(false)}
+        onSuccess={() => {
+          setIsUploadModalOpen(false);
+          loadJobDescriptions();
+        }}
+      />
+
+      {/* Edit JD Modal */}
+      <AdvancedAddJobDescriptionModal
+        isOpen={isEditModalOpen}
+        onClose={closeEditModal}
+        onSuccess={() => {
+          closeEditModal();
+          loadJobDescriptions();
+        }}
+        editJobDescription={selectedJobForEdit || undefined}
+      />
     </div>
   );
 };

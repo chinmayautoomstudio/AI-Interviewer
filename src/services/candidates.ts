@@ -58,6 +58,119 @@ export class CandidatesService {
     }
   }
 
+  // Get enhanced candidate data with statistics
+  static async getCandidatesWithStats(): Promise<CandidatesResponse> {
+    try {
+      const { data, error } = await supabase
+        .from('candidates')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        console.error('Error fetching candidates:', error);
+        return { data: [], error: error.message };
+      }
+
+      if (!data) return { data: [] };
+
+      // Transform candidates and add statistics
+      const candidates = await Promise.all(
+        data.map(async (candidateData) => {
+          const candidate: Candidate = {
+            id: candidateData.id,
+            candidate_id: candidateData.candidate_id,
+            name: candidateData.name,
+            email: candidateData.email,
+            phone: candidateData.phone,
+            contact_number: candidateData.contact_number,
+            resume: candidateData.resume_url,
+            resumeUrl: candidateData.resume_url,
+            resume_url: candidateData.resume_url,
+            resumeText: candidateData.resume_text,
+            resume_text: candidateData.resume_text,
+            summary: candidateData.summary,
+            skills: candidateData.skills,
+            experience: candidateData.experience,
+            education: candidateData.education,
+            projects: candidateData.projects,
+            status: candidateData.status,
+            interviewId: candidateData.interview_id,
+            interview_id: candidateData.interview_id,
+            primaryJobDescriptionId: candidateData.primary_job_description_id,
+            createdAt: candidateData.created_at,
+            created_at: candidateData.created_at,
+            updatedAt: candidateData.updated_at,
+            updated_at: candidateData.updated_at,
+          };
+
+          // Get job applications for this candidate
+          const { data: applications } = await supabase
+            .from('candidate_job_applications')
+            .select(`
+              *,
+              job_description:job_descriptions(title, department, location)
+            `)
+            .eq('candidate_id', candidate.id);
+
+          // Get interview sessions for this candidate
+          const { data: interviews } = await supabase
+            .from('interview_sessions')
+            .select('*')
+            .eq('candidate_id', candidate.id);
+
+          // Get interview reports for this candidate
+          const { data: reports } = await supabase
+            .from('interview_reports')
+            .select(`
+              overall_score, 
+              created_at,
+              interview_sessions!inner(candidate_id)
+            `)
+            .eq('interview_sessions.candidate_id', candidate.id)
+            .order('created_at', { ascending: false });
+
+          // Calculate statistics
+          const appliedJobs = applications?.map(app => app.job_description?.title).filter(Boolean) || [];
+          const interviewCount = interviews?.length || 0;
+          const averageScore = reports && reports.length > 0 
+            ? reports.reduce((sum, report) => sum + (report.overall_score || 0), 0) / reports.length / 10 // Convert from percentage to score out of 10
+            : null;
+          const lastInterviewDate = reports && reports.length > 0 ? reports[0].created_at : null;
+
+          // Debug logging
+          if (candidate.name && reports && reports.length > 0) {
+            console.log(`📊 Candidate ${candidate.name}:`, {
+              reportsCount: reports.length,
+              rawScores: reports.map(r => r.overall_score),
+              averageScore: averageScore,
+              interviewCount: interviewCount
+            });
+          }
+
+          // Add statistics to candidate object
+          return {
+            ...candidate,
+            appliedJobs,
+            interviewCount,
+            averageScore,
+            lastInterviewDate,
+            applicationCount: applications?.length || 0,
+            hasInterviews: interviewCount > 0,
+            latestApplicationStatus: applications && applications.length > 0 ? applications[0].application_status : null
+          };
+        })
+      );
+
+      return { data: candidates };
+    } catch (error) {
+      console.error('Error in getCandidatesWithStats:', error);
+      return { 
+        data: [], 
+        error: error instanceof Error ? error.message : 'Unknown error' 
+      };
+    }
+  }
+
   // Get candidate by ID
   static async getCandidateById(id: string): Promise<{ data: Candidate | null; error?: string }> {
     try {
