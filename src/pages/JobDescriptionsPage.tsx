@@ -549,25 +549,52 @@ const JobDescriptionsPage: React.FC = () => {
           <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Job Descriptions</h1>
           <p className="text-sm sm:text-base text-gray-600">Manage job postings and descriptions</p>
         </div>
-        <div className="flex flex-col sm:flex-row items-stretch sm:items-center space-y-2 sm:space-y-0 sm:space-x-3">
-          <Button 
-            variant="outline" 
-            onClick={loadJobDescriptions} 
-            disabled={jobDescriptionsLoading} 
-            className="w-full sm:w-auto bg-gray-50 hover:bg-gray-100 border-gray-200 text-gray-700 hover:text-gray-800"
-          >
-            <RefreshCw className={`h-4 w-4 mr-2 ${jobDescriptionsLoading ? 'animate-spin' : ''}`} />
-            <span className="text-sm sm:text-base font-medium">Refresh</span>
-          </Button>
-          <Button 
-            variant="primary" 
-            onClick={() => setIsUploadModalOpen(true)} 
-            className="w-full sm:w-auto shadow-lg hover:shadow-xl"
-          >
-            <Plus className="h-4 w-4 mr-2" />
-            <span className="text-sm sm:text-base font-medium">Add Job Description</span>
-          </Button>
-        </div>
+         <div className="flex flex-col sm:flex-row items-stretch sm:items-center space-y-3 sm:space-y-0 sm:space-x-3">
+           {/* Mobile: Right-aligned primary action */}
+           <div className="flex justify-end sm:hidden">
+             <Button 
+               variant="primary" 
+               onClick={() => setIsUploadModalOpen(true)} 
+               className="px-6 py-2.5 shadow-sm"
+             >
+               <Plus className="h-4 w-4 mr-2" />
+               <span className="text-sm font-medium">Add Job</span>
+             </Button>
+           </div>
+           
+           {/* Mobile: Secondary action - icon only, right-aligned */}
+           <div className="flex justify-end sm:hidden">
+             <Button 
+               variant="outline" 
+               onClick={loadJobDescriptions} 
+               disabled={jobDescriptionsLoading} 
+               className="p-2.5 bg-gray-50 hover:bg-gray-100 border-gray-200 text-gray-700 hover:text-gray-800"
+             >
+               <RefreshCw className={`h-4 w-4 ${jobDescriptionsLoading ? 'animate-spin' : ''}`} />
+             </Button>
+           </div>
+
+           {/* Desktop: Original layout */}
+           <div className="hidden sm:flex items-center space-x-3">
+             <Button 
+               variant="outline" 
+               onClick={loadJobDescriptions} 
+               disabled={jobDescriptionsLoading} 
+               className="bg-gray-50 hover:bg-gray-100 border-gray-200 text-gray-700 hover:text-gray-800"
+             >
+               <RefreshCw className={`h-4 w-4 mr-2 ${jobDescriptionsLoading ? 'animate-spin' : ''}`} />
+               <span className="text-sm sm:text-base font-medium">Refresh</span>
+             </Button>
+             <Button 
+               variant="primary" 
+               onClick={() => setIsUploadModalOpen(true)} 
+               className="shadow-lg hover:shadow-xl"
+             >
+               <Plus className="h-4 w-4 mr-2" />
+               <span className="text-sm sm:text-base font-medium">Add Job Description</span>
+             </Button>
+           </div>
+         </div>
       </div>
 
       {/* Search and Filter */}
@@ -579,12 +606,22 @@ const JobDescriptionsPage: React.FC = () => {
             placeholder="Search job descriptions..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-10 pr-4 py-2 sm:py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm sm:text-base"
+            className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm sm:text-base"
           />
         </div>
+        {/* Mobile: Right-aligned filter button */}
+        <div className="flex justify-end sm:hidden">
+          <Button 
+            variant="outline" 
+            className="p-2.5 bg-white hover:bg-gray-50 border-gray-300 text-gray-700 hover:text-gray-800"
+          >
+            <Filter className="h-4 w-4" />
+          </Button>
+        </div>
+        {/* Desktop: Original filter button */}
         <Button 
           variant="outline" 
-          className="w-full sm:w-auto bg-white hover:bg-gray-50 border-gray-300 text-gray-700 hover:text-gray-800"
+          className="hidden sm:flex bg-white hover:bg-gray-50 border-gray-300 text-gray-700 hover:text-gray-800"
         >
           <Filter className="h-4 w-4 mr-2" />
           <span className="text-sm sm:text-base font-medium">Filter</span>
@@ -622,13 +659,9 @@ const JobDescriptionsPage: React.FC = () => {
               </p>
               {!searchQuery && (
                 <div className="mt-4 flex justify-center">
-                  <Button 
-                    variant="primary" 
-                    onClick={() => setIsUploadModalOpen(true)} 
-                    className="w-full sm:w-auto shadow-lg hover:shadow-xl"
-                  >
+                  <Button variant="primary" onClick={() => setIsUploadModalOpen(true)} className="w-full sm:w-auto">
                     <Plus className="h-4 w-4 mr-2" />
-                    <span className="text-sm sm:text-base font-medium">Add First Job Description</span>
+                    <span className="text-sm sm:text-base">Add First Job Description</span>
                   </Button>
                 </div>
               )}
@@ -691,41 +724,85 @@ const JobDescriptionsPage: React.FC = () => {
                     </div>
                   </div>
 
-                  <div className="flex flex-wrap items-center gap-2 lg:ml-4">
-                    <Button 
-                      variant="outline" 
-                      size="sm"
-                      onClick={() => navigate(`/job-descriptions/${job.id}`)}
-                      className="flex-1 sm:flex-none bg-blue-50 hover:bg-blue-100 border-blue-200 text-blue-700 hover:text-blue-800"
-                    >
-                      <Eye className="h-3 w-3 sm:h-4 sm:w-4 mr-1" />
-                      <span className="text-xs sm:text-sm font-medium">View</span>
-                    </Button>
-                    <Button 
-                      variant="outline" 
-                      size="sm"
-                      onClick={() => handleAssignClick(job)}
-                      className="flex-1 sm:flex-none bg-green-50 hover:bg-green-100 border-green-200 text-green-700 hover:text-green-800"
-                    >
-                      <UserPlus className="h-3 w-3 sm:h-4 sm:w-4 mr-1" />
-                      <span className="text-xs sm:text-sm font-medium">Assign</span>
-                    </Button>
-                    <Button 
-                      variant="outline" 
-                      size="sm"
-                      onClick={() => handleEditClick(job)}
-                      className="flex-1 sm:flex-none bg-amber-50 hover:bg-amber-100 border-amber-200 text-amber-700 hover:text-amber-800"
-                    >
-                      <Edit className="h-3 w-3 sm:h-4 sm:w-4" />
-                    </Button>
-                    <Button 
-                      variant="outline" 
-                      size="sm"
-                      onClick={() => handleDeleteClick(job)}
-                      className="flex-1 sm:flex-none bg-red-50 hover:bg-red-100 border-red-200 text-red-700 hover:text-red-800"
-                    >
-                      <Trash2 className="h-3 w-3 sm:h-4 sm:w-4" />
-                    </Button>
+                  <div className="flex flex-col sm:flex-row sm:items-center lg:ml-4 space-y-3 sm:space-y-0 sm:space-x-3">
+                    {/* Mobile: Primary action button - full width, right-aligned */}
+                    <div className="flex justify-end sm:hidden">
+                      <Button 
+                        variant="primary" 
+                        size="sm"
+                        onClick={() => navigate(`/job-descriptions/${job.id}`)}
+                        className="px-6 py-2.5 shadow-sm"
+                      >
+                        <Eye className="h-4 w-4 mr-2" />
+                        <span className="text-sm font-medium">View Details</span>
+                      </Button>
+                    </div>
+                    
+                    {/* Mobile: Secondary actions - icon-only, right-aligned */}
+                    <div className="flex justify-end space-x-2 sm:hidden">
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={() => handleAssignClick(job)}
+                        className="p-2.5 bg-green-50 hover:bg-green-100 border-green-200 text-green-700 hover:text-green-800"
+                      >
+                        <UserPlus className="h-4 w-4" />
+                      </Button>
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={() => handleEditClick(job)}
+                        className="p-2.5 bg-amber-50 hover:bg-amber-100 border-amber-200 text-amber-700 hover:text-amber-800"
+                      >
+                        <Edit className="h-4 w-4" />
+                      </Button>
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={() => handleDeleteClick(job)}
+                        className="p-2.5 bg-red-50 hover:bg-red-100 border-red-200 text-red-700 hover:text-red-800"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+
+                    {/* Desktop: Original layout */}
+                    <div className="hidden sm:flex items-center space-x-2">
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={() => navigate(`/job-descriptions/${job.id}`)}
+                        className="bg-blue-50 hover:bg-blue-100 border-blue-200 text-blue-700 hover:text-blue-800"
+                      >
+                        <Eye className="h-3 w-3 sm:h-4 sm:w-4 mr-1" />
+                        <span className="text-xs sm:text-sm">View</span>
+                      </Button>
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={() => handleAssignClick(job)}
+                        className="bg-green-50 hover:bg-green-100 border-green-200 text-green-700 hover:text-green-800"
+                      >
+                        <UserPlus className="h-3 w-3 sm:h-4 sm:w-4 mr-1" />
+                        <span className="text-xs sm:text-sm">Assign</span>
+                      </Button>
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={() => handleEditClick(job)}
+                        className="bg-amber-50 hover:bg-amber-100 border-amber-200 text-amber-700 hover:text-amber-800"
+                      >
+                        <Edit className="h-3 w-3 sm:h-4 sm:w-4" />
+                      </Button>
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={() => handleDeleteClick(job)}
+                        className="bg-red-50 hover:bg-red-100 border-red-200 text-red-700 hover:text-red-800"
+                      >
+                        <Trash2 className="h-3 w-3 sm:h-4 sm:w-4" />
+                      </Button>
+                    </div>
                   </div>
                 </div>
               </Card>
