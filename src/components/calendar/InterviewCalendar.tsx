@@ -24,7 +24,7 @@ interface InterviewCalendarProps {
   jobDescriptions: JobDescription[];
   aiAgents: AIAgent[];
   onInterviewClick: (interview: Interview) => void;
-  onScheduleInterview: () => void;
+  onScheduleInterview: (date?: string) => void;
   onEditInterview: (interview: Interview) => void;
   onDeleteInterview: (interview: Interview) => void;
   onStatusChange: (interviewId: string, status: Interview['status']) => void;
@@ -246,9 +246,8 @@ const InterviewCalendar: React.FC<InterviewCalendarProps> = ({
                   {hoveredDate && hoveredDate.toDateString() === day.toDateString() && isCurrentMonth && (
                     <button
                       onClick={() => {
-                        const timeSlot = '09:00'; // Default time
-                        const dateTime = `${day.toISOString().slice(0, 10)}T${timeSlot}`;
-                        onScheduleInterview();
+                        const selectedDate = day.toISOString().slice(0, 10); // YYYY-MM-DD format
+                        onScheduleInterview(selectedDate);
                       }}
                       className="opacity-0 group-hover:opacity-100 transition-opacity duration-200 bg-ai-teal hover:bg-ai-teal-dark text-white rounded-full p-1 shadow-sm"
                       title="Schedule interview on this date"
@@ -369,9 +368,8 @@ const InterviewCalendar: React.FC<InterviewCalendarProps> = ({
                     {hoveredDate && hoveredDate.toDateString() === day.toDateString() && (
                       <button
                         onClick={() => {
-                          const timeSlot = '09:00'; // Default time
-                          const dateTime = `${day.toISOString().slice(0, 10)}T${timeSlot}`;
-                          onScheduleInterview();
+                          const selectedDate = day.toISOString().slice(0, 10); // YYYY-MM-DD format
+                          onScheduleInterview(selectedDate);
                         }}
                         className="opacity-0 group-hover:opacity-100 transition-opacity duration-200 bg-ai-teal hover:bg-ai-teal-dark text-white rounded-full p-1 shadow-sm"
                         title="Schedule interview on this date"
@@ -465,7 +463,7 @@ const InterviewCalendar: React.FC<InterviewCalendarProps> = ({
               <ChevronRight className="w-4 h-4" />
             </Button>
             <Button
-              onClick={onScheduleInterview}
+              onClick={() => onScheduleInterview(currentDate.toISOString().slice(0, 10))}
               size="sm"
               className="flex-1 sm:flex-none"
             >
@@ -482,7 +480,7 @@ const InterviewCalendar: React.FC<InterviewCalendarProps> = ({
               <CalendarIcon className="w-8 h-8 sm:w-12 sm:h-12 text-gray-400 mx-auto mb-4" />
               <h3 className="text-base sm:text-lg font-medium text-gray-900 mb-2">No interviews scheduled</h3>
               <p className="text-sm sm:text-base text-gray-500 mb-4">This day is free for scheduling new interviews.</p>
-              <Button onClick={onScheduleInterview} size="sm" className="sm:size-md">
+              <Button onClick={() => onScheduleInterview(currentDate.toISOString().slice(0, 10))} size="sm" className="sm:size-md">
                 <Plus className="w-4 h-4 mr-2" />
                 Schedule Interview
               </Button>

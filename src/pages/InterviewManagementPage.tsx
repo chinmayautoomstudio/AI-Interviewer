@@ -58,6 +58,7 @@ const InterviewManagementPage: React.FC = () => {
   const [isScheduleModalOpen, setIsScheduleModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [selectedDate, setSelectedDate] = useState<string | undefined>(undefined);
 
   // Load data on component mount
   useEffect(() => {
@@ -191,6 +192,16 @@ const InterviewManagementPage: React.FC = () => {
     setSelectedInterview(null);
   };
 
+  const handleScheduleInterview = (date?: string) => {
+    setSelectedDate(date);
+    setIsScheduleModalOpen(true);
+  };
+
+  const handleScheduleModalClose = () => {
+    setIsScheduleModalOpen(false);
+    setSelectedDate(undefined);
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -241,7 +252,7 @@ const InterviewManagementPage: React.FC = () => {
 
               {/* Schedule Interview Button */}
               <Button
-                onClick={() => setIsScheduleModalOpen(true)}
+                onClick={() => handleScheduleInterview()}
                 className="flex items-center justify-center gap-2 w-full sm:w-auto"
               >
                 <Plus className="w-4 h-4" />
@@ -455,7 +466,7 @@ const InterviewManagementPage: React.FC = () => {
               setSelectedInterview(interview);
               setIsEditModalOpen(true);
             }}
-            onScheduleInterview={() => setIsScheduleModalOpen(true)}
+            onScheduleInterview={(date) => handleScheduleInterview(date)}
             onEditInterview={(interview) => {
               setSelectedInterview(interview);
               setIsEditModalOpen(true);
@@ -480,11 +491,12 @@ const InterviewManagementPage: React.FC = () => {
       {/* Schedule Interview Modal */}
       <ScheduleInterviewModal
         isOpen={isScheduleModalOpen}
-        onClose={() => setIsScheduleModalOpen(false)}
+        onClose={handleScheduleModalClose}
         onSuccess={loadData}
         candidates={candidates}
         jobDescriptions={jobDescriptions}
         aiAgents={aiAgents}
+        selectedDate={selectedDate}
       />
 
       {/* Edit Interview Modal */}

@@ -21,7 +21,8 @@ import {
   RefreshCw,
   AlertCircle,
   UserPlus,
-  Upload
+  Upload,
+  MoreVertical
 } from 'lucide-react';
 import { JobDescription, CreateJobDescriptionRequest, Candidate } from '../types';
 import { getJobDescriptions, deleteJobDescription, createJobDescription, updateJobDescription } from '../services/jobDescriptions';
@@ -544,88 +545,69 @@ const JobDescriptionsPage: React.FC = () => {
   return (
     <div className="p-4 sm:p-6 space-y-4 sm:space-y-6">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-4 sm:space-y-0">
+      <div className="flex items-center justify-between mb-4">
         <div>
           <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Job Descriptions</h1>
           <p className="text-sm sm:text-base text-gray-600">Manage job postings and descriptions</p>
         </div>
-         <div className="flex flex-col sm:flex-row items-stretch sm:items-center space-y-3 sm:space-y-0 sm:space-x-3">
-           {/* Mobile: Right-aligned primary action */}
-           <div className="flex justify-end sm:hidden">
-             <Button 
-               variant="primary" 
-               onClick={() => setIsUploadModalOpen(true)} 
-               className="px-6 py-2.5 shadow-sm"
-             >
-               <Plus className="h-4 w-4 mr-2" />
-               <span className="text-sm font-medium">Add Job</span>
-             </Button>
-           </div>
-           
-           {/* Mobile: Secondary action - icon only, right-aligned */}
-           <div className="flex justify-end sm:hidden">
-             <Button 
-               variant="outline" 
-               onClick={loadJobDescriptions} 
-               disabled={jobDescriptionsLoading} 
-               className="p-2.5 bg-gray-50 hover:bg-gray-100 border-gray-200 text-gray-700 hover:text-gray-800"
-             >
-               <RefreshCw className={`h-4 w-4 ${jobDescriptionsLoading ? 'animate-spin' : ''}`} />
-             </Button>
-           </div>
+        
+        {/* Desktop: Full header with buttons */}
+        <div className="hidden lg:flex items-center space-x-3">
+          <Button 
+            variant="outline" 
+            onClick={loadJobDescriptions} 
+            disabled={jobDescriptionsLoading} 
+            className="bg-gray-50 hover:bg-gray-100 border-gray-200 text-gray-700 hover:text-gray-800"
+          >
+            <RefreshCw className={`h-4 w-4 mr-2 ${jobDescriptionsLoading ? 'animate-spin' : ''}`} />
+            <span className="text-sm font-medium">Refresh</span>
+          </Button>
+          <Button 
+            variant="primary" 
+            onClick={() => setIsUploadModalOpen(true)} 
+            className="shadow-lg hover:shadow-xl"
+          >
+            <Plus className="h-4 w-4 mr-2" />
+            <span className="text-sm font-medium">Add Job Description</span>
+          </Button>
+        </div>
 
-           {/* Desktop: Original layout */}
-           <div className="hidden sm:flex items-center space-x-3">
-             <Button 
-               variant="outline" 
-               onClick={loadJobDescriptions} 
-               disabled={jobDescriptionsLoading} 
-               className="bg-gray-50 hover:bg-gray-100 border-gray-200 text-gray-700 hover:text-gray-800"
-             >
-               <RefreshCw className={`h-4 w-4 mr-2 ${jobDescriptionsLoading ? 'animate-spin' : ''}`} />
-               <span className="text-sm sm:text-base font-medium">Refresh</span>
-             </Button>
-             <Button 
-               variant="primary" 
-               onClick={() => setIsUploadModalOpen(true)} 
-               className="shadow-lg hover:shadow-xl"
-             >
-               <Plus className="h-4 w-4 mr-2" />
-               <span className="text-sm sm:text-base font-medium">Add Job Description</span>
-             </Button>
-           </div>
-         </div>
+        {/* Mobile: Just refresh icon */}
+        <button 
+          className="lg:hidden p-2 hover:bg-gray-100 rounded-lg transition-colors"
+          onClick={loadJobDescriptions}
+          disabled={jobDescriptionsLoading}
+        >
+          <RefreshCw className={`w-5 h-5 text-gray-600 ${jobDescriptionsLoading ? 'animate-spin' : ''}`} />
+        </button>
       </div>
 
       {/* Search and Filter */}
-      <div className="flex flex-col sm:flex-row items-stretch sm:items-center space-y-3 sm:space-y-0 sm:space-x-4">
-        <div className="flex-1 relative">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+      <div className="flex gap-2">
+        <div className="relative flex-1">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
           <input
             type="text"
             placeholder="Search job descriptions..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm sm:text-base"
+            className="w-full bg-gray-50 lg:bg-white rounded-lg py-2.5 pl-10 pr-4 text-sm text-gray-700 placeholder-gray-400 border border-gray-200 focus:outline-none focus:ring-2 focus:ring-teal-500 lg:focus:ring-blue-500 focus:border-transparent"
           />
         </div>
-        {/* Mobile: Right-aligned filter button */}
-        <div className="flex justify-end sm:hidden">
-          <Button 
-            variant="outline" 
-            className="p-2.5 bg-white hover:bg-gray-50 border-gray-300 text-gray-700 hover:text-gray-800"
-          >
-            <Filter className="h-4 w-4" />
-          </Button>
-        </div>
-        {/* Desktop: Original filter button */}
+        
+        {/* Desktop: Full filter button */}
         <Button 
           variant="outline" 
-          className="hidden sm:flex bg-white hover:bg-gray-50 border-gray-300 text-gray-700 hover:text-gray-800"
+          className="hidden lg:flex bg-white hover:bg-gray-50 border-gray-300 text-gray-700 hover:text-gray-800"
         >
           <Filter className="h-4 w-4 mr-2" />
-          <span className="text-sm sm:text-base font-medium">Filter</span>
+          <span className="text-sm font-medium">Filter</span>
         </Button>
+        
+        {/* Mobile: Icon-only filter button */}
+        <button className="lg:hidden p-2.5 bg-gray-50 border border-gray-200 rounded-lg hover:bg-gray-100 transition-colors">
+          <Filter className="w-5 h-5 text-gray-600" />
+        </button>
       </div>
 
       {/* Error State */}
@@ -667,146 +649,203 @@ const JobDescriptionsPage: React.FC = () => {
               )}
             </div>
           ) : (
-            filteredJobs.map((job) => (
-              <Card key={job.id}>
-                <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between space-y-4 lg:space-y-0">
-                  <div className="flex-1">
-                    <div className="flex flex-col sm:flex-row sm:items-center sm:space-x-3 space-y-2 sm:space-y-0 mb-3">
-                      <h3 className="text-base sm:text-lg font-semibold text-gray-900 truncate">{job.title || 'Untitled Job'}</h3>
-                      <div className="flex flex-wrap gap-2">
-                        {job.job_description_id && (
-                          <span className="px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-700">
-                            {job.job_description_id}
-                          </span>
-                        )}
-                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(job.status || 'active')}`}>
+            <div className="space-y-4 lg:pb-0 pb-24">
+              {filteredJobs.map((job) => (
+                <div key={job.id}>
+                  {/* Mobile Card View */}
+                  <div className="lg:hidden bg-white rounded-xl border border-gray-200 overflow-hidden hover:shadow-lg transition-shadow duration-300">
+                    {/* Card Header */}
+                    <div className="p-4 pb-3">
+                      <div className="flex items-start justify-between mb-3">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 mb-2">
+                            <span className="bg-teal-100 text-teal-700 text-xs font-semibold px-2 py-1 rounded">
+                              NEW
+                            </span>
+                            <span className="text-xs text-gray-500 font-medium">{job.job_description_id || job.id}</span>
+                          </div>
+                          <h3 className="text-base font-semibold text-gray-900 leading-tight mb-1">
+                            {job.title || 'Untitled Job'}
+                          </h3>
+                        </div>
+                        <button 
+                          className="p-1 hover:bg-gray-100 rounded-lg transition-colors"
+                          onClick={() => handleEditClick(job)}
+                        >
+                          <MoreVertical className="w-5 h-5 text-gray-400" />
+                        </button>
+                      </div>
+
+                      {/* Status Badges */}
+                      <div className="flex gap-2 mb-3">
+                        <span className={`inline-flex items-center px-2.5 py-1 rounded-md text-xs font-medium ${getStatusColor(job.status || 'active')}`}>
                           {(job.status || 'active').toUpperCase()}
                         </span>
-                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${getEmploymentTypeColor(job.employmentType || 'full-time')}`}>
+                        <span className={`inline-flex items-center px-2.5 py-1 rounded-md text-xs font-medium ${getEmploymentTypeColor(job.employmentType || 'full-time')}`}>
                           {(job.employmentType || 'full-time').replace('-', ' ').toUpperCase()}
                         </span>
-                        <span className="px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                          {applicationCounts[job.id] || 0} candidate{(applicationCounts[job.id] || 0) !== 1 ? 's' : ''}
-                        </span>
                       </div>
-                    </div>
-                    
-                    <div className="flex flex-col sm:flex-row sm:items-center sm:space-x-6 space-y-2 sm:space-y-0 text-xs sm:text-sm text-gray-600 mb-3">
-                      <div className="flex items-center">
-                        <Briefcase className="h-3 w-3 sm:h-4 sm:w-4 mr-1" />
-                        <span className="truncate">{job.department || 'No Department'}</span>
-                      </div>
-                      <div className="flex items-center">
-                        <MapPin className="h-3 w-3 sm:h-4 sm:w-4 mr-1" />
-                        <span className="truncate">{job.location || 'No Location'}</span>
-                      </div>
-                      <div className="flex items-center">
-                        <Users className="h-3 w-3 sm:h-4 sm:w-4 mr-1" />
-                        <span className="truncate">{(job.experienceLevel || 'mid').charAt(0).toUpperCase() + (job.experienceLevel || 'mid').slice(1)}</span>
-                      </div>
-                      {job.salaryRange && (
-                        <div className="flex items-center text-xs sm:text-sm">
-                          <span className="text-gray-500 mr-1">💰</span>
-                          <span className="font-medium text-gray-900 truncate">
-                            {getCurrencySymbol(job.salaryRange.currency)} {formatIndianNumber(job.salaryRange.min)} - {formatIndianNumber(job.salaryRange.max)}
-                          </span>
+
+                      {/* Candidate Count - Prominent */}
+                      <div className="bg-gradient-to-r from-teal-50 to-cyan-50 rounded-lg p-3 mb-3 border border-teal-100">
+                        <div className="flex items-center gap-2">
+                          <Users className="w-5 h-5 text-teal-600" />
+                          <span className="text-2xl font-bold text-teal-700">{applicationCounts[job.id] || 0}</span>
+                          <span className="text-sm text-teal-600 font-medium">candidate{(applicationCounts[job.id] || 0) !== 1 ? 's' : ''}</span>
                         </div>
-                      )}
+                      </div>
+
+                      {/* Job Details Grid */}
+                      <div className="space-y-2.5">
+                        <div className="flex items-start gap-2">
+                          <Briefcase className="w-4 h-4 text-gray-400 mt-0.5 flex-shrink-0" />
+                          <span className="text-sm text-gray-700">{job.department || 'No Department'}</span>
+                        </div>
+                        
+                        <div className="flex items-start gap-2">
+                          <MapPin className="w-4 h-4 text-gray-400 mt-0.5 flex-shrink-0" />
+                          <span className="text-sm text-gray-700 leading-snug">{job.location || 'No Location'}</span>
+                        </div>
+                        
+                        <div className="flex items-center gap-2">
+                          <Clock className="w-4 h-4 text-gray-400 flex-shrink-0" />
+                          <span className="text-sm text-gray-700">{(job.experienceLevel || 'mid').charAt(0).toUpperCase() + (job.experienceLevel || 'mid').slice(1)}</span>
+                        </div>
+                        
+                        {job.salaryRange && (
+                          <div className="flex items-center gap-2">
+                            <DollarSign className="w-4 h-4 text-gray-400 flex-shrink-0" />
+                            <span className="text-sm font-semibold text-gray-900">
+                              {getCurrencySymbol(job.salaryRange.currency)} {formatIndianNumber(job.salaryRange.min)} - {formatIndianNumber(job.salaryRange.max)}
+                            </span>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Description */}
+                      <div className="mt-3 pt-3 border-t border-gray-100">
+                        <p className="text-sm text-gray-600 line-clamp-2 leading-relaxed">
+                          {job.description || 'No description available'}
+                        </p>
+                      </div>
+
+                      {/* Created Date */}
+                      <div className="flex items-center gap-1.5 mt-3 text-xs text-gray-500">
+                        <Calendar className="w-3.5 h-3.5" />
+                        <span>Created {job.createdAt ? new Date(job.createdAt).toLocaleDateString() : 'Unknown date'}</span>
+                      </div>
                     </div>
 
-                    <p className="text-gray-700 text-xs sm:text-sm mb-3 line-clamp-2">
-                      {job.description || 'No description available'}
-                    </p>
-
-                    <div className="flex items-center text-xs text-gray-500">
-                      <Calendar className="h-3 w-3 mr-1" />
-                      Created {job.createdAt ? new Date(job.createdAt).toLocaleDateString() : 'Unknown date'}
+                    {/* Card Footer - Action Button */}
+                    <div className="px-4 py-3 bg-gray-50 border-t border-gray-100">
+                      <button 
+                        className="w-full flex items-center justify-center gap-2 bg-teal-600 hover:bg-teal-700 text-white font-medium py-2.5 rounded-lg transition-colors"
+                        onClick={() => navigate(`/job-descriptions/${job.id}`)}
+                      >
+                        <Eye className="w-4 h-4" />
+                        View Details
+                      </button>
                     </div>
                   </div>
 
-                  <div className="flex flex-col sm:flex-row sm:items-center lg:ml-4 space-y-3 sm:space-y-0 sm:space-x-3">
-                    {/* Mobile: Primary action button - full width, right-aligned */}
-                    <div className="flex justify-end sm:hidden">
-                      <Button 
-                        variant="primary" 
-                        size="sm"
-                        onClick={() => navigate(`/job-descriptions/${job.id}`)}
-                        className="px-6 py-2.5 shadow-sm"
-                      >
-                        <Eye className="h-4 w-4 mr-2" />
-                        <span className="text-sm font-medium">View Details</span>
-                      </Button>
-                    </div>
-                    
-                    {/* Mobile: Secondary actions - icon-only, right-aligned */}
-                    <div className="flex justify-end space-x-2 sm:hidden">
-                      <Button 
-                        variant="outline" 
-                        size="sm"
-                        onClick={() => handleAssignClick(job)}
-                        className="p-2.5 bg-green-50 hover:bg-green-100 border-green-200 text-green-700 hover:text-green-800"
-                      >
-                        <UserPlus className="h-4 w-4" />
-                      </Button>
-                      <Button 
-                        variant="outline" 
-                        size="sm"
-                        onClick={() => handleEditClick(job)}
-                        className="p-2.5 bg-amber-50 hover:bg-amber-100 border-amber-200 text-amber-700 hover:text-amber-800"
-                      >
-                        <Edit className="h-4 w-4" />
-                      </Button>
-                      <Button 
-                        variant="outline" 
-                        size="sm"
-                        onClick={() => handleDeleteClick(job)}
-                        className="p-2.5 bg-red-50 hover:bg-red-100 border-red-200 text-red-700 hover:text-red-800"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
+                  {/* Desktop Card View */}
+                  <Card className="hidden lg:block">
+                    <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between space-y-4 lg:space-y-0">
+                      <div className="flex-1">
+                        <div className="flex flex-col sm:flex-row sm:items-center sm:space-x-3 space-y-2 sm:space-y-0 mb-3">
+                          <h3 className="text-base sm:text-lg font-semibold text-gray-900 truncate">{job.title || 'Untitled Job'}</h3>
+                          <div className="flex flex-wrap gap-2">
+                            {job.job_description_id && (
+                              <span className="px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-700">
+                                {job.job_description_id}
+                              </span>
+                            )}
+                            <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(job.status || 'active')}`}>
+                              {(job.status || 'active').toUpperCase()}
+                            </span>
+                            <span className={`px-2 py-1 rounded-full text-xs font-medium ${getEmploymentTypeColor(job.employmentType || 'full-time')}`}>
+                              {(job.employmentType || 'full-time').replace('-', ' ').toUpperCase()}
+                            </span>
+                            <span className="px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                              {applicationCounts[job.id] || 0} candidate{(applicationCounts[job.id] || 0) !== 1 ? 's' : ''}
+                            </span>
+                          </div>
+                        </div>
+                        
+                        <div className="flex flex-col sm:flex-row sm:items-center sm:space-x-6 space-y-2 sm:space-y-0 text-xs sm:text-sm text-gray-600 mb-3">
+                          <div className="flex items-center">
+                            <Briefcase className="h-3 w-3 sm:h-4 sm:w-4 mr-1" />
+                            <span className="truncate">{job.department || 'No Department'}</span>
+                          </div>
+                          <div className="flex items-center">
+                            <MapPin className="h-3 w-3 sm:h-4 sm:w-4 mr-1" />
+                            <span className="truncate">{job.location || 'No Location'}</span>
+                          </div>
+                          <div className="flex items-center">
+                            <Users className="h-3 w-3 sm:h-4 sm:w-4 mr-1" />
+                            <span className="truncate">{(job.experienceLevel || 'mid').charAt(0).toUpperCase() + (job.experienceLevel || 'mid').slice(1)}</span>
+                          </div>
+                          {job.salaryRange && (
+                            <div className="flex items-center text-xs sm:text-sm">
+                              <span className="text-gray-500 mr-1">💰</span>
+                              <span className="font-medium text-gray-900 truncate">
+                                {getCurrencySymbol(job.salaryRange.currency)} {formatIndianNumber(job.salaryRange.min)} - {formatIndianNumber(job.salaryRange.max)}
+                              </span>
+                            </div>
+                          )}
+                        </div>
 
-                    {/* Desktop: Original layout */}
-                    <div className="hidden sm:flex items-center space-x-2">
-                      <Button 
-                        variant="outline" 
-                        size="sm"
-                        onClick={() => navigate(`/job-descriptions/${job.id}`)}
-                        className="bg-blue-50 hover:bg-blue-100 border-blue-200 text-blue-700 hover:text-blue-800"
-                      >
-                        <Eye className="h-3 w-3 sm:h-4 sm:w-4 mr-1" />
-                        <span className="text-xs sm:text-sm">View</span>
-                      </Button>
-                      <Button 
-                        variant="outline" 
-                        size="sm"
-                        onClick={() => handleAssignClick(job)}
-                        className="bg-green-50 hover:bg-green-100 border-green-200 text-green-700 hover:text-green-800"
-                      >
-                        <UserPlus className="h-3 w-3 sm:h-4 sm:w-4 mr-1" />
-                        <span className="text-xs sm:text-sm">Assign</span>
-                      </Button>
-                      <Button 
-                        variant="outline" 
-                        size="sm"
-                        onClick={() => handleEditClick(job)}
-                        className="bg-amber-50 hover:bg-amber-100 border-amber-200 text-amber-700 hover:text-amber-800"
-                      >
-                        <Edit className="h-3 w-3 sm:h-4 sm:w-4" />
-                      </Button>
-                      <Button 
-                        variant="outline" 
-                        size="sm"
-                        onClick={() => handleDeleteClick(job)}
-                        className="bg-red-50 hover:bg-red-100 border-red-200 text-red-700 hover:text-red-800"
-                      >
-                        <Trash2 className="h-3 w-3 sm:h-4 sm:w-4" />
-                      </Button>
+                        <p className="text-gray-700 text-xs sm:text-sm mb-3 line-clamp-2">
+                          {job.description || 'No description available'}
+                        </p>
+
+                        <div className="flex items-center text-xs text-gray-500">
+                          <Calendar className="h-3 w-3 mr-1" />
+                          Created {job.createdAt ? new Date(job.createdAt).toLocaleDateString() : 'Unknown date'}
+                        </div>
+                      </div>
+
+                      <div className="flex flex-col sm:flex-row sm:items-center lg:ml-4 space-y-3 sm:space-y-0 sm:space-x-3">
+                        <Button 
+                          variant="outline" 
+                          size="sm"
+                          onClick={() => navigate(`/job-descriptions/${job.id}`)}
+                          className="bg-blue-50 hover:bg-blue-100 border-blue-200 text-blue-700 hover:text-blue-800"
+                        >
+                          <Eye className="h-3 w-3 sm:h-4 sm:w-4 mr-1" />
+                          <span className="text-xs sm:text-sm">View</span>
+                        </Button>
+                        <Button 
+                          variant="outline" 
+                          size="sm"
+                          onClick={() => handleAssignClick(job)}
+                          className="bg-green-50 hover:bg-green-100 border-green-200 text-green-700 hover:text-green-800"
+                        >
+                          <UserPlus className="h-3 w-3 sm:h-4 sm:w-4 mr-1" />
+                          <span className="text-xs sm:text-sm">Assign</span>
+                        </Button>
+                        <Button 
+                          variant="outline" 
+                          size="sm"
+                          onClick={() => handleEditClick(job)}
+                          className="bg-amber-50 hover:bg-amber-100 border-amber-200 text-amber-700 hover:text-amber-800"
+                        >
+                          <Edit className="h-3 w-3 sm:h-4 sm:w-4" />
+                        </Button>
+                        <Button 
+                          variant="outline" 
+                          size="sm"
+                          onClick={() => handleDeleteClick(job)}
+                          className="bg-red-50 hover:bg-red-100 border-red-200 text-red-700 hover:text-red-800"
+                        >
+                          <Trash2 className="h-3 w-3 sm:h-4 sm:w-4" />
+                        </Button>
+                      </div>
                     </div>
-                  </div>
+                  </Card>
                 </div>
-              </Card>
-            ))
+              ))}
+            </div>
           )}
         </div>
       )}
@@ -1450,6 +1489,15 @@ const JobDescriptionsPage: React.FC = () => {
         }}
         editJobDescription={selectedJobForEdit || undefined}
       />
+
+      {/* Floating Add Button - Mobile Only */}
+      <button 
+        className="lg:hidden fixed bottom-6 right-4 bg-teal-600 hover:bg-teal-700 text-white pl-5 pr-6 py-3.5 rounded-full shadow-lg hover:shadow-xl transition-all flex items-center gap-2 font-medium z-50"
+        onClick={() => setIsUploadModalOpen(true)}
+      >
+        <Plus className="w-5 h-5" />
+        <span>Add Job Description</span>
+      </button>
     </div>
   );
 };

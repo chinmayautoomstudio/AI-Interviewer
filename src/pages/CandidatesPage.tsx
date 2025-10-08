@@ -296,28 +296,37 @@ const CandidatesPage: React.FC = () => {
   };
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="p-4 sm:p-6 space-y-4 sm:space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-4 sm:space-y-0">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Candidates</h1>
-          <p className="text-gray-600">Manage candidate profiles and information</p>
+          <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Candidates</h1>
+          <p className="text-sm sm:text-base text-gray-600">Manage candidate profiles and information</p>
         </div>
-        <div className="flex items-center space-x-3">
-          <Button variant="outline" onClick={loadCandidates} disabled={candidatesLoading}>
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center space-y-2 sm:space-y-0 sm:space-x-3">
+          <Button 
+            variant="outline" 
+            onClick={loadCandidates} 
+            disabled={candidatesLoading}
+            className="w-full sm:w-auto"
+          >
             <RefreshCw className={`h-4 w-4 mr-2 ${candidatesLoading ? 'animate-spin' : ''}`} />
-            Refresh
+            <span className="text-sm sm:text-base">Refresh</span>
           </Button>
-          <Button variant="primary" onClick={handleAddCandidate}>
+          <Button 
+            variant="primary" 
+            onClick={handleAddCandidate}
+            className="w-full sm:w-auto"
+          >
             <Plus className="h-4 w-4 mr-2" />
-            Add Candidate
+            <span className="text-sm sm:text-base">Add Candidate</span>
           </Button>
         </div>
       </div>
 
       {/* Filters */}
       <Card>
-        <div className="flex items-center space-x-4">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center space-y-3 sm:space-y-0 sm:space-x-4">
           <div className="flex-1">
             <div className="relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
@@ -326,13 +335,16 @@ const CandidatesPage: React.FC = () => {
                 placeholder="Search candidates..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                className="w-full pl-10 pr-4 py-2 sm:py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm sm:text-base"
               />
             </div>
           </div>
-          <Button variant="outline">
+          <Button 
+            variant="outline"
+            className="w-full sm:w-auto"
+          >
             <Filter className="h-4 w-4 mr-2" />
-            Filter
+            <span className="text-sm sm:text-base">Filter</span>
           </Button>
         </div>
       </Card>
@@ -380,84 +392,223 @@ const CandidatesPage: React.FC = () => {
           </div>
         </Card>
       ) : (
-        <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
-          {/* Table Header */}
-          <div className="bg-gray-50 px-6 py-3 border-b border-gray-200">
-            <div className="grid grid-cols-12 gap-4 text-xs font-medium text-gray-500 uppercase tracking-wider">
-              <div className="col-span-3">Candidate</div>
-              <div className="col-span-2">Applied Jobs</div>
-              <div className="col-span-1">Status</div>
-              <div className="col-span-2">Interview Status</div>
-              <div className="col-span-2">Final Rating</div>
-              <div className="col-span-2">Actions</div>
+        <div className="space-y-4">
+          {/* Desktop Table View */}
+          <div className="hidden lg:block bg-white rounded-lg border border-gray-200 overflow-hidden">
+            {/* Table Header */}
+            <div className="bg-gray-50 px-6 py-3 border-b border-gray-200">
+              <div className="grid grid-cols-12 gap-4 text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <div className="col-span-3">Candidate</div>
+                <div className="col-span-2">Applied Jobs</div>
+                <div className="col-span-1">Status</div>
+                <div className="col-span-2">Interview Status</div>
+                <div className="col-span-2">Final Rating</div>
+                <div className="col-span-2">Actions</div>
+              </div>
+            </div>
+
+            {/* Table Body */}
+            <div className="divide-y divide-gray-200">
+              {filteredCandidates.map((candidate) => (
+                <div key={candidate.id}>
+                  {/* Main Row */}
+                  <div 
+                    className="grid grid-cols-12 gap-4 px-6 py-4 hover:bg-gray-50 cursor-pointer transition-colors"
+                    onClick={() => toggleCandidateExpansion(candidate.id)}
+                  >
+                    {/* Candidate Info */}
+                    <div className="col-span-3 flex items-center space-x-3">
+                      <div className="w-10 h-10 bg-ai-teal/10 rounded-full flex items-center justify-center">
+                        <User className="h-5 w-5 text-ai-teal" />
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <p className="text-sm font-medium text-gray-900 truncate">
+                          {candidate.name || 'Unknown Name'}
+                        </p>
+                        <p className="text-sm text-gray-500 truncate">
+                          {candidate.email || 'No email'}
+                        </p>
+                      </div>
+                      {expandedCandidate === candidate.id ? (
+                        <ChevronDown className="h-4 w-4 text-gray-400" />
+                      ) : (
+                        <ChevronRight className="h-4 w-4 text-gray-400" />
+                      )}
+                    </div>
+
+                    {/* Applied Jobs */}
+                    <div className="col-span-2 flex items-center">
+                      <div className="flex items-center space-x-1">
+                        <Briefcase className="h-4 w-4 text-gray-400" />
+                        <span className="text-sm text-gray-900">
+                          {candidate.applicationCount || 0} jobs
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Status */}
+                    <div className="col-span-1 flex items-center">
+                      <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
+                        candidate.latestApplicationStatus ? getStatusColor(candidate.latestApplicationStatus) : 'bg-gray-100 text-gray-800'
+                      }`}>
+                        {candidate.latestApplicationStatus ? candidate.latestApplicationStatus.replace('_', ' ') : 'Applied'}
+                      </span>
+                    </div>
+
+                    {/* Interview Status */}
+                    <div className="col-span-2 flex items-center">
+                      <div className="flex items-center space-x-1">
+                        <Calendar className="h-4 w-4 text-gray-400" />
+                        <span className={`text-sm font-medium ${
+                          candidate.hasInterviews 
+                            ? 'text-green-600' 
+                            : 'text-gray-500'
+                        }`}>
+                          {candidate.hasInterviews ? 'Interview Taken' : 'Not Taken'}
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Final Rating */}
+                    <div className="col-span-2 flex items-center">
+                      <div className="flex items-center space-x-1">
+                        <Star className="h-4 w-4 text-gray-400" />
+                        <span className="text-sm text-gray-900">
+                          {candidate.averageScore !== null && candidate.averageScore !== undefined 
+                            ? `${candidate.averageScore.toFixed(1)}/10` 
+                            : 'N/A'
+                          }
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Actions */}
+                    <div className="col-span-2 flex items-center space-x-2">
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={(e: React.MouseEvent) => {
+                          e.stopPropagation();
+                          (candidate.candidate_id || candidate.id) && navigate(`/candidates/${candidate.candidate_id || candidate.id}`);
+                        }}
+                        disabled={!candidate.candidate_id && !candidate.id}
+                      >
+                        <Eye className="h-3 w-3" />
+                      </Button>
+                      <Button 
+                        variant="ghost" 
+                        size="sm"
+                        onClick={(e: React.MouseEvent) => {
+                          e.stopPropagation();
+                          handleDeleteClick(candidate);
+                        }}
+                        className="text-red-600 hover:text-red-700"
+                      >
+                        <Trash2 className="h-3 w-3" />
+                      </Button>
+                    </div>
+                  </div>
+
+                  {/* Expanded Row */}
+                  {expandedCandidate === candidate.id && (
+                    <div className="px-6 py-4 bg-gray-50 border-t border-gray-200">
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        {/* Applied Jobs Details */}
+                        <div>
+                          <h4 className="text-sm font-medium text-gray-900 mb-2">Applied Jobs</h4>
+                          <div className="space-y-1">
+                            {candidate.appliedJobs && candidate.appliedJobs.length > 0 ? (
+                              candidate.appliedJobs.map((job, index) => (
+                                <div key={index} className="text-sm text-gray-600 bg-white px-2 py-1 rounded border">
+                                  {job}
+                                </div>
+                              ))
+                            ) : (
+                              <p className="text-sm text-gray-500">No jobs applied</p>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Interview Information */}
+                        <div>
+                          <h4 className="text-sm font-medium text-gray-900 mb-2">Interview Details</h4>
+                          <div className="space-y-1">
+                            <div className="flex items-center space-x-2 text-sm text-gray-600">
+                              <Calendar className="h-3 w-3" />
+                              <span>Interviews: {candidate.interviewCount || 0}</span>
+                            </div>
+                            <div className="flex items-center space-x-2 text-sm text-gray-600">
+                              <Star className="h-3 w-3" />
+                              <span>Final Rating: {candidate.averageScore !== null && candidate.averageScore !== undefined ? `${candidate.averageScore.toFixed(1)}/10` : 'N/A'}</span>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Contact Information */}
+                        <div>
+                          <h4 className="text-sm font-medium text-gray-900 mb-2">Contact Information</h4>
+                          <div className="space-y-1">
+                            <div className="flex items-center space-x-2 text-sm text-gray-600">
+                              <Mail className="h-3 w-3" />
+                              <span>{candidate.email || 'No email'}</span>
+                            </div>
+                            {(candidate.phone || candidate.contact_number) && (
+                              <div className="flex items-center space-x-2 text-sm text-gray-600">
+                                <Phone className="h-3 w-3" />
+                                <span>{candidate.phone || candidate.contact_number}</span>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ))}
             </div>
           </div>
 
-          {/* Table Body */}
-          <div className="divide-y divide-gray-200">
+          {/* Mobile Card View */}
+          <div className="lg:hidden space-y-4">
             {filteredCandidates.map((candidate) => (
-              <div key={candidate.id}>
-                {/* Main Row */}
-                <div 
-                  className="grid grid-cols-12 gap-4 px-6 py-4 hover:bg-gray-50 cursor-pointer transition-colors"
-                  onClick={() => toggleCandidateExpansion(candidate.id)}
-                >
-                  {/* Candidate Info */}
-                  <div className="col-span-3 flex items-center space-x-3">
-                    <div className="w-10 h-10 bg-ai-teal/10 rounded-full flex items-center justify-center">
-                      <User className="h-5 w-5 text-ai-teal" />
+              <Card key={candidate.id} className="p-4">
+                <div className="space-y-4">
+                  {/* Candidate Header */}
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-3">
+                      <div className="w-10 h-10 bg-ai-teal/10 rounded-full flex items-center justify-center">
+                        <User className="h-5 w-5 text-ai-teal" />
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <p className="text-sm font-medium text-gray-900 truncate">
+                          {candidate.name || 'Unknown Name'}
+                        </p>
+                        <p className="text-sm text-gray-500 truncate">
+                          {candidate.email || 'No email'}
+                        </p>
+                      </div>
                     </div>
-                    <div className="min-w-0 flex-1">
-                      <p className="text-sm font-medium text-gray-900 truncate">
-                        {candidate.name || 'Unknown Name'}
-                      </p>
-                      <p className="text-sm text-gray-500 truncate">
-                        {candidate.email || 'No email'}
-                      </p>
-                    </div>
-                    {expandedCandidate === candidate.id ? (
-                      <ChevronDown className="h-4 w-4 text-gray-400" />
-                    ) : (
-                      <ChevronRight className="h-4 w-4 text-gray-400" />
-                    )}
+                    <button
+                      onClick={() => toggleCandidateExpansion(candidate.id)}
+                      className="p-1 text-gray-400 hover:text-gray-600"
+                    >
+                      {expandedCandidate === candidate.id ? (
+                        <ChevronDown className="h-4 w-4" />
+                      ) : (
+                        <ChevronRight className="h-4 w-4" />
+                      )}
+                    </button>
                   </div>
 
-                  {/* Applied Jobs */}
-                  <div className="col-span-2 flex items-center">
-                    <div className="flex items-center space-x-1">
+                  {/* Quick Stats */}
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="flex items-center space-x-2">
                       <Briefcase className="h-4 w-4 text-gray-400" />
                       <span className="text-sm text-gray-900">
                         {candidate.applicationCount || 0} jobs
                       </span>
                     </div>
-                  </div>
-
-                  {/* Status */}
-                  <div className="col-span-1 flex items-center">
-                    <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
-                      candidate.latestApplicationStatus ? getStatusColor(candidate.latestApplicationStatus) : 'bg-gray-100 text-gray-800'
-                    }`}>
-                      {candidate.latestApplicationStatus ? candidate.latestApplicationStatus.replace('_', ' ') : 'Applied'}
-                    </span>
-                  </div>
-
-                  {/* Interview Status */}
-                  <div className="col-span-2 flex items-center">
-                    <div className="flex items-center space-x-1">
-                      <Calendar className="h-4 w-4 text-gray-400" />
-                      <span className={`text-sm font-medium ${
-                        candidate.hasInterviews 
-                          ? 'text-green-600' 
-                          : 'text-gray-500'
-                      }`}>
-                        {candidate.hasInterviews ? 'Interview Taken' : 'Not Taken'}
-                      </span>
-                    </div>
-                  </div>
-
-                  {/* Final Rating */}
-                  <div className="col-span-2 flex items-center">
-                    <div className="flex items-center space-x-1">
+                    <div className="flex items-center space-x-2">
                       <Star className="h-4 w-4 text-gray-400" />
                       <span className="text-sm text-gray-900">
                         {candidate.averageScore !== null && candidate.averageScore !== undefined 
@@ -468,65 +619,61 @@ const CandidatesPage: React.FC = () => {
                     </div>
                   </div>
 
-                  {/* Actions */}
-                  <div className="col-span-2 flex items-center space-x-2">
+                  {/* Status and Interview Status */}
+                  <div className="flex items-center justify-between">
+                    <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
+                      candidate.latestApplicationStatus ? getStatusColor(candidate.latestApplicationStatus) : 'bg-gray-100 text-gray-800'
+                    }`}>
+                      {candidate.latestApplicationStatus ? candidate.latestApplicationStatus.replace('_', ' ') : 'Applied'}
+                    </span>
+                    <span className={`text-xs font-medium ${
+                      candidate.hasInterviews 
+                        ? 'text-green-600' 
+                        : 'text-gray-500'
+                    }`}>
+                      {candidate.hasInterviews ? 'Interview Taken' : 'Not Taken'}
+                    </span>
+                  </div>
+
+                  {/* Action Buttons */}
+                  <div className="flex items-center space-x-2">
                     <Button 
                       variant="outline" 
                       size="sm"
-                      onClick={(e: React.MouseEvent) => {
-                        e.stopPropagation();
-                        (candidate.candidate_id || candidate.id) && navigate(`/candidates/${candidate.candidate_id || candidate.id}`);
-                      }}
+                      onClick={() => (candidate.candidate_id || candidate.id) && navigate(`/candidates/${candidate.candidate_id || candidate.id}`)}
                       disabled={!candidate.candidate_id && !candidate.id}
+                      className="flex-1"
                     >
-                      <Eye className="h-3 w-3" />
+                      <Eye className="h-3 w-3 mr-1" />
+                      <span className="text-xs">View</span>
                     </Button>
                     <Button 
                       variant="ghost" 
                       size="sm"
-                      onClick={(e: React.MouseEvent) => {
-                        e.stopPropagation();
-                        handleDeleteClick(candidate);
-                      }}
-                      className="text-red-600 hover:text-red-700"
+                      onClick={() => handleDeleteClick(candidate)}
+                      className="text-red-600 hover:text-red-700 flex-1"
                     >
-                      <Trash2 className="h-3 w-3" />
+                      <Trash2 className="h-3 w-3 mr-1" />
+                      <span className="text-xs">Delete</span>
                     </Button>
                   </div>
-                </div>
 
-                {/* Expanded Row */}
-                {expandedCandidate === candidate.id && (
-                  <div className="px-6 py-4 bg-gray-50 border-t border-gray-200">
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                      {/* Applied Jobs Details */}
+                  {/* Expanded Details */}
+                  {expandedCandidate === candidate.id && (
+                    <div className="pt-4 border-t border-gray-200 space-y-4">
+                      {/* Applied Jobs */}
                       <div>
                         <h4 className="text-sm font-medium text-gray-900 mb-2">Applied Jobs</h4>
                         <div className="space-y-1">
                           {candidate.appliedJobs && candidate.appliedJobs.length > 0 ? (
                             candidate.appliedJobs.map((job, index) => (
-                              <div key={index} className="text-sm text-gray-600 bg-white px-2 py-1 rounded border">
+                              <div key={index} className="text-sm text-gray-600 bg-gray-50 px-2 py-1 rounded">
                                 {job}
                               </div>
                             ))
                           ) : (
                             <p className="text-sm text-gray-500">No jobs applied</p>
                           )}
-                        </div>
-                      </div>
-
-                      {/* Interview Information */}
-                      <div>
-                        <h4 className="text-sm font-medium text-gray-900 mb-2">Interview Details</h4>
-                        <div className="space-y-1">
-                          <div className="flex items-center space-x-2 text-sm text-gray-600">
-                            <Calendar className="h-3 w-3" />
-                            <span>Interviews: {candidate.interviewCount || 0}</span>
-                          </div>
-                          <div className="flex items-center space-x-2 text-sm text-gray-600">
-                            <Star className="h-3 w-3" />
-                            <span>Final Rating: {candidate.averageScore !== null && candidate.averageScore !== undefined ? `${candidate.averageScore.toFixed(1)}/10` : 'N/A'}</span>
-                          </div>
                         </div>
                       </div>
 
@@ -547,9 +694,9 @@ const CandidatesPage: React.FC = () => {
                         </div>
                       </div>
                     </div>
-                  </div>
-                )}
-              </div>
+                  )}
+                </div>
+              </Card>
             ))}
           </div>
         </div>
@@ -557,34 +704,34 @@ const CandidatesPage: React.FC = () => {
 
       {/* Add Candidate Modal */}
       <Modal isOpen={isAddModalOpen} onClose={closeModal} title="Add New Candidate" size="lg">
-        <div className="space-y-6">
+        <div className="space-y-4 sm:space-y-6">
           {/* Method Selection */}
           {!addMethod && (
             <div className="space-y-4">
-              <p className="text-gray-600">Choose how you'd like to add the candidate:</p>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <p className="text-sm sm:text-base text-gray-600">Choose how you'd like to add the candidate:</p>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <button
                   onClick={() => handleMethodSelect('upload')}
-                  className="p-6 border-2 border-gray-200 rounded-lg hover:border-blue-500 hover:bg-blue-50 transition-colors text-left"
+                  className="p-4 sm:p-6 border-2 border-gray-200 rounded-lg hover:border-blue-500 hover:bg-blue-50 transition-colors text-left"
                 >
                   <div className="flex items-center space-x-3 mb-3">
-                    <Upload className="h-8 w-8 text-blue-600" />
-                    <h3 className="font-semibold text-gray-900">Upload Resume</h3>
+                    <Upload className="h-6 w-6 sm:h-8 sm:w-8 text-blue-600" />
+                    <h3 className="font-semibold text-gray-900 text-sm sm:text-base">Upload Resume</h3>
                   </div>
-                  <p className="text-sm text-gray-600">
+                  <p className="text-xs sm:text-sm text-gray-600">
                     Upload a resume file and we'll automatically extract candidate information using AI.
                   </p>
                 </button>
                 
                 <button
                   onClick={() => handleMethodSelect('manual')}
-                  className="p-6 border-2 border-gray-200 rounded-lg hover:border-blue-500 hover:bg-blue-50 transition-colors text-left"
+                  className="p-4 sm:p-6 border-2 border-gray-200 rounded-lg hover:border-blue-500 hover:bg-blue-50 transition-colors text-left"
                 >
                   <div className="flex items-center space-x-3 mb-3">
-                    <UserPlus className="h-8 w-8 text-blue-600" />
-                    <h3 className="font-semibold text-gray-900">Manual Entry</h3>
+                    <UserPlus className="h-6 w-6 sm:h-8 sm:w-8 text-blue-600" />
+                    <h3 className="font-semibold text-gray-900 text-sm sm:text-base">Manual Entry</h3>
                   </div>
-                  <p className="text-sm text-gray-600">
+                  <p className="text-xs sm:text-sm text-gray-600">
                     Manually enter candidate information in the form fields.
                   </p>
                 </button>
@@ -602,14 +749,14 @@ const CandidatesPage: React.FC = () => {
                 >
                   <X className="h-4 w-4" />
                 </button>
-                <h3 className="font-semibold text-gray-900">Upload Resume</h3>
+                <h3 className="font-semibold text-gray-900 text-sm sm:text-base">Upload Resume</h3>
               </div>
 
               {/* File Upload */}
               <div className="space-y-4">
                 <div className="space-y-2">
                   <label className="block text-sm font-medium text-gray-700">Resume File *</label>
-                  <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-gray-400 transition-colors">
+                  <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 sm:p-6 text-center hover:border-gray-400 transition-colors">
                     <input
                       type="file"
                       accept=".pdf,.doc,.docx"
@@ -620,14 +767,14 @@ const CandidatesPage: React.FC = () => {
                     <label htmlFor="resume-upload" className="cursor-pointer">
                       {resumeFile ? (
                         <div className="space-y-2">
-                          <FileText className="h-8 w-8 text-green-600 mx-auto" />
-                          <p className="text-sm text-green-600 font-medium">{resumeFile.name}</p>
+                          <FileText className="h-6 w-6 sm:h-8 sm:w-8 text-green-600 mx-auto" />
+                          <p className="text-xs sm:text-sm text-green-600 font-medium">{resumeFile.name}</p>
                           <p className="text-xs text-gray-500">Click to change file</p>
                         </div>
                       ) : (
                         <div className="space-y-2">
-                          <Upload className="h-8 w-8 text-gray-400 mx-auto" />
-                          <p className="text-sm text-gray-600">Click to upload resume</p>
+                          <Upload className="h-6 w-6 sm:h-8 sm:w-8 text-gray-400 mx-auto" />
+                          <p className="text-xs sm:text-sm text-gray-600">Click to upload resume</p>
                           <p className="text-xs text-gray-500">PDF, DOC, DOCX (max 5MB)</p>
                         </div>
                       )}
@@ -693,10 +840,10 @@ const CandidatesPage: React.FC = () => {
                 >
                   <X className="h-4 w-4" />
                 </button>
-                <h3 className="font-semibold text-gray-900">Manual Entry</h3>
+                <h3 className="font-semibold text-gray-900 text-sm sm:text-base">Manual Entry</h3>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <Input
                   label="Full Name *"
                   value={formData.name}
@@ -731,7 +878,7 @@ const CandidatesPage: React.FC = () => {
                     value={formData.experience || ''}
                     onChange={(e) => handleInputChange('experience', e.target.value)}
                     placeholder="Describe candidate's work experience"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm sm:text-base"
                     rows={3}
                   />
                 </div>
@@ -741,7 +888,7 @@ const CandidatesPage: React.FC = () => {
                     value={formData.education || ''}
                     onChange={(e) => handleInputChange('education', e.target.value)}
                     placeholder="Describe candidate's education background"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm sm:text-base"
                     rows={3}
                   />
                 </div>
@@ -786,17 +933,25 @@ const CandidatesPage: React.FC = () => {
 
           {/* Action Buttons */}
           {addMethod && (
-            <div className="flex justify-end space-x-3 pt-4 border-t">
-              <Button variant="outline" onClick={closeModal} disabled={loading}>
-                Cancel
+            <div className="flex flex-col sm:flex-row justify-end space-y-2 sm:space-y-0 sm:space-x-3 pt-4 border-t">
+              <Button 
+                variant="outline" 
+                onClick={closeModal} 
+                disabled={loading}
+                className="w-full sm:w-auto"
+              >
+                <span className="text-sm sm:text-base">Cancel</span>
               </Button>
               <Button 
                 variant="primary" 
                 onClick={handleSubmit} 
                 loading={loading}
                 disabled={loading}
+                className="w-full sm:w-auto"
               >
-                {loading ? 'Processing...' : 'Add Candidate'}
+                <span className="text-sm sm:text-base">
+                  {loading ? 'Processing...' : 'Add Candidate'}
+                </span>
               </Button>
             </div>
           )}

@@ -14,6 +14,7 @@ interface ScheduleInterviewModalProps {
   aiAgents: AIAgent[];
   selectedCandidateId?: string;
   selectedJobId?: string;
+  selectedDate?: string; // ISO date string (YYYY-MM-DD)
 }
 
 const ScheduleInterviewModal: React.FC<ScheduleInterviewModalProps> = ({
@@ -24,7 +25,8 @@ const ScheduleInterviewModal: React.FC<ScheduleInterviewModalProps> = ({
   jobDescriptions,
   aiAgents,
   selectedCandidateId,
-  selectedJobId
+  selectedJobId,
+  selectedDate
 }) => {
   const [formData, setFormData] = useState<InterviewForm>({
     candidateId: selectedCandidateId || '',
@@ -32,7 +34,7 @@ const ScheduleInterviewModal: React.FC<ScheduleInterviewModalProps> = ({
     aiAgentId: '',
     interviewType: 'general',
     duration: 60,
-    scheduledAt: '',
+    scheduledAt: new Date(Date.now() + 60 * 60 * 1000).toISOString().slice(0, 16), // 1 hour from now
     interviewNotes: ''
   });
 
@@ -42,20 +44,33 @@ const ScheduleInterviewModal: React.FC<ScheduleInterviewModalProps> = ({
   // Reset form when modal opens/closes
   useEffect(() => {
     if (isOpen) {
+      // If a date is selected from calendar, set it with default time
+      let initialScheduledAt = '';
+      if (selectedDate) {
+        // Set default time to 9:00 AM
+        initialScheduledAt = `${selectedDate}T09:00`;
+      } else {
+        // Set to current time + 1 hour if no date selected
+        const now = new Date();
+        now.setHours(now.getHours() + 1);
+        initialScheduledAt = now.toISOString().slice(0, 16);
+      }
+      
       setFormData({
         candidateId: selectedCandidateId || '',
         jobDescriptionId: selectedJobId || '',
         aiAgentId: '',
         interviewType: 'general',
         duration: 60,
-        scheduledAt: '',
+        scheduledAt: initialScheduledAt,
         interviewNotes: ''
       });
       setError(null);
     }
-  }, [isOpen, selectedCandidateId, selectedJobId]);
+  }, [isOpen, selectedCandidateId, selectedJobId, selectedDate]);
 
   const handleInputChange = (field: keyof InterviewForm, value: string | number) => {
+    console.log('handleInputChange called:', field, value);
     setFormData(prev => ({
       ...prev,
       [field]: value
@@ -207,19 +222,57 @@ const ScheduleInterviewModal: React.FC<ScheduleInterviewModalProps> = ({
           </div>
 
           {/* Scheduled Date & Time */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              <Calendar className="w-4 h-4 inline mr-1" />
-              Date & Time *
-            </label>
-            <input
-              type="datetime-local"
-              value={formData.scheduledAt}
-              onChange={(e) => handleInputChange('scheduledAt', e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              required
-              min={new Date().toISOString().slice(0, 16)}
-            />
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                <Calendar className="w-4 h-4 inline mr-1" />
+                Date & Time *
+              </label>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {/* Date Input */}
+                <div>
+                  <label className="block text-xs text-gray-600 mb-1">Date</label>
+                  <input
+                    type="date"
+                    value={formData.scheduledAt ? formData.scheduledAt.split('T')[0] : ''}
+                    onChange={(e) => {
+                      const date = e.target.value;
+                      const time = formData.scheduledAt ? formData.scheduledAt.split('T')[1] : '09:00';
+                      const newDateTime = `${date}T${time}`;
+                      console.log('Date input changed:', newDateTime);
+                      handleInputChange('scheduledAt', newDateTime);
+                    }}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    required
+                    min={new Date().toISOString().slice(0, 10)}
+                  />
+                </div>
+                
+                {/* Time Input */}
+                <div>
+                  <label className="block text-xs text-gray-600 mb-1">Time</label>
+                  <input
+                    type="time"
+                    value={formData.scheduledAt ? formData.scheduledAt.split('T')[1] : '09:00'}
+                    onChange={(e) => {
+                      const time = e.target.value;
+                      const date = formData.scheduledAt ? formData.scheduledAt.split('T')[0] : new Date().toISOString().slice(0, 10);
+                      const newDateTime = `${date}T${time}`;
+                      console.log('Time input changed:', newDateTime);
+                      handleInputChange('scheduledAt', newDateTime);
+                    }}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    required
+                  />
+                </div>
+              </div>
+              <p className="text-xs text-gray-500 mt-1">
+                Past dates and times are not allowed.
+              </p>
+              <p className="text-xs text-gray-400 mt-1">
+                Current value: {formData.scheduledAt}
+              </p>
+            </div>
           </div>
 
           {/* Interview Notes */}

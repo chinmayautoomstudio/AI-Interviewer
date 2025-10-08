@@ -132,3 +132,5 @@ Thumbs.db
 # Test files
 test-*.js
 *-test.js
+# Local Netlify folder
+.netlify

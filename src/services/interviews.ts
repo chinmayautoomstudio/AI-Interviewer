@@ -1,5 +1,6 @@
 import { supabase } from './supabase';
 import { Interview, InterviewForm } from '../types';
+import { EmailService, InterviewEmailData } from './emailService';
 
 // Helper function to ensure array fields are properly handled
 const ensureArray = (field: any): any[] => {
@@ -233,7 +234,17 @@ export const createInterview = async (interviewData: InterviewForm): Promise<Int
       throw error;
     }
 
-    return transformInterviewData(data);
+    const interview = transformInterviewData(data);
+
+    // Send email notification to candidate
+    try {
+      await sendInterviewEmailNotification(interview);
+    } catch (emailError) {
+      console.error('Failed to send interview email notification:', emailError);
+      // Don't fail the interview creation if email fails
+    }
+
+    return interview;
   } catch (error) {
     console.error('Error in createInterview:', error);
     throw error;
@@ -435,5 +446,66 @@ export class InterviewsService {
    */
   static async getInterviewStats() {
     return getInterviewStats();
+  }
+}
+
+/**
+ * Send interview email notification to candidate
+ */
+async function sendInterviewEmailNotification(interview: Interview): Promise<void> {
+  try {
+    if (!interview.candidate || !interview.jobDescription) {
+      console.warn('Missing candidate or job description data for email notification');
+      return;
+    }
+
+    // Generate interview link
+    const interviewLink = EmailService.generateInterviewLink(interview.id, interview.candidate.id);
+    
+    // Generate and store temporary credentials for candidate login
+    const candidateLoginCredentials = EmailService.generateTemporaryCredentials(interview.candidate.email);
+    
+    // Store credentials in database
+    try {
+      const { error: updateError } = await supabase
+        .from('candidates')
+        .update({
+          username: candidateLoginCredentials.username,
+          password_hash: btoa(candidateLoginCredentials.temporaryPassword + 'candidate_salt_2024'), // Simple hash for development
+          credentials_generated: true,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', interview.candidate.id);
+
+      if (updateError) {
+        console.error('Error storing candidate credentials:', updateError);
+        // Continue with email sending even if credential storage fails
+      } else {
+        console.log('✅ Candidate credentials stored successfully');
+      }
+    } catch (credentialError) {
+      console.error('Error in credential storage:', credentialError);
+      // Continue with email sending even if credential storage fails
+    }
+
+    const emailData: InterviewEmailData = {
+      candidate: interview.candidate,
+      jobDescription: interview.jobDescription,
+      aiAgent: interview.aiAgent,
+      interview,
+      interviewLink,
+      candidateLoginCredentials,
+    };
+
+    const result = await EmailService.sendInterviewInvitation(emailData);
+    
+    if (result.success) {
+      console.log('✅ Interview email notification sent successfully to:', interview.candidate.email);
+    } else {
+      console.error('❌ Failed to send interview email notification:', result.error);
+    }
+  } catch (error) {
+    console.error('Error in sendInterviewEmailNotification:', error);
+    throw error;
   }
 }

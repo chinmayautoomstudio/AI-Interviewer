@@ -14,6 +14,7 @@ import CandidateLoginPage from './pages/CandidateLoginPage';
 import CandidateDashboardPage from './pages/CandidateDashboardPage';
 import CandidateInterviewPage from './pages/CandidateInterviewPage';
 import CandidateProfilePage from './pages/CandidateProfilePage';
+import CandidatePasswordUpdatePage from './pages/CandidatePasswordUpdatePage';
 import AIAgentsPage from './pages/AIAgentsPage';
 import AdminInterviewTestPage from './pages/AdminInterviewTestPage';
 import InterviewReportPage from './pages/InterviewReportPage';
@@ -43,9 +44,10 @@ const AppContent: React.FC = () => {
       <Routes>
         <Route path="/login" element={<LoginPage />} />
         <Route path="/register" element={<RegisterPage />} />
-        <Route path="/candidate" element={<CandidateLoginPage />} />
+        <Route path="/candidate/login" element={<CandidateLoginPage />} />
         <Route path="/candidate/dashboard" element={<CandidateDashboardPage />} />
         <Route path="/candidate/interview/:sessionToken" element={<CandidateInterviewPage />} />
+        <Route path="/candidate/update-password" element={<CandidatePasswordUpdatePage />} />
         <Route path="/privacy-policy" element={<PrivacyPolicyPage />} />
         <Route path="/terms-and-conditions" element={<TermsAndConditionsPage />} />
         <Route path="/disclaimer" element={<DisclaimerPage />} />

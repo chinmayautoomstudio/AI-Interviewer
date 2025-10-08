@@ -273,4 +273,39 @@ export class CandidateAuthService {
       };
     }
   }
+
+  /**
+   * Update candidate password
+   */
+  static async updateCandidatePassword(candidateId: string, newPassword: string): Promise<{ success: boolean; error?: string }> {
+    try {
+      // Hash the new password
+      const hashedPassword = this.hashPassword(newPassword);
+
+      // Update the candidate's password
+      const { error } = await supabase
+        .from('candidates')
+        .update({ 
+          password_hash: hashedPassword,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', candidateId);
+
+      if (error) {
+        console.error('Error updating candidate password:', error);
+        return { 
+          success: false, 
+          error: 'Failed to update password. Please try again.' 
+        };
+      }
+
+      return { success: true };
+    } catch (error) {
+      console.error('Error in updateCandidatePassword:', error);
+      return { 
+        success: false, 
+        error: 'An unexpected error occurred. Please try again.' 
+      };
+    }
+  }
 }

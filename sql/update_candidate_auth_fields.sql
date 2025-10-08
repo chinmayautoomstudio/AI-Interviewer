@@ -1,5 +1,5 @@
--- Add Candidate Authentication Fields
--- This script adds username and password_hash fields to the candidates table
+-- Update Candidate Authentication Fields (Simplified)
+-- This script adds the missing last_login field and ensures existing auth fields are properly configured
 -- Run this script in the Supabase SQL Editor
 
 -- ==============================================
@@ -19,64 +19,10 @@ WHERE table_name = 'candidates'
 ORDER BY ordinal_position;
 
 -- ==============================================
--- STEP 2: ADD AUTHENTICATION FIELDS
+-- STEP 2: ADD MISSING last_login FIELD
 -- ==============================================
 
--- Add username column
-DO $$
-BEGIN
-    IF NOT EXISTS (
-        SELECT 1 FROM information_schema.columns 
-        WHERE table_name = 'candidates' 
-        AND column_name = 'username'
-        AND table_schema = 'public'
-    ) THEN
-        ALTER TABLE candidates 
-        ADD COLUMN username VARCHAR(100) UNIQUE;
-        
-        RAISE NOTICE 'Added username column to candidates table';
-    ELSE
-        RAISE NOTICE 'username column already exists in candidates table';
-    END IF;
-END $$;
-
--- Add password_hash column
-DO $$
-BEGIN
-    IF NOT EXISTS (
-        SELECT 1 FROM information_schema.columns 
-        WHERE table_name = 'candidates' 
-        AND column_name = 'password_hash'
-        AND table_schema = 'public'
-    ) THEN
-        ALTER TABLE candidates 
-        ADD COLUMN password_hash VARCHAR(255);
-        
-        RAISE NOTICE 'Added password_hash column to candidates table';
-    ELSE
-        RAISE NOTICE 'password_hash column already exists in candidates table';
-    END IF;
-END $$;
-
--- Add credentials_generated column
-DO $$
-BEGIN
-    IF NOT EXISTS (
-        SELECT 1 FROM information_schema.columns 
-        WHERE table_name = 'candidates' 
-        AND column_name = 'credentials_generated'
-        AND table_schema = 'public'
-    ) THEN
-        ALTER TABLE candidates 
-        ADD COLUMN credentials_generated BOOLEAN DEFAULT FALSE;
-        
-        RAISE NOTICE 'Added credentials_generated column to candidates table';
-    ELSE
-        RAISE NOTICE 'credentials_generated column already exists in candidates table';
-    END IF;
-END $$;
-
--- Add last_login column
+-- Add last_login column (only if it doesn't exist)
 DO $$
 BEGIN
     IF NOT EXISTS (
@@ -95,17 +41,44 @@ BEGIN
 END $$;
 
 -- ==============================================
--- STEP 3: CREATE INDEXES FOR PERFORMANCE
+-- STEP 3: ENSURE PROPER CONSTRAINTS ON EXISTING FIELDS
 -- ==============================================
 
--- Create index on username for faster lookups
+-- Make username unique if it isn't already
+DO $$
+BEGIN
+    -- Check if unique constraint exists on username
+    IF NOT EXISTS (
+        SELECT 1 FROM information_schema.table_constraints 
+        WHERE table_name = 'candidates' 
+        AND constraint_type = 'UNIQUE'
+        AND constraint_name LIKE '%username%'
+    ) THEN
+        -- Add unique constraint to username
+        ALTER TABLE candidates 
+        ADD CONSTRAINT candidates_username_unique UNIQUE (username);
+        
+        RAISE NOTICE 'Added unique constraint to username column';
+    ELSE
+        RAISE NOTICE 'Username unique constraint already exists';
+    END IF;
+END $$;
+
+-- ==============================================
+-- STEP 4: CREATE INDEXES FOR PERFORMANCE
+-- ==============================================
+
+-- Create index on username for faster lookups (if it doesn't exist)
 CREATE INDEX IF NOT EXISTS idx_candidates_username ON candidates(username);
 
--- Create index on credentials_generated for filtering
+-- Create index on credentials_generated for filtering (if it doesn't exist)
 CREATE INDEX IF NOT EXISTS idx_candidates_credentials_generated ON candidates(credentials_generated);
 
+-- Create index on last_login for sorting (if it doesn't exist)
+CREATE INDEX IF NOT EXISTS idx_candidates_last_login ON candidates(last_login);
+
 -- ==============================================
--- STEP 4: UPDATE EXISTING CANDIDATES (OPTIONAL)
+-- STEP 5: UPDATE EXISTING CANDIDATES (OPTIONAL)
 -- ==============================================
 
 -- Generate usernames for existing candidates who don't have them
@@ -115,34 +88,6 @@ SET username = COALESCE(
     LOWER(SPLIT_PART(email, '@', 1)) || '_' || SUBSTRING(id::text, 1, 8)
 )
 WHERE username IS NULL;
-
--- ==============================================
--- STEP 5: VERIFY CHANGES
--- ==============================================
-
--- Display updated table structure
-SELECT 
-    'Updated Candidates Table Structure' as info,
-    column_name,
-    data_type,
-    is_nullable,
-    column_default
-FROM information_schema.columns 
-WHERE table_name = 'candidates' 
-    AND table_schema = 'public'
-ORDER BY ordinal_position;
-
--- Show sample of updated data
-SELECT 
-    'Sample Updated Candidates' as info,
-    id,
-    name,
-    email,
-    username,
-    credentials_generated,
-    status
-FROM candidates
-LIMIT 5;
 
 -- ==============================================
 -- STEP 6: CREATE HELPER FUNCTIONS
@@ -181,6 +126,7 @@ BEGIN
         username = generated_username,
         password_hash = hashed_password,
         credentials_generated = TRUE,
+        credentials_generated_at = NOW(),
         updated_at = NOW()
     WHERE id = candidate_id;
     
@@ -190,14 +136,42 @@ END;
 $$ LANGUAGE plpgsql;
 
 -- ==============================================
+-- STEP 7: VERIFY CHANGES
+-- ==============================================
+
+-- Display updated table structure
+SELECT 
+    'Updated Candidates Table Structure' as info,
+    column_name,
+    data_type,
+    is_nullable,
+    column_default
+FROM information_schema.columns 
+WHERE table_name = 'candidates' 
+    AND table_schema = 'public'
+ORDER BY ordinal_position;
+
+-- Show sample of updated data
+SELECT 
+    'Sample Updated Candidates' as info,
+    id,
+    name,
+    email,
+    username,
+    credentials_generated,
+    status
+FROM candidates
+LIMIT 5;
+
+-- ==============================================
 -- SUCCESS MESSAGE
 -- ==============================================
 
 DO $$
 BEGIN
-    RAISE NOTICE '✅ Candidate authentication fields added successfully!';
-    RAISE NOTICE '📋 Added fields: username, password_hash, credentials_generated, last_login';
-    RAISE NOTICE '🔍 Created indexes for performance optimization';
-    RAISE NOTICE '🛠️ Created helper function: generate_candidate_credentials()';
+    RAISE NOTICE '✅ Candidate authentication fields updated successfully!';
+    RAISE NOTICE '📋 Added missing field: last_login';
+    RAISE NOTICE '🔍 Ensured proper constraints and indexes';
+    RAISE NOTICE '🛠️ Updated helper function: generate_candidate_credentials()';
     RAISE NOTICE '📧 Ready to send interview invitations with login credentials!';
 END $$;
