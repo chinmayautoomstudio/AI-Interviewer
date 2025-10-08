@@ -57,7 +57,7 @@ const LoginPage: React.FC = () => {
             <div className="grid grid-cols-1 lg:grid-cols-2 min-h-[500px] sm:min-h-[600px]">
               
               {/* Left Section - Welcome */}
-              <div className="bg-gradient-to-br from-white/20 to-white/5 p-6 sm:p-8 lg:p-12 flex flex-col justify-between order-2 lg:order-1">
+              <div className="bg-gradient-to-br from-white/20 to-white/5 p-6 sm:p-8 lg:p-12 flex flex-col justify-between order-1 lg:order-1">
                 {/* Logo */}
                 <div className="flex items-center space-x-2 sm:space-x-3 mb-6 sm:mb-8">
                   <img 
@@ -97,7 +97,7 @@ const LoginPage: React.FC = () => {
               </div>
 
               {/* Right Section - Login Form */}
-              <div className="bg-white/95 backdrop-blur-sm p-6 sm:p-8 lg:p-12 flex flex-col justify-center order-1 lg:order-2">
+              <div className="bg-white/95 backdrop-blur-sm p-6 sm:p-8 lg:p-12 flex flex-col justify-center order-2 lg:order-2">
                 <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-6">
                   {error && (
                     <div className="bg-ai-coral/10 border border-ai-coral/20 rounded-lg p-4">
