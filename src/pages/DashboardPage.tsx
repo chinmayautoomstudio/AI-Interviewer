@@ -174,7 +174,7 @@ const DashboardPage: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="p-6 flex items-center justify-center min-h-96">
+      <div className="p-4 sm:p-6 flex items-center justify-center min-h-96">
         <LoadingSpinner size="lg" />
       </div>
     );
@@ -182,13 +182,13 @@ const DashboardPage: React.FC = () => {
 
   if (error) {
     return (
-      <div className="p-6">
+      <div className="p-4 sm:p-6">
         <div className="bg-ai-coral/10 border border-ai-coral/20 rounded-lg p-4">
-          <p className="text-ai-coral-dark">Error: {error}</p>
+          <p className="text-ai-coral-dark text-sm sm:text-base">Error: {error}</p>
           <Button 
             variant="primary" 
             onClick={loadDashboardData}
-            className="mt-2"
+            className="mt-2 text-sm sm:text-base"
           >
             Retry
           </Button>
@@ -198,66 +198,66 @@ const DashboardPage: React.FC = () => {
   }
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="p-4 sm:p-6 space-y-4 sm:space-y-6">
       {/* Header */}
       <div>
-        <h1 className="text-2xl font-bold text-ai-teal">Dashboard</h1>
-        <p className="text-gray-600">Welcome back! Here's what's happening with your interviews.</p>
+        <h1 className="text-xl sm:text-2xl font-bold text-ai-teal">Dashboard</h1>
+        <p className="text-sm sm:text-base text-gray-600">Welcome back! Here's what's happening with your interviews.</p>
       </div>
 
       {/* Middle Section - Split Layout */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
         {/* Left Side - Quick Actions */}
-        <div className="lg:col-span-1">
+        <div className="lg:col-span-1 order-2 lg:order-1">
           <Card title="Quick Actions">
-            <div className="space-y-3">
+            <div className="space-y-2 sm:space-y-3">
               <Button 
                 variant="outline" 
-                className="w-full justify-start"
+                className="w-full justify-start text-sm sm:text-base"
                 onClick={() => handleQuickAction('add-job')}
               >
-                <FileText className="h-4 w-4 mr-2" />
-                Add New Job Description
+                <FileText className="h-4 w-4 mr-2 flex-shrink-0" />
+                <span className="truncate">Add New Job Description</span>
               </Button>
               <Button 
                 variant="outline" 
-                className="w-full justify-start"
+                className="w-full justify-start text-sm sm:text-base"
                 onClick={() => handleQuickAction('add-candidate')}
               >
-                <Users className="h-4 w-4 mr-2" />
-                Add New Candidate
+                <Users className="h-4 w-4 mr-2 flex-shrink-0" />
+                <span className="truncate">Add New Candidate</span>
               </Button>
               <Button 
                 variant="outline" 
-                className="w-full justify-start"
+                className="w-full justify-start text-sm sm:text-base"
                 onClick={() => handleQuickAction('schedule-interview')}
               >
-                <Calendar className="h-4 w-4 mr-2" />
-                Schedule Interview
+                <Calendar className="h-4 w-4 mr-2 flex-shrink-0" />
+                <span className="truncate">Schedule Interview</span>
               </Button>
               <Button 
                 variant="outline" 
-                className="w-full justify-start"
+                className="w-full justify-start text-sm sm:text-base"
                 onClick={() => handleQuickAction('review-results')}
               >
-                <CheckCircle className="h-4 w-4 mr-2" />
-                Review Results
+                <CheckCircle className="h-4 w-4 mr-2 flex-shrink-0" />
+                <span className="truncate">Review Results</span>
               </Button>
             </div>
           </Card>
         </div>
 
         {/* Right Side - Stats Grid */}
-        <div className="lg:col-span-2">
-          <div className="grid grid-cols-2 gap-4">
+        <div className="lg:col-span-2 order-1 lg:order-2">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
             {stats.map((stat) => {
               const Icon = stat.icon;
               return (
-                <Card key={stat.title} className="p-4">
+                <Card key={stat.title} className="p-3 sm:p-4">
                   <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-xs font-medium text-gray-600">{stat.title}</p>
-                      <p className="text-xl font-bold text-gray-900">{stat.value}</p>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-xs font-medium text-gray-600 truncate">{stat.title}</p>
+                      <p className="text-lg sm:text-xl font-bold text-gray-900">{stat.value}</p>
                       <p className={`text-xs ${
                         stat.changeType === 'positive' ? 'text-ai-teal' : 'text-ai-coral'
                       }`}>
@@ -265,8 +265,8 @@ const DashboardPage: React.FC = () => {
                         {stat.change}
                       </p>
                     </div>
-                    <div className="p-2 bg-ai-teal/10 rounded-lg">
-                      <Icon className="h-5 w-5 text-ai-teal" />
+                    <div className="p-2 bg-ai-teal/10 rounded-lg flex-shrink-0 ml-2">
+                      <Icon className="h-4 w-4 sm:h-5 sm:w-5 text-ai-teal" />
                     </div>
                   </div>
                 </Card>
@@ -279,23 +279,23 @@ const DashboardPage: React.FC = () => {
       {/* Recent Interview Reports - Full width */}
       <div>
         <Card title="Recent Interview Reports">
-          <div className="space-y-4">
+          <div className="space-y-3 sm:space-y-4">
             {recentInterviews.length > 0 ? (
               recentInterviews.map((report) => (
-                <div key={report.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
-                  <div className="flex items-center space-x-4">
-                    <div className="w-12 h-12 bg-gradient-to-br from-ai-teal to-ai-teal-light rounded-full flex items-center justify-center">
-                      <span className="text-sm font-medium text-white">
+                <div key={report.id} className="flex flex-col sm:flex-row sm:items-center justify-between p-3 sm:p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors gap-3 sm:gap-0">
+                  <div className="flex items-center space-x-3 sm:space-x-4 min-w-0 flex-1">
+                    <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-br from-ai-teal to-ai-teal-light rounded-full flex items-center justify-center flex-shrink-0">
+                      <span className="text-xs sm:text-sm font-medium text-white">
                         {report.interview_sessions?.candidates?.name ? 
                           report.interview_sessions.candidates.name.split(' ').map((n: string) => n[0]).join('') : 
                           'N/A'
                         }
                       </span>
                     </div>
-                    <div className="flex-1">
-                      <p className="font-medium text-gray-900">{report.interview_sessions?.candidates?.name || 'Unknown Candidate'}</p>
-                      <p className="text-sm text-gray-600">{report.interview_sessions?.job_descriptions?.title || 'Unknown Position'}</p>
-                      <div className="flex items-center space-x-4 mt-1">
+                    <div className="min-w-0 flex-1">
+                      <p className="font-medium text-gray-900 text-sm sm:text-base truncate">{report.interview_sessions?.candidates?.name || 'Unknown Candidate'}</p>
+                      <p className="text-xs sm:text-sm text-gray-600 truncate">{report.interview_sessions?.job_descriptions?.title || 'Unknown Position'}</p>
+                      <div className="flex flex-col sm:flex-row sm:items-center space-y-1 sm:space-y-0 sm:space-x-4 mt-1">
                         <span className="text-xs text-gray-500">
                           <FileText className="h-3 w-3 inline mr-1" />
                           Report #{report.id.slice(-8)}
@@ -306,8 +306,8 @@ const DashboardPage: React.FC = () => {
                       </div>
                     </div>
                   </div>
-                  <div className="flex items-center space-x-3">
-                    <div className="text-right">
+                  <div className="flex flex-col sm:flex-row sm:items-center space-y-2 sm:space-y-0 sm:space-x-3">
+                    <div className="text-left sm:text-right">
                       <div className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(report.suitability_status)}`}>
                         {report.suitability_status ? report.suitability_status.replace('_', ' ') : 'Unknown'}
                       </div>
@@ -321,7 +321,7 @@ const DashboardPage: React.FC = () => {
                       variant="outline"
                       size="sm"
                       onClick={() => navigate(`/reports/${report.id}`)}
-                      className="text-ai-teal border-ai-teal hover:bg-ai-teal hover:text-white"
+                      className="text-ai-teal border-ai-teal hover:bg-ai-teal hover:text-white text-xs sm:text-sm w-full sm:w-auto"
                     >
                       View Report
                     </Button>
@@ -329,10 +329,10 @@ const DashboardPage: React.FC = () => {
                 </div>
               ))
             ) : (
-              <div className="text-center py-8 text-gray-500">
-                <FileText className="h-12 w-12 mx-auto mb-4 text-gray-300" />
-                <p>No interview reports found</p>
-                <p className="text-sm">Complete some interviews to see reports here</p>
+              <div className="text-center py-6 sm:py-8 text-gray-500">
+                <FileText className="h-8 w-8 sm:h-12 sm:w-12 mx-auto mb-3 sm:mb-4 text-gray-300" />
+                <p className="text-sm sm:text-base">No interview reports found</p>
+                <p className="text-xs sm:text-sm">Complete some interviews to see reports here</p>
               </div>
             )}
           </div>
