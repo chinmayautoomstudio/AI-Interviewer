@@ -46,6 +46,10 @@ const AIAgentsPage: React.FC = () => {
       setLoading(true);
       setError(null);
       const agentsData = await AIAgentsService.getAllAIAgents();
+      console.log('AI Agents data received:', agentsData);
+      if (agentsData.length > 0) {
+        console.log('First agent structure:', agentsData[0]);
+      }
       setAgents(agentsData);
     } catch (err) {
       console.error('Error loading AI agents:', err);
@@ -62,12 +66,13 @@ const AIAgentsPage: React.FC = () => {
     return (
       agent.name.toLowerCase().includes(query) ||
       agent.description?.toLowerCase().includes(query) ||
-      agent.agentType.toLowerCase().includes(query) ||
-      agent.jobCategories.some(category => category.toLowerCase().includes(query))
+      (agent.agentType && agent.agentType.toLowerCase().includes(query)) ||
+      (agent.jobCategories && agent.jobCategories.some(category => category.toLowerCase().includes(query)))
     );
   });
 
-  const getAgentTypeIcon = (type: AIAgent['agentType']) => {
+  const getAgentTypeIcon = (type: AIAgent['agentType'] | undefined) => {
+    if (!type) return <Bot className="h-5 w-5" />;
     switch (type) {
       case 'technical': return <Code className="h-5 w-5" />;
       case 'behavioral': return <MessageSquare className="h-5 w-5" />;
@@ -78,7 +83,8 @@ const AIAgentsPage: React.FC = () => {
     }
   };
 
-  const getAgentTypeColor = (type: AIAgent['agentType']) => {
+  const getAgentTypeColor = (type: AIAgent['agentType'] | undefined) => {
+    if (!type) return 'bg-gray-100 text-gray-800';
     switch (type) {
       case 'technical': return 'bg-blue-100 text-blue-800';
       case 'behavioral': return 'bg-green-100 text-green-800';
@@ -186,7 +192,7 @@ const AIAgentsPage: React.FC = () => {
                     <div>
                       <h3 className="font-semibold text-gray-900">{agent.name}</h3>
                       <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${getAgentTypeColor(agent.agentType)}`}>
-                        {agent.agentType.replace('_', ' ').toUpperCase()}
+                        {agent.agentType ? agent.agentType.replace('_', ' ').toUpperCase() : 'UNKNOWN'}
                       </span>
                     </div>
                   </div>
@@ -201,14 +207,18 @@ const AIAgentsPage: React.FC = () => {
                   <div>
                     <p className="text-xs text-gray-500 mb-1">Job Categories</p>
                     <div className="flex flex-wrap gap-1">
-                      {agent.jobCategories.map((category, index) => (
-                        <span
-                          key={index}
-                          className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-800"
-                        >
-                          {category}
-                        </span>
-                      ))}
+                      {agent.jobCategories && agent.jobCategories.length > 0 ? (
+                        agent.jobCategories.map((category, index) => (
+                          <span
+                            key={index}
+                            className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-800"
+                          >
+                            {category}
+                          </span>
+                        ))
+                      ) : (
+                        <span className="text-xs text-gray-400">No categories assigned</span>
+                      )}
                     </div>
                   </div>
 
