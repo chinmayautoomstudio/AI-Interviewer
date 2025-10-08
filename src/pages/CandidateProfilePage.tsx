@@ -23,6 +23,7 @@ import {
 import { Candidate } from '../types';
 import { getCandidateById, deleteCandidate } from '../services/candidates';
 import ResumeViewerModal from '../components/modals/ResumeViewerModal';
+import EditCandidateModal from '../components/modals/EditCandidateModal';
 import ResumeThumbnail from '../components/ui/ResumeThumbnail';
 
 const CandidateProfilePage: React.FC = () => {
@@ -36,6 +37,9 @@ const CandidateProfilePage: React.FC = () => {
   
   // Resume viewer state
   const [isResumeViewerOpen, setIsResumeViewerOpen] = useState(false);
+  
+  // Edit modal state
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
 
   useEffect(() => {
     if (id) {
@@ -109,7 +113,12 @@ const CandidateProfilePage: React.FC = () => {
 
 
   const handleEditCandidate = () => {
-    navigate(`/candidates/edit/${id}`);
+    setIsEditModalOpen(true);
+  };
+
+  const handleEditSuccess = () => {
+    // Reload candidate data after successful edit
+    loadCandidate();
   };
 
 
@@ -519,6 +528,14 @@ const CandidateProfilePage: React.FC = () => {
         isOpen={isResumeViewerOpen}
         onClose={closeResumeViewer}
         candidate={candidate}
+      />
+
+      {/* Edit Candidate Modal */}
+      <EditCandidateModal
+        isOpen={isEditModalOpen}
+        onClose={() => setIsEditModalOpen(false)}
+        candidate={candidate}
+        onSuccess={handleEditSuccess}
       />
     </div>
   );

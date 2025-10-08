@@ -96,11 +96,7 @@ export const getApplicationsForJob = async (jobDescriptionId: string): Promise<C
   try {
     const { data, error } = await supabase
       .from('candidate_job_applications')
-      .select(`
-        *,
-        candidate:candidates(*),
-        job_description:job_descriptions(*)
-      `)
+      .select('*, candidate:candidates(*), job_description:job_descriptions(*)')
       .eq('job_description_id', jobDescriptionId)
       .order('applied_at', { ascending: false });
 
@@ -121,11 +117,7 @@ export const getApplicationsForCandidate = async (candidateId: string): Promise<
   try {
     const { data, error } = await supabase
       .from('candidate_job_applications')
-      .select(`
-        *,
-        candidate:candidates(*),
-        job_description:job_descriptions(*)
-      `)
+      .select('*, candidate:candidates(*), job_description:job_descriptions(*)')
       .eq('candidate_id', candidateId)
       .order('applied_at', { ascending: false });
 
@@ -157,11 +149,7 @@ export const createJobApplication = async (
         application_status: 'applied',
         notes: notes || null,
       })
-      .select(`
-        *,
-        candidate:candidates(*),
-        job_description:job_descriptions(*)
-      `)
+      .select('*, candidate:candidates(*), job_description:job_descriptions(*)')
       .single();
 
     if (error) {
@@ -204,11 +192,7 @@ export const updateApplicationStatus = async (
       .from('candidate_job_applications')
       .update(updateData)
       .eq('id', applicationId)
-      .select(`
-        *,
-        candidate:candidates(*),
-        job_description:job_descriptions(*)
-      `)
+      .select('*, candidate:candidates(*), job_description:job_descriptions(*)')
       .single();
 
     if (error) {

@@ -417,9 +417,14 @@ export class N8nService {
         throw new Error(`Database error: ${dbError.message}`);
       }
 
+      if (!candidateData?.id) {
+        console.error('No candidate ID returned from database insert');
+        throw new Error('Failed to create candidate - no ID returned');
+      }
+
       return {
         success: true,
-        candidateId: candidateData?.id || 'generated-id',
+        candidateId: candidateData.id,
         resumeText: data.extracted_text || data.resumeText || data.extractedText || '',
         extractedData: extractedData,
       };
@@ -570,9 +575,14 @@ export class N8nService {
         // Still return success since n8n processing worked
       }
 
+      if (!candidateData?.id) {
+        console.error('No candidate ID returned from database insert');
+        throw new Error('Failed to create candidate - no ID returned');
+      }
+
       return {
         success: true,
-        candidateId: candidateData?.id || data.candidateId || data.id || 'generated-id',
+        candidateId: candidateData.id,
         resumeText: data.resumeText || data.extractedText || '',
         extractedData: extractedData,
       };

@@ -178,14 +178,18 @@ const CandidatesPage: React.FC = () => {
         const result: ResumeUploadResponse = await N8nService.processResumeUpload(resumeFile);
         
         if (result.success && result.candidateId) {
-          // Create job application if a job is selected
-          if (selectedJobDescriptionId) {
+          // Validate that candidateId is a valid UUID before creating job application
+          const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+          
+          if (uuidRegex.test(result.candidateId) && selectedJobDescriptionId) {
             try {
               await createJobApplication(result.candidateId, selectedJobDescriptionId, 'Applied via resume upload');
             } catch (appError) {
               console.error('Error creating job application:', appError);
               // Don't fail the entire process if job application creation fails
             }
+          } else if (!uuidRegex.test(result.candidateId)) {
+            console.warn('Invalid candidate ID format, skipping job application creation:', result.candidateId);
           }
           
           setSuccess('Candidate added successfully! Resume processed and data extracted automatically.');
@@ -221,14 +225,18 @@ const CandidatesPage: React.FC = () => {
         const result = await N8nService.addCandidateManually(formData);
         
         if (result.success && result.candidateId) {
-          // Create job application if a job is selected
-          if (selectedJobDescriptionId) {
+          // Validate that candidateId is a valid UUID before creating job application
+          const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+          
+          if (uuidRegex.test(result.candidateId) && selectedJobDescriptionId) {
             try {
               await createJobApplication(result.candidateId, selectedJobDescriptionId, 'Applied via manual entry');
             } catch (appError) {
               console.error('Error creating job application:', appError);
               // Don't fail the entire process if job application creation fails
             }
+          } else if (!uuidRegex.test(result.candidateId)) {
+            console.warn('Invalid candidate ID format, skipping job application creation:', result.candidateId);
           }
           
           setSuccess('Candidate added successfully!');

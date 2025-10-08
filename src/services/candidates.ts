@@ -274,6 +274,46 @@ export class CandidatesService {
     }
   }
 
+  // Update candidate details
+  static async updateCandidate(id: string, updates: Partial<Candidate>): Promise<{ success: boolean; error?: string }> {
+    try {
+      const updateData: any = {
+        updated_at: new Date().toISOString()
+      };
+
+      // Map frontend fields to database fields
+      if (updates.name !== undefined) updateData.name = updates.name;
+      if (updates.email !== undefined) updateData.email = updates.email;
+      if (updates.phone !== undefined) {
+        updateData.phone = updates.phone;
+        updateData.contact_number = updates.phone; // Also update contact_number
+      }
+      if (updates.summary !== undefined) updateData.summary = updates.summary;
+      if (updates.skills !== undefined) updateData.skills = updates.skills;
+      if (updates.experience !== undefined) updateData.experience = updates.experience;
+      if (updates.education !== undefined) updateData.education = updates.education;
+      if (updates.projects !== undefined) updateData.projects = updates.projects;
+      if (updates.status !== undefined) updateData.status = updates.status;
+
+      const { error } = await supabase
+        .from('candidates')
+        .update(updateData)
+        .eq('id', id);
+
+      if (error) {
+        console.error('Error updating candidate:', error);
+        return { success: false, error: error.message };
+      }
+
+      return { success: true };
+    } catch (error) {
+      console.error('Error updating candidate:', error);
+      return { 
+        success: false, 
+        error: error instanceof Error ? error.message : 'Unknown error' 
+      };
+    }
+  }
 
   // Search candidates
   static async searchCandidates(query: string): Promise<CandidatesResponse> {

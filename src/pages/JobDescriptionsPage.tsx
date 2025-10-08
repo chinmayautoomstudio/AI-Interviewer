@@ -554,11 +554,7 @@ const JobDescriptionsPage: React.FC = () => {
             <RefreshCw className={`h-4 w-4 mr-2 ${jobDescriptionsLoading ? 'animate-spin' : ''}`} />
             Refresh
           </Button>
-          <Button variant="outline" onClick={() => setIsUploadModalOpen(true)}>
-            <Upload className="h-4 w-4 mr-2" />
-            Upload JD
-          </Button>
-          <Button variant="primary" onClick={() => setIsAddModalOpen(true)}>
+          <Button variant="primary" onClick={() => setIsUploadModalOpen(true)}>
             <Plus className="h-4 w-4 mr-2" />
             Add Job Description
           </Button>
@@ -614,11 +610,7 @@ const JobDescriptionsPage: React.FC = () => {
               </p>
               {!searchQuery && (
                 <div className="mt-4 flex items-center space-x-3">
-                  <Button variant="outline" onClick={() => setIsUploadModalOpen(true)}>
-                    <Upload className="h-4 w-4 mr-2" />
-                    Upload JD File
-                  </Button>
-                  <Button variant="primary" onClick={() => setIsAddModalOpen(true)}>
+                  <Button variant="primary" onClick={() => setIsUploadModalOpen(true)}>
                     <Plus className="h-4 w-4 mr-2" />
                     Add First Job Description
                   </Button>
