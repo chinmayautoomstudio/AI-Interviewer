@@ -371,3 +371,69 @@ export const getInterviewStats = async () => {
     throw error;
   }
 };
+
+// Class-based service for the InterviewManagementPage
+export class InterviewsService {
+  /**
+   * Get all interviews with related data
+   */
+  static async getAllInterviews(): Promise<Interview[]> {
+    return getInterviews();
+  }
+
+  /**
+   * Get interview by ID
+   */
+  static async getInterviewById(id: string): Promise<Interview | null> {
+    return getInterviewById(id);
+  }
+
+  /**
+   * Get interviews for a specific candidate
+   */
+  static async getInterviewsForCandidate(candidateId: string): Promise<Interview[]> {
+    return getInterviewsForCandidate(candidateId);
+  }
+
+  /**
+   * Get interviews for a specific job description
+   */
+  static async getInterviewsForJob(jobDescriptionId: string): Promise<Interview[]> {
+    return getInterviewsForJob(jobDescriptionId);
+  }
+
+  /**
+   * Create a new interview
+   */
+  static async createInterview(interviewData: InterviewForm): Promise<Interview> {
+    return createInterview(interviewData);
+  }
+
+  /**
+   * Update interview status
+   */
+  static async updateInterviewStatus(id: string, status: Interview['status']): Promise<Interview> {
+    return updateInterviewStatus(id, status);
+  }
+
+  /**
+   * Update interview details
+   */
+  static async updateInterview(id: string, interviewData: Partial<InterviewForm>): Promise<Interview> {
+    return updateInterview(id, interviewData);
+  }
+
+  /**
+   * Delete an interview
+   */
+  static async deleteInterview(id: string): Promise<void> {
+    return deleteInterview(id);
+  }
+
+  /**
+   * Get interview statistics
+   */
+  static async getInterviewStats() {
+    return getInterviewStats();
+  }
+}

@@ -16,6 +16,7 @@ import CandidateProfilePage from './pages/CandidateProfilePage';
 import AIAgentsPage from './pages/AIAgentsPage';
 import AdminInterviewTestPage from './pages/AdminInterviewTestPage';
 import InterviewReportPage from './pages/InterviewReportPage';
+import InterviewManagementPage from './pages/InterviewManagementPage';
 import PrivacyPolicyPage from './pages/PrivacyPolicyPage';
 import TermsAndConditionsPage from './pages/TermsAndConditionsPage';
 import DisclaimerPage from './pages/DisclaimerPage';
@@ -62,7 +63,8 @@ const AppContent: React.FC = () => {
         <main className="flex-1">
           <Routes>
             <Route path="/dashboard" element={<DashboardPage />} />
-            <Route path="/interviews" element={<Navigate to="/admin-interview-test" replace />} />
+            <Route path="/interviews" element={<InterviewManagementPage />} />
+            <Route path="/interview-management" element={<InterviewManagementPage />} />
             <Route path="/candidates" element={<CandidatesPage />} />
             <Route path="/candidates/:id" element={<CandidateProfilePage />} />
             <Route path="/reports" element={<ReportsPage />} />

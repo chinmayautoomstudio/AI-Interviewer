@@ -20,7 +20,7 @@ import {
   Globe
 } from 'lucide-react';
 import { 
-  getAIAgents
+  AIAgentsService
 } from '../services/aiAgents';
 import { AIAgent } from '../types';
 
@@ -45,7 +45,7 @@ const AIAgentsPage: React.FC = () => {
     try {
       setLoading(true);
       setError(null);
-      const agentsData = await getAIAgents();
+      const agentsData = await AIAgentsService.getAllAIAgents();
       setAgents(agentsData);
     } catch (err) {
       console.error('Error loading AI agents:', err);
