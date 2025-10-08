@@ -198,51 +198,51 @@ const DashboardPage: React.FC = () => {
   }
 
   return (
-    <div className="p-4 sm:p-6 space-y-4 sm:space-y-6">
+    <div className="p-4 sm:p-6 lg:p-8 space-y-4 sm:space-y-6 lg:space-y-8">
       {/* Header */}
       <div>
-        <h1 className="text-xl sm:text-2xl font-bold text-ai-teal">Dashboard</h1>
-        <p className="text-sm sm:text-base text-gray-600">Welcome back! Here's what's happening with your interviews.</p>
+        <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-ai-teal">Dashboard</h1>
+        <p className="text-sm sm:text-base lg:text-lg text-gray-600">Welcome back! Here's what's happening with your interviews.</p>
       </div>
 
       {/* Main Content Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6 lg:gap-8">
         {/* Left Side - Quick Actions */}
         <div className="lg:col-span-1 order-2 lg:order-1">
           <Card className="h-fit">
-            <div className="p-4 sm:p-6">
-              <h3 className="text-lg font-semibold text-ai-teal mb-4">Quick Actions</h3>
-              <div className="space-y-3">
+            <div className="p-4 sm:p-5 lg:p-6">
+              <h3 className="text-base sm:text-lg lg:text-xl font-semibold text-ai-teal mb-3 lg:mb-4">Quick Actions</h3>
+              <div className="space-y-2 sm:space-y-3">
                 <Button 
                   variant="outline" 
-                  className="w-full justify-start text-sm py-3 border-ai-teal text-ai-teal hover:bg-ai-teal hover:text-white transition-colors"
+                  className="w-full justify-start text-xs sm:text-sm lg:text-base py-2 sm:py-2.5 lg:py-3 border-ai-teal text-ai-teal hover:bg-ai-teal hover:text-white transition-colors"
                   onClick={() => handleQuickAction('add-job')}
                 >
-                  <FileText className="h-4 w-4 mr-3 flex-shrink-0" />
+                  <FileText className="h-3 w-3 sm:h-4 sm:w-4 lg:h-4 lg:w-4 mr-2 sm:mr-3 flex-shrink-0" />
                   <span>Add New Job Description</span>
                 </Button>
                 <Button 
                   variant="outline" 
-                  className="w-full justify-start text-sm py-3 border-ai-teal text-ai-teal hover:bg-ai-teal hover:text-white transition-colors"
+                  className="w-full justify-start text-xs sm:text-sm lg:text-base py-2 sm:py-2.5 lg:py-3 border-ai-teal text-ai-teal hover:bg-ai-teal hover:text-white transition-colors"
                   onClick={() => handleQuickAction('add-candidate')}
                 >
-                  <Users className="h-4 w-4 mr-3 flex-shrink-0" />
+                  <Users className="h-3 w-3 sm:h-4 sm:w-4 lg:h-4 lg:w-4 mr-2 sm:mr-3 flex-shrink-0" />
                   <span>Add New Candidate</span>
                 </Button>
                 <Button 
                   variant="outline" 
-                  className="w-full justify-start text-sm py-3 border-ai-teal text-ai-teal hover:bg-ai-teal hover:text-white transition-colors"
+                  className="w-full justify-start text-xs sm:text-sm lg:text-base py-2 sm:py-2.5 lg:py-3 border-ai-teal text-ai-teal hover:bg-ai-teal hover:text-white transition-colors"
                   onClick={() => handleQuickAction('schedule-interview')}
                 >
-                  <Calendar className="h-4 w-4 mr-3 flex-shrink-0" />
+                  <Calendar className="h-3 w-3 sm:h-4 sm:w-4 lg:h-4 lg:w-4 mr-2 sm:mr-3 flex-shrink-0" />
                   <span>Schedule Interview</span>
                 </Button>
                 <Button 
                   variant="outline" 
-                  className="w-full justify-start text-sm py-3 border-ai-teal text-ai-teal hover:bg-ai-teal hover:text-white transition-colors"
+                  className="w-full justify-start text-xs sm:text-sm lg:text-base py-2 sm:py-2.5 lg:py-3 border-ai-teal text-ai-teal hover:bg-ai-teal hover:text-white transition-colors"
                   onClick={() => handleQuickAction('review-results')}
                 >
-                  <CheckCircle className="h-4 w-4 mr-3 flex-shrink-0" />
+                  <CheckCircle className="h-3 w-3 sm:h-4 sm:w-4 lg:h-4 lg:w-4 mr-2 sm:mr-3 flex-shrink-0" />
                   <span>Review Results</span>
                 </Button>
               </div>
@@ -252,28 +252,28 @@ const DashboardPage: React.FC = () => {
 
         {/* Right Side - Stats Grid */}
         <div className="lg:col-span-2 order-1 lg:order-2">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 lg:gap-6">
             {stats.map((stat) => {
               const Icon = stat.icon;
               return (
-                <Card key={stat.title} className="p-4 sm:p-6">
+                <Card key={stat.title} className="p-3 sm:p-4 lg:p-5">
                   <div className="flex items-center justify-between">
                     <div className="min-w-0 flex-1">
-                      <p className="text-sm font-medium text-gray-600 mb-1">{stat.title}</p>
-                      <p className="text-2xl sm:text-3xl font-bold text-gray-900 mb-1">{stat.value}</p>
+                      <p className="text-xs sm:text-sm lg:text-base font-medium text-gray-600 mb-1">{stat.title}</p>
+                      <p className="text-lg sm:text-xl lg:text-2xl font-bold text-gray-900 mb-1">{stat.value}</p>
                       <div className="flex items-center">
                         <TrendingUp className={`h-3 w-3 mr-1 ${
                           stat.changeType === 'positive' ? 'text-ai-teal' : 'text-red-500'
                         }`} />
-                        <span className={`text-sm font-medium ${
+                        <span className={`text-xs sm:text-sm font-medium ${
                           stat.changeType === 'positive' ? 'text-ai-teal' : 'text-red-500'
                         }`}>
                           {stat.change}
                         </span>
                       </div>
                     </div>
-                    <div className="p-3 bg-ai-teal/10 rounded-lg flex-shrink-0 ml-4">
-                      <Icon className="h-5 w-5 text-ai-teal" />
+                    <div className="p-2 sm:p-2.5 lg:p-3 bg-ai-teal/10 rounded-lg flex-shrink-0 ml-3 lg:ml-4">
+                      <Icon className="h-4 w-4 sm:h-4 sm:w-4 lg:h-5 lg:w-5 text-ai-teal" />
                     </div>
                   </div>
                 </Card>
@@ -285,15 +285,15 @@ const DashboardPage: React.FC = () => {
 
       {/* Recent Interview Reports - Full width */}
       <div>
-        <Card className="p-4 sm:p-6">
-          <h3 className="text-lg font-semibold text-ai-teal mb-4">Recent Interview Reports</h3>
-          <div className="space-y-3">
+        <Card className="p-4 sm:p-5 lg:p-6">
+          <h3 className="text-base sm:text-lg lg:text-xl font-semibold text-ai-teal mb-3 lg:mb-4">Recent Interview Reports</h3>
+          <div className="space-y-2 sm:space-y-3">
             {recentInterviews.length > 0 ? (
               recentInterviews.map((report) => (
-                <div key={report.id} className="flex flex-col sm:flex-row sm:items-center justify-between p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors gap-3">
-                  <div className="flex items-center space-x-4 min-w-0 flex-1">
-                    <div className="w-10 h-10 bg-gradient-to-br from-ai-teal to-ai-teal-light rounded-full flex items-center justify-center flex-shrink-0">
-                      <span className="text-sm font-medium text-white">
+                <div key={report.id} className="flex flex-col sm:flex-row sm:items-center justify-between p-3 sm:p-4 lg:p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors gap-2 sm:gap-3">
+                  <div className="flex items-center space-x-3 sm:space-x-4 min-w-0 flex-1">
+                    <div className="w-8 h-8 sm:w-9 sm:h-9 lg:w-10 lg:h-10 bg-gradient-to-br from-ai-teal to-ai-teal-light rounded-full flex items-center justify-center flex-shrink-0">
+                      <span className="text-xs sm:text-sm font-medium text-white">
                         {report.interview_sessions?.candidates?.name ? 
                           report.interview_sessions.candidates.name.split(' ').map((n: string) => n[0]).join('') : 
                           'N/A'
@@ -301,9 +301,9 @@ const DashboardPage: React.FC = () => {
                       </span>
                     </div>
                     <div className="min-w-0 flex-1">
-                      <p className="font-medium text-gray-900 text-sm truncate">{report.interview_sessions?.candidates?.name || 'Unknown Candidate'}</p>
-                      <p className="text-sm text-gray-600 truncate">{report.interview_sessions?.job_descriptions?.title || 'Unknown Position'}</p>
-                      <div className="flex items-center space-x-4 mt-1">
+                      <p className="font-medium text-gray-900 text-xs sm:text-sm lg:text-base truncate">{report.interview_sessions?.candidates?.name || 'Unknown Candidate'}</p>
+                      <p className="text-xs sm:text-sm lg:text-base text-gray-600 truncate">{report.interview_sessions?.job_descriptions?.title || 'Unknown Position'}</p>
+                      <div className="flex items-center space-x-3 sm:space-x-4 mt-1">
                         <span className="text-xs text-gray-500">
                           <FileText className="h-3 w-3 inline mr-1" />
                           Report #{report.id.slice(-8)}
@@ -316,11 +316,11 @@ const DashboardPage: React.FC = () => {
                   </div>
                   <div className="flex flex-col sm:flex-row sm:items-center space-y-2 sm:space-y-0 sm:space-x-3">
                     <div className="text-left sm:text-right">
-                      <div className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(report.suitability_status)}`}>
+                      <div className={`inline-flex items-center px-2 sm:px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(report.suitability_status)}`}>
                         {report.suitability_status ? report.suitability_status.replace('_', ' ') : 'Unknown'}
                       </div>
                       {report.overall_score && (
-                        <p className="text-sm font-semibold text-gray-900 mt-1">
+                        <p className="text-xs sm:text-sm font-semibold text-gray-900 mt-1">
                           {report.overall_score}/10
                         </p>
                       )}
@@ -329,7 +329,7 @@ const DashboardPage: React.FC = () => {
                       variant="outline"
                       size="sm"
                       onClick={() => navigate(`/reports/${report.id}`)}
-                      className="text-ai-teal border-ai-teal hover:bg-ai-teal hover:text-white text-sm w-full sm:w-auto py-2"
+                      className="text-ai-teal border-ai-teal hover:bg-ai-teal hover:text-white text-xs sm:text-sm w-full sm:w-auto py-1.5 sm:py-2"
                     >
                       View Report
                     </Button>
@@ -337,10 +337,10 @@ const DashboardPage: React.FC = () => {
                 </div>
               ))
             ) : (
-              <div className="text-center py-8 text-gray-500">
-                <FileText className="h-12 w-12 mx-auto mb-4 text-gray-300" />
-                <p className="text-base">No interview reports found</p>
-                <p className="text-sm">Complete some interviews to see reports here</p>
+              <div className="text-center py-6 sm:py-8 text-gray-500">
+                <FileText className="h-10 w-10 sm:h-12 sm:w-12 mx-auto mb-3 sm:mb-4 text-gray-300" />
+                <p className="text-sm sm:text-base">No interview reports found</p>
+                <p className="text-xs sm:text-sm">Complete some interviews to see reports here</p>
               </div>
             )}
           </div>
