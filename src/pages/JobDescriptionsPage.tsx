@@ -542,27 +542,27 @@ const JobDescriptionsPage: React.FC = () => {
   }
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="p-4 sm:p-6 space-y-4 sm:space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-4 sm:space-y-0">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Job Descriptions</h1>
-          <p className="text-gray-600">Manage job postings and descriptions</p>
+          <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Job Descriptions</h1>
+          <p className="text-sm sm:text-base text-gray-600">Manage job postings and descriptions</p>
         </div>
-        <div className="flex items-center space-x-3">
-          <Button variant="outline" onClick={loadJobDescriptions} disabled={jobDescriptionsLoading}>
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center space-y-2 sm:space-y-0 sm:space-x-3">
+          <Button variant="outline" onClick={loadJobDescriptions} disabled={jobDescriptionsLoading} className="w-full sm:w-auto">
             <RefreshCw className={`h-4 w-4 mr-2 ${jobDescriptionsLoading ? 'animate-spin' : ''}`} />
-            Refresh
+            <span className="text-sm sm:text-base">Refresh</span>
           </Button>
-          <Button variant="primary" onClick={() => setIsUploadModalOpen(true)}>
+          <Button variant="primary" onClick={() => setIsUploadModalOpen(true)} className="w-full sm:w-auto">
             <Plus className="h-4 w-4 mr-2" />
-            Add Job Description
+            <span className="text-sm sm:text-base">Add Job Description</span>
           </Button>
         </div>
       </div>
 
       {/* Search and Filter */}
-      <div className="flex items-center space-x-4">
+      <div className="flex flex-col sm:flex-row items-stretch sm:items-center space-y-3 sm:space-y-0 sm:space-x-4">
         <div className="flex-1 relative">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
           <input
@@ -570,28 +570,28 @@ const JobDescriptionsPage: React.FC = () => {
             placeholder="Search job descriptions..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            className="w-full pl-10 pr-4 py-2 sm:py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm sm:text-base"
           />
         </div>
-        <Button variant="outline">
+        <Button variant="outline" className="w-full sm:w-auto">
           <Filter className="h-4 w-4 mr-2" />
-          Filter
+          <span className="text-sm sm:text-base">Filter</span>
         </Button>
       </div>
 
       {/* Error State */}
       {jobDescriptionsError && (
         <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-          <div className="flex items-center">
-            <div className="text-red-600">
+          <div className="flex flex-col sm:flex-row sm:items-center">
+            <div className="text-red-600 mb-3 sm:mb-0">
               <AlertCircle className="h-5 w-5" />
             </div>
-            <div className="ml-3">
+            <div className="ml-0 sm:ml-3 flex-1">
               <h3 className="text-sm font-medium text-red-800">Error loading job descriptions</h3>
-              <p className="text-gray-600 mb-4">{jobDescriptionsError}</p>
-              <Button variant="primary" onClick={loadJobDescriptions}>
+              <p className="text-sm sm:text-base text-gray-600 mb-4">{jobDescriptionsError}</p>
+              <Button variant="primary" onClick={loadJobDescriptions} className="w-full sm:w-auto">
                 <RefreshCw className="h-4 w-4 mr-2" />
-                Try Again
+                <span className="text-sm sm:text-base">Try Again</span>
               </Button>
             </div>
           </div>
@@ -602,17 +602,17 @@ const JobDescriptionsPage: React.FC = () => {
       {!jobDescriptionsError && (
         <div className="space-y-4">
           {filteredJobs.length === 0 ? (
-            <div className="text-center py-12">
-              <Briefcase className="mx-auto h-12 w-12 text-gray-400" />
-              <h3 className="mt-2 text-sm font-medium text-gray-900">No job descriptions</h3>
-              <p className="mt-1 text-sm text-gray-500">
+            <div className="text-center py-8 sm:py-12">
+              <Briefcase className="mx-auto h-10 w-10 sm:h-12 sm:w-12 text-gray-400" />
+              <h3 className="mt-2 text-sm sm:text-base font-medium text-gray-900">No job descriptions</h3>
+              <p className="mt-1 text-xs sm:text-sm text-gray-500 px-4">
                 {searchQuery ? 'No job descriptions match your search.' : 'Get started by creating a new job description.'}
               </p>
               {!searchQuery && (
-                <div className="mt-4 flex items-center space-x-3">
-                  <Button variant="primary" onClick={() => setIsUploadModalOpen(true)}>
+                <div className="mt-4 flex justify-center">
+                  <Button variant="primary" onClick={() => setIsUploadModalOpen(true)} className="w-full sm:w-auto">
                     <Plus className="h-4 w-4 mr-2" />
-                    Add First Job Description
+                    <span className="text-sm sm:text-base">Add First Job Description</span>
                   </Button>
                 </div>
               )}
@@ -620,50 +620,52 @@ const JobDescriptionsPage: React.FC = () => {
           ) : (
             filteredJobs.map((job) => (
               <Card key={job.id}>
-                <div className="flex items-start justify-between">
+                <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between space-y-4 lg:space-y-0">
                   <div className="flex-1">
-                    <div className="flex items-center space-x-3 mb-2">
-                      <h3 className="text-lg font-semibold text-gray-900">{job.title || 'Untitled Job'}</h3>
-                      {job.job_description_id && (
-                        <span className="px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-700">
-                          {job.job_description_id}
+                    <div className="flex flex-col sm:flex-row sm:items-center sm:space-x-3 space-y-2 sm:space-y-0 mb-3">
+                      <h3 className="text-base sm:text-lg font-semibold text-gray-900 truncate">{job.title || 'Untitled Job'}</h3>
+                      <div className="flex flex-wrap gap-2">
+                        {job.job_description_id && (
+                          <span className="px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-700">
+                            {job.job_description_id}
+                          </span>
+                        )}
+                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(job.status || 'active')}`}>
+                          {(job.status || 'active').toUpperCase()}
                         </span>
-                      )}
-                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(job.status || 'active')}`}>
-                        {(job.status || 'active').toUpperCase()}
-                      </span>
-                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${getEmploymentTypeColor(job.employmentType || 'full-time')}`}>
-                        {(job.employmentType || 'full-time').replace('-', ' ').toUpperCase()}
-                      </span>
-                      <span className="px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                        {applicationCounts[job.id] || 0} candidate{(applicationCounts[job.id] || 0) !== 1 ? 's' : ''}
-                      </span>
+                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${getEmploymentTypeColor(job.employmentType || 'full-time')}`}>
+                          {(job.employmentType || 'full-time').replace('-', ' ').toUpperCase()}
+                        </span>
+                        <span className="px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                          {applicationCounts[job.id] || 0} candidate{(applicationCounts[job.id] || 0) !== 1 ? 's' : ''}
+                        </span>
+                      </div>
                     </div>
                     
-                    <div className="flex items-center space-x-6 text-sm text-gray-600 mb-3">
+                    <div className="flex flex-col sm:flex-row sm:items-center sm:space-x-6 space-y-2 sm:space-y-0 text-xs sm:text-sm text-gray-600 mb-3">
                       <div className="flex items-center">
-                        <Briefcase className="h-4 w-4 mr-1" />
-                        {job.department || 'No Department'}
+                        <Briefcase className="h-3 w-3 sm:h-4 sm:w-4 mr-1" />
+                        <span className="truncate">{job.department || 'No Department'}</span>
                       </div>
                       <div className="flex items-center">
-                        <MapPin className="h-4 w-4 mr-1" />
-                        {job.location || 'No Location'}
+                        <MapPin className="h-3 w-3 sm:h-4 sm:w-4 mr-1" />
+                        <span className="truncate">{job.location || 'No Location'}</span>
                       </div>
                       <div className="flex items-center">
-                        <Users className="h-4 w-4 mr-1" />
-                        {(job.experienceLevel || 'mid').charAt(0).toUpperCase() + (job.experienceLevel || 'mid').slice(1)}
+                        <Users className="h-3 w-3 sm:h-4 sm:w-4 mr-1" />
+                        <span className="truncate">{(job.experienceLevel || 'mid').charAt(0).toUpperCase() + (job.experienceLevel || 'mid').slice(1)}</span>
                       </div>
                       {job.salaryRange && (
-                        <div className="flex items-center text-sm">
+                        <div className="flex items-center text-xs sm:text-sm">
                           <span className="text-gray-500 mr-1">💰</span>
-                          <span className="font-medium text-gray-900">
+                          <span className="font-medium text-gray-900 truncate">
                             {getCurrencySymbol(job.salaryRange.currency)} {formatIndianNumber(job.salaryRange.min)} - {formatIndianNumber(job.salaryRange.max)}
                           </span>
                         </div>
                       )}
                     </div>
 
-                    <p className="text-gray-700 text-sm mb-3 line-clamp-2">
+                    <p className="text-gray-700 text-xs sm:text-sm mb-3 line-clamp-2">
                       {job.description || 'No description available'}
                     </p>
 
@@ -673,38 +675,40 @@ const JobDescriptionsPage: React.FC = () => {
                     </div>
                   </div>
 
-                  <div className="flex items-center space-x-2 ml-4">
+                  <div className="flex flex-wrap items-center gap-2 lg:ml-4">
                     <Button 
                       variant="outline" 
                       size="sm"
                       onClick={() => navigate(`/job-descriptions/${job.id}`)}
+                      className="flex-1 sm:flex-none"
                     >
-                      <Eye className="h-4 w-4 mr-1" />
-                      View
+                      <Eye className="h-3 w-3 sm:h-4 sm:w-4 mr-1" />
+                      <span className="text-xs sm:text-sm">View</span>
                     </Button>
                     <Button 
                       variant="outline" 
                       size="sm"
                       onClick={() => handleAssignClick(job)}
-                      className="text-blue-600 hover:text-blue-700"
+                      className="text-blue-600 hover:text-blue-700 flex-1 sm:flex-none"
                     >
-                      <UserPlus className="h-4 w-4 mr-1" />
-                      Assign
+                      <UserPlus className="h-3 w-3 sm:h-4 sm:w-4 mr-1" />
+                      <span className="text-xs sm:text-sm">Assign</span>
                     </Button>
                     <Button 
                       variant="outline" 
                       size="sm"
                       onClick={() => handleEditClick(job)}
+                      className="flex-1 sm:flex-none"
                     >
-                      <Edit className="h-4 w-4" />
+                      <Edit className="h-3 w-3 sm:h-4 sm:w-4" />
                     </Button>
                     <Button 
                       variant="outline" 
                       size="sm"
                       onClick={() => handleDeleteClick(job)}
-                      className="text-red-600 hover:text-red-700"
+                      className="text-red-600 hover:text-red-700 flex-1 sm:flex-none"
                     >
-                      <Trash2 className="h-4 w-4" />
+                      <Trash2 className="h-3 w-3 sm:h-4 sm:w-4" />
                     </Button>
                   </div>
                 </div>
@@ -723,17 +727,17 @@ const JobDescriptionsPage: React.FC = () => {
       >
         <div className="bg-white">
           {/* Header */}
-          <div className="border-b border-gray-200 px-6 py-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <h2 className="text-2xl font-bold text-gray-900">{isEditMode ? 'Edit Job Post' : 'Post a Job'}</h2>
-                <p className="text-gray-600 mt-1">{isEditMode ? 'Update your job posting details' : 'Create a job posting to attract the best candidates'}</p>
+          <div className="border-b border-gray-200 px-4 sm:px-6 py-4">
+            <div className="flex items-start sm:items-center justify-between">
+              <div className="flex-1 pr-4">
+                <h2 className="text-lg sm:text-2xl font-bold text-gray-900">{isEditMode ? 'Edit Job Post' : 'Post a Job'}</h2>
+                <p className="text-sm sm:text-base text-gray-600 mt-1">{isEditMode ? 'Update your job posting details' : 'Create a job posting to attract the best candidates'}</p>
               </div>
               <button
                 onClick={closeModal}
-                className="text-gray-400 hover:text-gray-600 transition-colors"
+                className="text-gray-400 hover:text-gray-600 transition-colors flex-shrink-0"
               >
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                 </svg>
               </button>
@@ -742,7 +746,7 @@ const JobDescriptionsPage: React.FC = () => {
 
 
           {/* Content */}
-          <div className="px-6 py-6">
+          <div className="px-4 sm:px-6 py-4 sm:py-6">
             {/* Error/Success Messages */}
             {error && (
               <div className="mb-6 bg-red-50 border border-red-200 rounded-lg p-4">
@@ -827,11 +831,11 @@ const JobDescriptionsPage: React.FC = () => {
             )}
 
             {/* Job Details Form */}
-            <div className="space-y-8">
+            <div className="space-y-6 sm:space-y-8">
               {/* Basic Information */}
               <div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">Job Information</h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-4">Job Information</h3>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
                       Job Title *
@@ -840,7 +844,7 @@ const JobDescriptionsPage: React.FC = () => {
                       type="text"
                       value={formData.title}
                       onChange={(e) => handleInputChange('title', e.target.value)}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-lg"
+                      className="w-full px-3 sm:px-4 py-2 sm:py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm sm:text-lg"
                       placeholder="e.g., Senior Software Engineer"
                     />
                   </div>
@@ -852,7 +856,7 @@ const JobDescriptionsPage: React.FC = () => {
                       type="text"
                       value={companyName}
                       onChange={(e) => setCompanyName(e.target.value)}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-lg"
+                      className="w-full px-3 sm:px-4 py-2 sm:py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm sm:text-lg"
                       placeholder="e.g., Autoom Studio OPC Pvt. Ltd."
                       required
                     />
@@ -865,7 +869,7 @@ const JobDescriptionsPage: React.FC = () => {
                       type="text"
                       value={formData.location}
                       onChange={(e) => handleInputChange('location', e.target.value)}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      className="w-full px-3 sm:px-4 py-2 sm:py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm sm:text-base"
                       placeholder="e.g., Bhubaneswar, Odisha"
                     />
                   </div>
@@ -876,7 +880,7 @@ const JobDescriptionsPage: React.FC = () => {
                     <select
                       value={formData.employmentType}
                       onChange={(e) => handleInputChange('employmentType', e.target.value as any)}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      className="w-full px-3 sm:px-4 py-2 sm:py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm sm:text-base"
                     >
                       <option value="full-time">Full-time</option>
                       <option value="part-time">Part-time</option>
@@ -891,7 +895,7 @@ const JobDescriptionsPage: React.FC = () => {
                     <select
                       value={formData.experienceLevel}
                       onChange={(e) => handleInputChange('experienceLevel', e.target.value as any)}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      className="w-full px-3 sm:px-4 py-2 sm:py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm sm:text-base"
                     >
                       <option value="entry">Entry Level (0-2 years)</option>
                       <option value="mid">Mid Level (3-5 years)</option>
@@ -907,7 +911,7 @@ const JobDescriptionsPage: React.FC = () => {
                     <select
                       value={workMode}
                       onChange={(e) => setWorkMode(e.target.value)}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      className="w-full px-3 sm:px-4 py-2 sm:py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm sm:text-base"
                     >
                       <option value="on-site">On-site</option>
                       <option value="remote">Remote</option>
@@ -919,8 +923,8 @@ const JobDescriptionsPage: React.FC = () => {
 
               {/* Salary Information */}
               <div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">Salary & Benefits</h3>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-4">Salary & Benefits</h3>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
                       Minimum Salary (Per Annum)
@@ -933,7 +937,7 @@ const JobDescriptionsPage: React.FC = () => {
                         type="number"
                         value={salaryMin}
                         onChange={(e) => setSalaryMin(e.target.value)}
-                        className="w-full pl-8 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        className="w-full pl-6 sm:pl-8 pr-3 sm:pr-4 py-2 sm:py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm sm:text-base"
                         placeholder="300000"
                       />
                     </div>
@@ -950,7 +954,7 @@ const JobDescriptionsPage: React.FC = () => {
                         type="number"
                         value={salaryMax}
                         onChange={(e) => setSalaryMax(e.target.value)}
-                        className="w-full pl-8 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        className="w-full pl-6 sm:pl-8 pr-3 sm:pr-4 py-2 sm:py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm sm:text-base"
                         placeholder="600000"
                       />
                     </div>
@@ -962,7 +966,7 @@ const JobDescriptionsPage: React.FC = () => {
                     <select
                       value={salaryCurrency}
                       onChange={(e) => setSalaryCurrency(e.target.value)}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      className="w-full px-3 sm:px-4 py-2 sm:py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm sm:text-base"
                     >
                       <option value="INR">INR (₹)</option>
                       <option value="USD">USD ($)</option>
@@ -975,7 +979,7 @@ const JobDescriptionsPage: React.FC = () => {
 
               {/* Job Description */}
               <div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">Job Description</h3>
+                <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-4">Job Description</h3>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Describe the role and what makes it unique *
@@ -984,7 +988,7 @@ const JobDescriptionsPage: React.FC = () => {
                     value={formData.description}
                     onChange={(e) => handleInputChange('description', e.target.value)}
                     rows={6}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+                    className="w-full px-3 sm:px-4 py-2 sm:py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none text-sm sm:text-base"
                     placeholder="Tell candidates about the role, company culture, growth opportunities, and what makes this position special..."
                   />
                   <p className="text-sm text-gray-500 mt-2">
@@ -995,27 +999,27 @@ const JobDescriptionsPage: React.FC = () => {
 
               {/* Requirements */}
               <div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">Requirements</h3>
+                <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-4">Requirements</h3>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     What skills and experience are required?
                   </label>
-                  <div className="flex space-x-3 mb-3">
+                  <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-3 mb-3">
                     <input
                       type="text"
                       value={requirementsInput}
                       onChange={(e) => setRequirementsInput(e.target.value)}
                       onKeyPress={(e) => e.key === 'Enter' && handleArrayInput('requirements', requirementsInput, setRequirementsInput)}
-                      className="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      className="flex-1 px-3 sm:px-4 py-2 sm:py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm sm:text-base"
                       placeholder="e.g., 3+ years of React experience"
                     />
                     <Button
                       type="button"
                       variant="outline"
                       onClick={() => handleArrayInput('requirements', requirementsInput, setRequirementsInput)}
-                      className="px-6"
+                      className="px-4 sm:px-6 w-full sm:w-auto"
                     >
-                      Add
+                      <span className="text-sm sm:text-base">Add</span>
                     </Button>
                   </div>
                   <div className="flex flex-wrap gap-2">
@@ -1040,27 +1044,27 @@ const JobDescriptionsPage: React.FC = () => {
 
               {/* Responsibilities */}
               <div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">Responsibilities</h3>
+                <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-4">Responsibilities</h3>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     What will the candidate be doing day-to-day?
                   </label>
-                  <div className="flex space-x-3 mb-3">
+                  <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-3 mb-3">
                     <input
                       type="text"
                       value={responsibilitiesInput}
                       onChange={(e) => setResponsibilitiesInput(e.target.value)}
                       onKeyPress={(e) => e.key === 'Enter' && handleArrayInput('responsibilities', responsibilitiesInput, setResponsibilitiesInput)}
-                      className="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      className="flex-1 px-3 sm:px-4 py-2 sm:py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm sm:text-base"
                       placeholder="e.g., Develop and maintain web applications"
                     />
                     <Button
                       type="button"
                       variant="outline"
                       onClick={() => handleArrayInput('responsibilities', responsibilitiesInput, setResponsibilitiesInput)}
-                      className="px-6"
+                      className="px-4 sm:px-6 w-full sm:w-auto"
                     >
-                      Add
+                      <span className="text-sm sm:text-base">Add</span>
                     </Button>
                   </div>
                   <div className="flex flex-wrap gap-2">
@@ -1085,27 +1089,27 @@ const JobDescriptionsPage: React.FC = () => {
 
               {/* Skills */}
               <div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">Required Skills</h3>
+                <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-4">Required Skills</h3>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     What technical skills are needed?
                   </label>
-                  <div className="flex space-x-3 mb-3">
+                  <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-3 mb-3">
                     <input
                       type="text"
                       value={skillsInput}
                       onChange={(e) => setSkillsInput(e.target.value)}
                       onKeyPress={(e) => e.key === 'Enter' && handleArrayInput('skills', skillsInput, setSkillsInput)}
-                      className="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      className="flex-1 px-3 sm:px-4 py-2 sm:py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm sm:text-base"
                       placeholder="e.g., React, Node.js, TypeScript"
                     />
                     <Button
                       type="button"
                       variant="outline"
                       onClick={() => handleArrayInput('skills', skillsInput, setSkillsInput)}
-                      className="px-6"
+                      className="px-4 sm:px-6 w-full sm:w-auto"
                     >
-                      Add
+                      <span className="text-sm sm:text-base">Add</span>
                     </Button>
                   </div>
                   <div className="flex flex-wrap gap-2">
@@ -1130,27 +1134,27 @@ const JobDescriptionsPage: React.FC = () => {
 
               {/* Benefits */}
               <div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">Benefits & Perks</h3>
+                <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-4">Benefits & Perks</h3>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     What benefits do you offer?
                   </label>
-                  <div className="flex space-x-3 mb-3">
+                  <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-3 mb-3">
                     <input
                       type="text"
                       value={benefitsInput}
                       onChange={(e) => setBenefitsInput(e.target.value)}
                       onKeyPress={(e) => e.key === 'Enter' && handleArrayInput('benefits', benefitsInput, setBenefitsInput)}
-                      className="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      className="flex-1 px-3 sm:px-4 py-2 sm:py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm sm:text-base"
                       placeholder="e.g., Health insurance, Flexible hours"
                     />
                     <Button
                       type="button"
                       variant="outline"
                       onClick={() => handleArrayInput('benefits', benefitsInput, setBenefitsInput)}
-                      className="px-6"
+                      className="px-4 sm:px-6 w-full sm:w-auto"
                     >
-                      Add
+                      <span className="text-sm sm:text-base">Add</span>
                     </Button>
                   </div>
                   <div className="flex flex-wrap gap-2">
@@ -1175,8 +1179,8 @@ const JobDescriptionsPage: React.FC = () => {
 
               {/* Additional Information */}
               <div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">Additional Information</h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-4">Additional Information</h3>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
                       Contact Email *
@@ -1185,7 +1189,7 @@ const JobDescriptionsPage: React.FC = () => {
                       type="email"
                       value={contactEmail}
                       onChange={(e) => setContactEmail(e.target.value)}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      className="w-full px-3 sm:px-4 py-2 sm:py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm sm:text-base"
                       placeholder="hr@company.com"
                       required
                     />
@@ -1198,7 +1202,7 @@ const JobDescriptionsPage: React.FC = () => {
                       type="date"
                       value={applicationDeadline}
                       onChange={(e) => setApplicationDeadline(e.target.value)}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      className="w-full px-3 sm:px-4 py-2 sm:py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm sm:text-base"
                     />
                   </div>
                 </div>
@@ -1207,28 +1211,28 @@ const JobDescriptionsPage: React.FC = () => {
           </div>
 
           {/* Footer Actions */}
-          <div className="border-t border-gray-200 px-6 py-4 bg-gray-50">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-4">
-                <Button variant="outline" onClick={closeModal} disabled={loading}>
-                  Cancel
+          <div className="border-t border-gray-200 px-4 sm:px-6 py-4 bg-gray-50">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-3 sm:space-y-0">
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center space-y-2 sm:space-y-0 sm:space-x-4">
+                <Button variant="outline" onClick={closeModal} disabled={loading} className="w-full sm:w-auto">
+                  <span className="text-sm sm:text-base">Cancel</span>
                 </Button>
-                <Button variant="outline" disabled={loading}>
-                  Save as Draft
+                <Button variant="outline" disabled={loading} className="w-full sm:w-auto">
+                  <span className="text-sm sm:text-base">Save as Draft</span>
                 </Button>
               </div>
-              <div className="flex items-center space-x-3">
-                <Button variant="primary" onClick={handleSubmit} disabled={loading} className="px-8">
+              <div className="flex items-center">
+                <Button variant="primary" onClick={handleSubmit} disabled={loading} className="w-full sm:w-auto px-6 sm:px-8">
                   {loading ? (
                     <>
                       <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" fill="none" viewBox="0 0 24 24">
                         <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                         <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                       </svg>
-                      {isEditMode ? 'Updating...' : 'Creating...'}
+                      <span className="text-sm sm:text-base">{isEditMode ? 'Updating...' : 'Creating...'}</span>
                     </>
                   ) : (
-                    isEditMode ? 'Update Job Post' : 'Create Job Post'
+                    <span className="text-sm sm:text-base">{isEditMode ? 'Update Job Post' : 'Create Job Post'}</span>
                   )}
                 </Button>
               </div>
