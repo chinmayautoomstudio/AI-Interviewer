@@ -110,17 +110,19 @@ export class EmailService {
   private static generateInterviewEmail(data: InterviewEmailData) {
     const { candidate, jobDescription, aiAgent, interview, interviewLink, candidateLoginCredentials } = data;
     
-    const interviewDate = new Date(interview.scheduledAt).toLocaleDateString('en-US', {
+    // Format date and time in IST
+    const interviewDate = new Date(interview.scheduledAt).toLocaleDateString('en-IN', {
       weekday: 'long',
       year: 'numeric',
       month: 'long',
       day: 'numeric',
+      timeZone: 'Asia/Kolkata'
     });
     
-    const interviewTime = new Date(interview.scheduledAt).toLocaleTimeString('en-US', {
+    const interviewTime = new Date(interview.scheduledAt).toLocaleTimeString('en-IN', {
       hour: '2-digit',
       minute: '2-digit',
-      timeZoneName: 'short',
+      timeZone: 'Asia/Kolkata'
     });
 
     const subject = `Interview Invitation - ${jobDescription.title} at ${EMAIL_CONFIG.company.name}`;

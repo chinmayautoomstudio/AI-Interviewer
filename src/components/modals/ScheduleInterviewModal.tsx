@@ -80,10 +80,29 @@ const ScheduleInterviewModal: React.FC<ScheduleInterviewModalProps> = ({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!formData.candidateId || !formData.jobDescriptionId || !formData.scheduledAt) {
+    // Validate required fields
+    if (!formData.candidateId || !formData.jobDescriptionId || !formData.aiAgentId || !formData.scheduledAt) {
       setError('Please fill in all required fields');
       return;
     }
+    
+    // Validate UUIDs
+    if (!formData.candidateId.trim()) {
+      setError('Please select a candidate');
+      return;
+    }
+    
+    if (!formData.jobDescriptionId.trim()) {
+      setError('Please select a job position');
+      return;
+    }
+    
+    if (!formData.aiAgentId.trim()) {
+      setError('Please select an AI interviewer');
+      return;
+    }
+    
+    console.log('Submitting interview data:', formData);
 
     try {
       setLoading(true);
@@ -167,14 +186,15 @@ const ScheduleInterviewModal: React.FC<ScheduleInterviewModalProps> = ({
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
               <Bot className="w-4 h-4 inline mr-1" />
-              AI Interviewer
+              AI Interviewer *
             </label>
             <select
               value={formData.aiAgentId}
               onChange={(e) => handleInputChange('aiAgentId', e.target.value)}
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              required
             >
-              <option value="">Select an AI interviewer (optional)</option>
+              <option value="">Select an AI interviewer</option>
               {aiAgents.map((agent) => (
                 <option key={agent.id} value={agent.id}>
                   {agent.name} - {agent.agentType}

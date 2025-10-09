@@ -209,18 +209,32 @@ export const getInterviewsForJob = async (jobDescriptionId: string): Promise<Int
 // Create a new interview
 export const createInterview = async (interviewData: InterviewForm): Promise<Interview> => {
   try {
+    // Convert scheduled time to IST (UTC+5:30)
+    const scheduledDate = new Date(interviewData.scheduledAt);
+    const istOffset = 5.5 * 60; // IST is UTC+5:30
+    const utcTime = scheduledDate.getTime() + (scheduledDate.getTimezoneOffset() * 60000);
+    const istTime = new Date(utcTime + (istOffset * 60000));
+    
+    console.log('Original time:', interviewData.scheduledAt);
+    console.log('IST time:', istTime.toISOString());
+    
+    // Prepare insert data
+    const insertData: any = {
+      candidate_id: interviewData.candidateId,
+      job_description_id: interviewData.jobDescriptionId,
+      ai_agent_id: interviewData.aiAgentId, // Now required
+      interview_type: interviewData.interviewType,
+      interview_duration: interviewData.duration,
+      scheduled_at: istTime.toISOString(),
+      interview_notes: interviewData.interviewNotes || null,
+      status: 'scheduled',
+    };
+    
+    console.log('Insert data:', insertData);
+    
     const { data, error } = await supabase
       .from('interviews')
-      .insert({
-        candidate_id: interviewData.candidateId,
-        job_description_id: interviewData.jobDescriptionId,
-        ai_agent_id: interviewData.aiAgentId,
-        interview_type: interviewData.interviewType,
-        interview_duration: interviewData.duration,
-        scheduled_at: interviewData.scheduledAt,
-        interview_notes: interviewData.interviewNotes || null,
-        status: 'scheduled',
-      })
+      .insert(insertData)
       .select(`
         *,
         candidate:candidates(*),
