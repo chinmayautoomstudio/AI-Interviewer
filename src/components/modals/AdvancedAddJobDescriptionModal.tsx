@@ -108,7 +108,6 @@ const AdvancedAddJobDescriptionModal: React.FC<AdvancedAddJobDescriptionModalPro
   const parseExistingJobData = (jobData: any) => {
     // Extract custom ID from title if it exists
     const titleMatch = jobData.title.match(/^\[([^\]]+)\]\s*(.+)$/);
-    const customId = titleMatch ? titleMatch[1] : '';
     const cleanTitle = titleMatch ? titleMatch[2] : jobData.title;
 
     // Use existing data directly from database (snake_case fields)
@@ -518,21 +517,20 @@ const AdvancedAddJobDescriptionModal: React.FC<AdvancedAddJobDescriptionModalPro
       console.log('🔍 Complete jobData being sent to database:', jobData);
       
       // Create or update job description in Supabase
-      let data, error;
+      let error;
       
       if (isEditMode && editJobDescription) {
         // Update existing job description
-        const { data: updateData, error: updateError } = await supabase
+        const { error: updateError } = await supabase
           .from('job_descriptions')
           .update(jobData)
           .eq('id', editJobDescription.id)
           .select()
           .single();
-        data = updateData;
         error = updateError;
       } else {
         // Create new job description
-        const { data: insertData, error: insertError } = await supabase
+        const { error: insertError } = await supabase
           .from('job_descriptions')
           .insert(jobData)
           .select()
