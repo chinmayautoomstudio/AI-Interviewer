@@ -72,7 +72,7 @@ exports.handler = async (event, context) => {
     // Send email
     console.log('Sending email to:', data.to);
     const result = await resend.emails.send({
-      from: 'AI HR Saathi <onboarding@resend.dev>', // Use Resend's default domain
+      from: 'AI HR Saathi <noreply@updates.aihrsaathi.com>', // Use verified subdomain
       to: data.to,
       subject: data.subject,
       html: data.html,

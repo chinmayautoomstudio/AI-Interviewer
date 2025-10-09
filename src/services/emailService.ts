@@ -8,20 +8,20 @@ const EMAIL_CONFIG = {
   // Resend configuration
   resend: {
     apiKey: process.env.REACT_APP_RESEND_API_KEY,
-    fromEmail: process.env.REACT_APP_FROM_EMAIL || 'noreply@aiinterviewer.com',
+    fromEmail: process.env.REACT_APP_FROM_EMAIL || 'noreply@updates.aihrsaathi.com',
   },
   
   // SendGrid configuration
   sendgrid: {
     apiKey: process.env.REACT_APP_SENDGRID_API_KEY,
-    fromEmail: process.env.REACT_APP_FROM_EMAIL || 'noreply@aiinterviewer.com',
+    fromEmail: process.env.REACT_APP_FROM_EMAIL || 'noreply@updates.aihrsaathi.com',
   },
   
   // Company information
   company: {
     name: process.env.REACT_APP_COMPANY_NAME || 'AI HR Saathi',
-    website: process.env.REACT_APP_COMPANY_WEBSITE || 'https://aiinterviewer.com',
-    supportEmail: process.env.REACT_APP_SUPPORT_EMAIL || 'support@aiinterviewer.com',
+    website: process.env.REACT_APP_COMPANY_WEBSITE || 'https://aihrsaathi.com',
+    supportEmail: process.env.REACT_APP_SUPPORT_EMAIL || 'support@updates.aihrsaathi.com',
   }
 };
 
