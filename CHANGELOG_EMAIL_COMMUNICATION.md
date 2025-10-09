@@ -1,7 +1,7 @@
 # Email & Communication Changelog
 
 ## 📋 Overview
-This document tracks all email and communication system improvements made to the AI Interviewer platform.
+This document tracks all email and communication system improvements made to the AI HR Saathi platform.
 
 ## 🎯 Recent Email System Enhancements
 

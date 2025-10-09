@@ -180,7 +180,7 @@ const Header: React.FC<HeaderProps> = ({ user, onLogout }) => {
               <span className="text-white font-bold text-xs sm:text-sm">AI</span>
             </div>
             <h1 className="text-lg sm:text-xl font-semibold text-ai-teal">
-              AI Interviewer
+              AI HR Saathi
             </h1>
           </div>
         </div>

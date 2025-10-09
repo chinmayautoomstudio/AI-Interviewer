@@ -1,7 +1,7 @@
 # Code Quality & Performance Changelog
 
 ## 📋 Overview
-This document tracks all code quality improvements, performance optimizations, and build warning fixes made to the AI Interviewer platform.
+This document tracks all code quality improvements, performance optimizations, and build warning fixes made to the AI HR Saathi platform.
 
 ## 🎯 Recent Code Quality Improvements
 

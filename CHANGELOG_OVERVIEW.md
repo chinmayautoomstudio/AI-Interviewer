@@ -1,7 +1,7 @@
-# AI Interviewer - Development Changelog Overview
+# AI HR Saathi - Development Changelog Overview
 
 ## 📋 Project Summary
-This document provides an overview of all major changes and improvements made to the AI Interviewer platform. The changes are organized by category and include detailed implementation notes.
+This document provides an overview of all major changes and improvements made to the AI HR Saathi platform. The changes are organized by category and include detailed implementation notes.
 
 ## 🎯 Recent Major Updates
 

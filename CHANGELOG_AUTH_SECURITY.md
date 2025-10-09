@@ -1,7 +1,7 @@
 # Authentication & Security Changelog
 
 ## 📋 Overview
-This document tracks all authentication and security improvements made to the AI Interviewer platform.
+This document tracks all authentication and security improvements made to the AI HR Saathi platform.
 
 ## 🎯 Recent Security Enhancements
 

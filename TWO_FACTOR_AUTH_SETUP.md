@@ -2,7 +2,7 @@
 
 ## Overview
 
-This guide explains how to set up and use the Two-Factor Authentication (2FA) system for the AI Interviewer platform. The 2FA system uses email-based verification codes to add an extra layer of security to user accounts.
+This guide explains how to set up and use the Two-Factor Authentication (2FA) system for the AI HR Saathi platform. The 2FA system uses email-based verification codes to add an extra layer of security to user accounts.
 
 ## Features
 

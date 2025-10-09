@@ -19,7 +19,7 @@ const EMAIL_CONFIG = {
   
   // Company information
   company: {
-    name: process.env.REACT_APP_COMPANY_NAME || 'AI Interviewer',
+    name: process.env.REACT_APP_COMPANY_NAME || 'AI HR Saathi',
     website: process.env.REACT_APP_COMPANY_WEBSITE || 'https://aiinterviewer.com',
     supportEmail: process.env.REACT_APP_SUPPORT_EMAIL || 'support@aiinterviewer.com',
   }
@@ -133,7 +133,7 @@ export class EmailService {
       <head>
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Interview Invitation</title>
+        <title>Interview Invitation - AI HR Saathi</title>
         <style>
           * { margin: 0; padding: 0; box-sizing: border-box; }
           body { 

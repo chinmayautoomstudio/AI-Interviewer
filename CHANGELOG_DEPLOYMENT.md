@@ -1,7 +1,7 @@
 # Deployment & Infrastructure Changelog
 
 ## 📋 Overview
-This document tracks all deployment, infrastructure, and build process improvements made to the AI Interviewer platform.
+This document tracks all deployment, infrastructure, and build process improvements made to the AI HR Saathi platform.
 
 ## 🎯 Recent Deployment Improvements
 
