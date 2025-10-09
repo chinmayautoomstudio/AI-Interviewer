@@ -564,6 +564,11 @@ export class EmailService {
    */
   private static async sendViaResend(emailContent: any): Promise<{ success: boolean; error?: string }> {
     console.log('Attempting to send via Resend...');
+    console.log('Current environment:', {
+      isProduction: process.env.NODE_ENV === 'production',
+      hostname: typeof window !== 'undefined' ? window.location.hostname : 'server',
+      isNetlify: typeof window !== 'undefined' && window.location.hostname.includes('netlify.app')
+    });
     
     // Try Netlify Function first (for production and netlify dev)
     try {
@@ -600,9 +605,19 @@ export class EmailService {
       return { success: true };
     } catch (netlifyError) {
       const errorMessage = netlifyError instanceof Error ? netlifyError.message : 'Unknown error';
-      console.log('Netlify Function failed, trying direct API:', errorMessage);
+      console.log('Netlify Function failed:', errorMessage);
+      
+      // In production (Netlify), don't fallback to direct API (CORS will block it)
+      if (typeof window !== 'undefined' && window.location.hostname.includes('netlify.app')) {
+        console.error('Production environment detected - direct API fallback will fail due to CORS');
+        return {
+          success: false,
+          error: 'Email service unavailable. Please check Netlify Functions configuration and environment variables.'
+        };
+      }
       
       // Fallback to direct API call (for development with npm start)
+      console.log('Falling back to direct API for development...');
       return await this.sendViaResendDirect(emailContent);
     }
   }
