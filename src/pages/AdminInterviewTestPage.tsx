@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Mic, MicOff, Play, Square, Users, Briefcase, Bot, Volume2, Settings, TestTube } from 'lucide-react';
+import { Mic, MicOff, Play, Users, Briefcase, Bot, Volume2, TestTube } from 'lucide-react';
 import { InterviewSystemService } from '../services/interviewSystem';
 import { ttsManager } from '../services/ttsManager';
 import { getBestIndianVoice, getVoiceForJobType, getVoiceForDepartment } from '../config/voiceConfig';

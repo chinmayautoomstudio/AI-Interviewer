@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import Modal from '../ui/Modal';
 import Button from '../ui/Button';
 import LoadingSpinner from '../ui/LoadingSpinner';
-import { FileText, Download, ExternalLink, X, AlertCircle } from 'lucide-react';
+import { FileText, Download, ExternalLink, AlertCircle } from 'lucide-react';
 
 interface ResumeViewerModalProps {
   isOpen: boolean;
@@ -20,7 +20,7 @@ const ResumeViewerModal: React.FC<ResumeViewerModalProps> = ({
   onClose,
   candidate
 }) => {
-  const [loading, setLoading] = useState(false);
+  const [loading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [resumeContent, setResumeContent] = useState<string>('');
   const [resumeUrl, setResumeUrl] = useState<string>('');

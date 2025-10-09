@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Clock, User, Briefcase, Bot, AlertCircle } from 'lucide-react';
+import { ArrowLeft, User, Briefcase, Bot, AlertCircle } from 'lucide-react';
 import Card from '../components/ui/Card';
 import Button from '../components/ui/Button';
 import LoadingSpinner from '../components/ui/LoadingSpinner';
@@ -27,12 +27,6 @@ const CandidateInterviewPage: React.FC = () => {
   const [startingInterview, setStartingInterview] = useState(false);
   const [interviewStarted, setInterviewStarted] = useState(false);
 
-  useEffect(() => {
-    if (sessionToken) {
-      loadInterviewData();
-    }
-  }, [sessionToken]);
-
   // Debug effect to log current state
   useEffect(() => {
     console.log('🔍 CandidateInterviewPage state update:', {
@@ -47,7 +41,7 @@ const CandidateInterviewPage: React.FC = () => {
     });
   }, [sessionToken, candidate, jobDescription, aiAgent, session, loading, error, startingInterview]);
 
-  const loadInterviewData = async () => {
+  const loadInterviewData = useCallback(async () => {
     console.log('🔍 loadInterviewData called with sessionToken:', sessionToken);
     
     try {
@@ -175,7 +169,14 @@ const CandidateInterviewPage: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [sessionToken]); // Include sessionToken in dependency array
+
+  // Load interview data when sessionToken changes
+  useEffect(() => {
+    if (sessionToken) {
+      loadInterviewData();
+    }
+  }, [sessionToken, loadInterviewData]);
 
   const handleStartInterview = async () => {
     console.log('🚀 handleStartInterview called');

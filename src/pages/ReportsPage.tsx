@@ -120,7 +120,7 @@ const ReportsPage: React.FC = () => {
     },
     {
       title: 'Average Score',
-      value: `${statistics?.averageScore || 0}%`,
+      value: `${statistics?.averageScore || 0}/10`,
       change: '+3%',
       changeType: 'positive' as const,
       icon: TrendingUp,
@@ -224,7 +224,7 @@ const ReportsPage: React.FC = () => {
                     </div>
                   </div>
                   <div className="flex items-center space-x-3">
-                    <span className="text-lg font-bold text-gray-900">{report.overall_score}%</span>
+                    <span className="text-lg font-bold text-gray-900">{report.overall_score}/10</span>
                     <Button 
                       variant="ghost" 
                       size="sm"

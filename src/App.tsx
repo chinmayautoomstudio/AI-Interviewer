@@ -15,6 +15,7 @@ import CandidateDashboardPage from './pages/CandidateDashboardPage';
 import CandidateInterviewPage from './pages/CandidateInterviewPage';
 import CandidateProfilePage from './pages/CandidateProfilePage';
 import CandidatePasswordUpdatePage from './pages/CandidatePasswordUpdatePage';
+import TwoFactorSettingsPage from './pages/TwoFactorSettingsPage';
 import AIAgentsPage from './pages/AIAgentsPage';
 import AdminInterviewTestPage from './pages/AdminInterviewTestPage';
 import InterviewReportPage from './pages/InterviewReportPage';
@@ -78,6 +79,7 @@ const AppContent: React.FC = () => {
             <Route path="/ai-agents" element={<AIAgentsPage />} />
             <Route path="/admin-interview-test" element={<AdminInterviewTestPage />} />
             <Route path="/settings" element={<SettingsPage />} />
+            <Route path="/settings/two-factor" element={<TwoFactorSettingsPage />} />
             <Route path="/privacy-policy" element={<PrivacyPolicyPage />} />
             <Route path="/terms-and-conditions" element={<TermsAndConditionsPage />} />
             <Route path="/disclaimer" element={<DisclaimerPage />} />

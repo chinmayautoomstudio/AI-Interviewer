@@ -19,7 +19,6 @@ import {
   ChevronDown, 
   ChevronUp,
   ExternalLink,
-  Download,
   Globe,
   Headphones,
   Shield

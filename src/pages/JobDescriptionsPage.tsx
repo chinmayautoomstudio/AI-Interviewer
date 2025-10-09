@@ -21,7 +21,6 @@ import {
   RefreshCw,
   AlertCircle,
   UserPlus,
-  Upload,
   MoreVertical
 } from 'lucide-react';
 import { JobDescription, CreateJobDescriptionRequest, Candidate } from '../types';
@@ -218,7 +217,6 @@ const JobDescriptionsPage: React.FC = () => {
       // Update additional fields
       if (data.salary_range) {
         // Parse salary range from text (e.g., "₹2.5L - ₹4L per annum")
-        const salaryText = data.salary_range;
         // For now, just set the salary range text - you can add parsing logic later
         setSalaryMin('0');
         setSalaryMax('0');

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Mic, MicOff, Play, Square, Volume2, CheckCircle, XCircle, ArrowRight, ArrowLeft } from 'lucide-react';
+import { Mic, Play, Square, Volume2, CheckCircle, XCircle, ArrowRight, ArrowLeft } from 'lucide-react';
 import { InterviewSystemService } from '../services/interviewSystem';
 import { elevenLabsService } from '../services/elevenLabs';
 import { getVoiceForJobType } from '../config/voiceConfig';

@@ -51,6 +51,91 @@ export interface Database {
           updated_at?: string;
         };
       };
+      users: {
+        Row: {
+          id: string;
+          email: string;
+          name: string;
+          password_hash: string;
+          role: 'admin' | 'hr_manager' | 'recruiter';
+          status: 'pending' | 'active' | 'inactive' | 'suspended';
+          company: string;
+          phone?: string;
+          location?: string;
+          created_at: string;
+          updated_at: string;
+          last_login?: string;
+          two_factor_enabled?: boolean;
+          two_factor_setup_at?: string;
+          last_verification_at?: string;
+        };
+        Insert: {
+          id?: string;
+          email: string;
+          name: string;
+          password_hash: string;
+          role?: 'admin' | 'hr_manager' | 'recruiter';
+          status?: 'pending' | 'active' | 'inactive' | 'suspended';
+          company: string;
+          phone?: string;
+          location?: string;
+          created_at?: string;
+          updated_at?: string;
+          last_login?: string;
+          two_factor_enabled?: boolean;
+          two_factor_setup_at?: string;
+          last_verification_at?: string;
+        };
+        Update: {
+          id?: string;
+          email?: string;
+          name?: string;
+          password_hash?: string;
+          role?: 'admin' | 'hr_manager' | 'recruiter';
+          status?: 'pending' | 'active' | 'inactive' | 'suspended';
+          company?: string;
+          phone?: string;
+          location?: string;
+          created_at?: string;
+          updated_at?: string;
+          last_login?: string;
+          two_factor_enabled?: boolean;
+          two_factor_setup_at?: string;
+          last_verification_at?: string;
+        };
+      };
+      two_factor_verification: {
+        Row: {
+          id: string;
+          user_id: string;
+          email: string;
+          verification_code: string;
+          expires_at: string;
+          is_used: boolean;
+          created_at: string;
+          used_at?: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          email: string;
+          verification_code: string;
+          expires_at: string;
+          is_used?: boolean;
+          created_at?: string;
+          used_at?: string;
+        };
+        Update: {
+          id?: string;
+          user_id?: string;
+          email?: string;
+          verification_code?: string;
+          expires_at?: string;
+          is_used?: boolean;
+          created_at?: string;
+          used_at?: string;
+        };
+      };
       candidates: {
         Row: {
           id: string;

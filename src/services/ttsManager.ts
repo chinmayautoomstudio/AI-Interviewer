@@ -1,8 +1,8 @@
 // TTS Manager - Handles multiple TTS providers
 // Primary: Amazon Polly, Fallback: ElevenLabs
 
-import { elevenLabsService, TTSRequest, TTSResponse } from './elevenLabs';
-import { amazonPollyWithSDK, PollyTTSRequest, PollyTTSResponse } from './awsPollyWithSDK';
+import { elevenLabsService, TTSRequest } from './elevenLabs';
+import { amazonPollyWithSDK, PollyTTSRequest } from './awsPollyWithSDK';
 import { browserTTSService, BrowserTTSRequest } from './browserTTS';
 
 export interface TTSManagerRequest {

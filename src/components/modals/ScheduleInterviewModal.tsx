@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, Calendar, Clock, User, Building, Bot, FileText } from 'lucide-react';
+import { Calendar, Clock, User, Building, Bot, FileText } from 'lucide-react';
 import Modal from '../ui/Modal';
 import Button from '../ui/Button';
 import { InterviewForm, Candidate, JobDescription, AIAgent } from '../../types';

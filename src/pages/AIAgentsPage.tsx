@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
 import Card from '../components/ui/Card';
 import Button from '../components/ui/Button';
 // Modal import removed
@@ -9,10 +8,7 @@ import LoadingSpinner from '../components/ui/LoadingSpinner';
 import { 
   Bot, 
   Search, 
-  Eye, 
   RefreshCw, 
-  Settings,
-  Zap,
   Users,
   Code,
   MessageSquare,
@@ -25,7 +21,6 @@ import {
 import { AIAgent } from '../types';
 
 const AIAgentsPage: React.FC = () => {
-  const navigate = useNavigate();
   const [agents, setAgents] = useState<AIAgent[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);

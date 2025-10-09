@@ -5,9 +5,11 @@ import { AuthService } from '../services/auth';
 interface AuthContextType {
   user: User | null;
   loading: boolean;
-  signIn: (email: string, password: string) => Promise<{ success: boolean; error?: string }>;
+  signIn: (email: string, password: string) => Promise<{ success: boolean; error?: string; requiresTwoFactor?: boolean; verificationCode?: string }>;
   signOut: () => Promise<void>;
   isAuthenticated: boolean;
+  completeTwoFactorAuth: (email: string, code: string) => Promise<{ success: boolean; error?: string }>;
+  resendTwoFactorCode: (email: string) => Promise<{ success: boolean; error?: string }>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -53,14 +55,16 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   }, [user]);
 
-  const signIn = async (email: string, password: string): Promise<{ success: boolean; error?: string }> => {
+  const signIn = async (email: string, password: string): Promise<{ success: boolean; error?: string; requiresTwoFactor?: boolean; verificationCode?: string }> => {
     try {
       setLoading(true);
-      const { user: authUser, error } = await AuthService.signIn(email, password);
+      const { user: authUser, error, requiresTwoFactor, verificationCode } = await AuthService.signIn(email, password);
       
       if (authUser && !error) {
         setUser(authUser);
         return { success: true };
+      } else if (requiresTwoFactor) {
+        return { success: false, requiresTwoFactor: true, verificationCode };
       } else {
         return { success: false, error: error || 'Authentication failed' };
       }
@@ -84,12 +88,40 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   };
 
+  const completeTwoFactorAuth = async (email: string, code: string): Promise<{ success: boolean; error?: string }> => {
+    try {
+      setLoading(true);
+      const result = await AuthService.completeTwoFactorAuth(email, code);
+      
+      if (result.success && result.user) {
+        setUser(result.user);
+        return { success: true };
+      } else {
+        return { success: false, error: result.error };
+      }
+    } catch (error) {
+      return { success: false, error: 'An unexpected error occurred' };
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const resendTwoFactorCode = async (email: string): Promise<{ success: boolean; error?: string }> => {
+    try {
+      return await AuthService.resendTwoFactorCode(email);
+    } catch (error) {
+      return { success: false, error: 'An unexpected error occurred' };
+    }
+  };
+
   const value: AuthContextType = {
     user,
     loading,
     signIn,
     signOut,
     isAuthenticated: !!user,
+    completeTwoFactorAuth,
+    resendTwoFactorCode,
   };
 
   return (

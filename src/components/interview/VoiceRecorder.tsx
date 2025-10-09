@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { Mic, MicOff } from 'lucide-react';
 import { InterviewSystemService } from '../../services/interviewSystem';
 import { amazonTranscribeService } from '../../services/amazonTranscribe';
@@ -68,7 +68,7 @@ const VoiceRecorder: React.FC<VoiceRecorderProps> = ({
   };
 
   // Start audio monitoring for visual feedback
-  const startAudioMonitoring = async () => {
+  const startAudioMonitoring = useCallback(async () => {
     try {
       addDebugLog('info', 'Starting audio monitoring...');
       
@@ -137,10 +137,10 @@ const VoiceRecorder: React.FC<VoiceRecorderProps> = ({
         addDebugLog('error', `Unexpected error starting audio monitoring: ${error.name} - ${error.message}`);
       }
     }
-  };
+  }, []); // Empty dependency array since this function doesn't depend on any props or state
 
   // Stop audio monitoring
-  const stopAudioMonitoring = () => {
+  const stopAudioMonitoring = useCallback(() => {
     console.log('🛑 Stopping audio monitoring...');
     
     if (animationFrameRef.current) {
@@ -162,7 +162,7 @@ const VoiceRecorder: React.FC<VoiceRecorderProps> = ({
     setIsListening(false);
     setAudioLevel(0);
     console.log('✅ Audio monitoring stopped');
-  };
+  }, []); // Empty dependency array since this function doesn't depend on any props or state
 
   // Process AI response
   const processAIResponse = async (aiResponse: string, confidence: number) => {
@@ -449,90 +449,6 @@ const VoiceRecorder: React.FC<VoiceRecorderProps> = ({
     }
   };
 
-  // Record audio for Whisper processing
-  const recordAudioForWhisper = async (): Promise<Blob | null> => {
-    return new Promise((resolve) => {
-      if (!streamRef.current) {
-        addDebugLog('error', 'No audio stream available for recording');
-        resolve(null);
-        return;
-      }
-
-      addDebugLog('info', 'Setting up MediaRecorder for audio recording...');
-      addDebugLog('info', `Stream tracks: ${streamRef.current.getTracks().length}, Audio tracks: ${streamRef.current.getAudioTracks().length}`);
-
-      const supportedTypes = [
-        'audio/webm;codecs=opus',
-        'audio/webm',
-        'audio/mp4',
-        'audio/wav'
-      ];
-
-      let selectedType = '';
-      for (const type of supportedTypes) {
-        if (MediaRecorder.isTypeSupported(type)) {
-          selectedType = type;
-          break;
-        }
-      }
-
-      if (!selectedType) {
-        addDebugLog('error', 'No supported audio format found');
-        resolve(null);
-        return;
-      }
-
-      addDebugLog('success', `Using audio format: ${selectedType}`);
-
-      const mediaRecorder = new MediaRecorder(streamRef.current, {
-        mimeType: selectedType,
-        audioBitsPerSecond: 128000 // Higher quality
-      });
-
-      const audioChunks: Blob[] = [];
-
-      mediaRecorder.ondataavailable = (event) => {
-        addDebugLog('info', `Audio data available: ${event.data.size} bytes`);
-        if (event.data.size > 0) {
-          audioChunks.push(event.data);
-        }
-      };
-
-      mediaRecorder.onstart = () => {
-        addDebugLog('success', 'MediaRecorder started recording');
-      };
-
-      mediaRecorder.onstop = () => {
-        addDebugLog('info', 'MediaRecorder stopped recording');
-        const audioBlob = new Blob(audioChunks, { type: selectedType });
-        addDebugLog('success', `Recording complete: ${audioChunks.length} chunks, ${audioBlob.size} bytes, type: ${audioBlob.type}`);
-        resolve(audioBlob);
-      };
-
-      mediaRecorder.onerror = (event) => {
-        addDebugLog('error', `MediaRecorder error: ${event}`);
-        resolve(null);
-      };
-
-      const recordDuration = Math.max(3000, Math.min(8000, 3000 + (audioLevel * 5000)));
-      addDebugLog('info', `Recording duration: ${recordDuration}ms (audio level: ${(audioLevel * 100).toFixed(1)}%)`);
-
-      try {
-        mediaRecorder.start(100); // Collect data every 100ms
-        addDebugLog('success', 'Started recording for n8n workflow...');
-
-        setTimeout(() => {
-          if (mediaRecorder.state === 'recording') {
-            addDebugLog('info', 'Stopping recording after timeout');
-            mediaRecorder.stop();
-          }
-        }, recordDuration);
-      } catch (error) {
-        addDebugLog('error', `Failed to start MediaRecorder: ${error}`);
-        resolve(null);
-      }
-    });
-  };
 
   // Amazon Transcribe fallback function
   const handleAmazonTranscribeInput = async () => {
@@ -790,25 +706,6 @@ const VoiceRecorder: React.FC<VoiceRecorderProps> = ({
     });
   };
 
-  // Stop voice recording (without processing)
-  const stopVoiceRecording = () => {
-    addDebugLog('info', 'Stopping voice recording without processing...');
-    setIsSTTRunning(false);
-    setInterimText('');
-    
-    // Stop MediaRecorder if running
-    if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'recording') {
-      mediaRecorderRef.current.stop();
-      mediaRecorderRef.current = null;
-      audioChunksRef.current = [];
-    }
-    
-    if (amazonTranscribeService.isAvailable()) {
-      amazonTranscribeService.stopTranscription();
-    }
-    
-    addDebugLog('success', 'Voice recording stopped');
-  };
 
   // Handle interview end popup actions
   const handleEndInterviewConfirm = () => {
@@ -852,7 +749,7 @@ const VoiceRecorder: React.FC<VoiceRecorderProps> = ({
         audioChunksRef.current = [];
       }
     };
-  }, []); // Empty dependency array - only run on mount/unmount
+  }, [startAudioMonitoring, stopAudioMonitoring]); // Include memoized functions in dependency array
 
   return (
     <div className={`voice-recorder ${className}`}>

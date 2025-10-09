@@ -6,7 +6,6 @@ import {
   Users, 
   Calendar, 
   Building, 
-  DollarSign,
   Edit,
   Trash2,
   CheckCircle,

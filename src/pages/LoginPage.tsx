@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
 import { Eye, EyeOff } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
+import TwoFactorVerificationModal from '../components/TwoFactorVerificationModal';
 
 const LoginPage: React.FC = () => {
-  const { signIn } = useAuth();
+  const { signIn, completeTwoFactorAuth, resendTwoFactorCode } = useAuth();
   const [formData, setFormData] = useState({
     email: '',
     password: '',
@@ -12,6 +13,9 @@ const LoginPage: React.FC = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [showTwoFactorModal, setShowTwoFactorModal] = useState(false);
+  const [pendingEmail, setPendingEmail] = useState('');
+  const [isResendingCode, setIsResendingCode] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -19,9 +23,20 @@ const LoginPage: React.FC = () => {
     setError(null);
     
     try {
-      const { success, error } = await signIn(formData.email, formData.password);
+      const { success, error, requiresTwoFactor, verificationCode } = await signIn(formData.email, formData.password);
       
-      if (!success) {
+      if (success) {
+        // Login successful, user will be redirected by AuthContext
+      } else if (requiresTwoFactor) {
+        // Show 2FA modal
+        setPendingEmail(formData.email);
+        setShowTwoFactorModal(true);
+        
+        // Log verification code for development (remove in production)
+        if (verificationCode) {
+          console.log('🔐 Development: Verification code is:', verificationCode);
+        }
+      } else {
         setError(error || 'Login failed. Please check your credentials.');
       }
     } catch (error) {
@@ -36,6 +51,24 @@ const LoginPage: React.FC = () => {
       ...prev,
       [field]: value,
     }));
+  };
+
+  const handleTwoFactorVerify = async (code: string) => {
+    return await completeTwoFactorAuth(pendingEmail, code);
+  };
+
+  const handleResendCode = async () => {
+    setIsResendingCode(true);
+    try {
+      await resendTwoFactorCode(pendingEmail);
+    } finally {
+      setIsResendingCode(false);
+    }
+  };
+
+  const handleCloseTwoFactorModal = () => {
+    setShowTwoFactorModal(false);
+    setPendingEmail('');
   };
 
   return (
@@ -225,6 +258,16 @@ const LoginPage: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {/* Two-Factor Authentication Modal */}
+      <TwoFactorVerificationModal
+        isOpen={showTwoFactorModal}
+        onClose={handleCloseTwoFactorModal}
+        onVerify={handleTwoFactorVerify}
+        email={pendingEmail}
+        onResendCode={handleResendCode}
+        isResending={isResendingCode}
+      />
     </div>
   );
 };

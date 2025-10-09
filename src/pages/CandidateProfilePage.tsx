@@ -13,7 +13,6 @@ import {
   Award, 
   Briefcase, 
   GraduationCap,
-  MapPin,
   Clock,
   User,
   Edit,

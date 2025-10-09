@@ -3,20 +3,17 @@ import {
   Calendar, 
   List, 
   Plus, 
-  Filter, 
   Search, 
   Clock, 
   User, 
   Building, 
   MapPin, 
-  MoreVertical,
   Edit,
   Trash2,
   CheckCircle,
   XCircle,
   AlertCircle,
-  Play,
-  Pause
+  Play
 } from 'lucide-react';
 import Button from '../components/ui/Button';
 import Modal from '../components/ui/Modal';
@@ -164,15 +161,6 @@ const InterviewManagementPage: React.FC = () => {
     }
   };
 
-  const handleCancelInterview = async (interviewId: string) => {
-    try {
-      await InterviewsService.updateInterviewStatus(interviewId, 'cancelled');
-      await loadData();
-    } catch (err) {
-      console.error('Error cancelling interview:', err);
-      setError('Failed to cancel interview. Please try again.');
-    }
-  };
 
   const handleDeleteInterview = async (interviewId: string) => {
     try {

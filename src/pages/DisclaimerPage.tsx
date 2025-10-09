@@ -1,6 +1,6 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, AlertTriangle, Shield, FileText, Users, Brain, Mic, BarChart3, Globe, Mail, Calendar, Info } from 'lucide-react';
+import { ArrowLeft, AlertTriangle, Shield, FileText, Users, Brain, Mic, BarChart3, Mail, Calendar, Info } from 'lucide-react';
 import Card from '../components/ui/Card';
 import Button from '../components/ui/Button';
 

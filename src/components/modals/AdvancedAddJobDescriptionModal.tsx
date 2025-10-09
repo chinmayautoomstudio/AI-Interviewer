@@ -1,9 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import Modal from '../ui/Modal';
-import Input from '../ui/Input';
 import Button from '../ui/Button';
 import LoadingSpinner from '../ui/LoadingSpinner';
-import { FileText, Zap, CheckCircle, AlertCircle, Upload, File, Plus, X, Calendar } from 'lucide-react';
+import { FileText, Zap, CheckCircle, AlertCircle, Upload, File, X, Calendar } from 'lucide-react';
 import JDParserService, { JDParserResponse } from '../../services/jdParser';
 import { supabase } from '../../services/supabase';
 
@@ -538,7 +537,6 @@ const AdvancedAddJobDescriptionModal: React.FC<AdvancedAddJobDescriptionModalPro
           .insert(jobData)
           .select()
           .single();
-        data = insertData;
         error = insertError;
       }
       
