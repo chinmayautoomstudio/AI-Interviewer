@@ -29,7 +29,8 @@
   },
   "scripts": {
     "start": "react-scripts start",
-    "build": "react-scripts build && npm run copy-functions",
+    "build": "node scripts/build.js",
+    "build-react": "react-scripts build",
     "copy-functions": "node scripts/copy-functions.js",
     "test": "react-scripts test",
     "eject": "react-scripts eject"

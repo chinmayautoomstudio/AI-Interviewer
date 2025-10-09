@@ -10,6 +10,9 @@
 
 [build.environment]
   NODE_VERSION = "18"
+  CI = "false"
+  GENERATE_SOURCEMAP = "false"
+  ESLINT_NO_DEV_ERRORS = "true"
 
 # Ensure functions are deployed
 [functions]
