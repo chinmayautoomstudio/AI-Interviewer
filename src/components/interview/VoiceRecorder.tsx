@@ -449,8 +449,8 @@ const VoiceRecorder: React.FC<VoiceRecorderProps> = ({
     }
   };
 
-  // Record audio for Whisper processing
-  const recordAudioForWhisper = async (): Promise<Blob | null> => {
+  // Record audio for Whisper processing (unused but kept for future implementation)
+  // const recordAudioForWhisper = async (): Promise<Blob | null> => {
     return new Promise((resolve) => {
       if (!streamRef.current) {
         addDebugLog('error', 'No audio stream available for recording');
