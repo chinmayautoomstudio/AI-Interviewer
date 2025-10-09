@@ -29,8 +29,8 @@ const DisclaimerPage: React.FC = () => {
               <AlertTriangle className="h-6 w-6 mr-3" /> Important Notice
             </h2>
             <p className="text-gray-700 leading-relaxed">
-              This disclaimer contains important information about the limitations and risks associated with using AI Interviewer. 
-              Please read this disclaimer carefully before using our AI-powered interview platform.
+              This disclaimer contains important information about the limitations and risks associated with using AI HR Saathi. 
+              Please read this disclaimer carefully before using our AI-powered HR management platform.
             </p>
           </section>
 
@@ -40,7 +40,7 @@ const DisclaimerPage: React.FC = () => {
               <Shield className="h-6 w-6 mr-3 text-ai-orange" /> General Disclaimer
             </h2>
             <p className="text-gray-700 leading-relaxed mb-4">
-              AI Interviewer is an AI-powered interview platform designed to assist in the recruitment process. 
+              AI HR Saathi is an AI-powered HR management platform designed to assist in the recruitment process. 
               However, users should understand the following important limitations:
             </p>
             <ul className="list-disc list-inside space-y-2 text-gray-700">
@@ -134,7 +134,7 @@ const DisclaimerPage: React.FC = () => {
             <div className="bg-ai-coral/10 border border-ai-coral/20 rounded-lg p-6">
               <h3 className="text-lg font-medium text-ai-coral mb-3">Important Legal Notice</h3>
               <ul className="list-disc list-inside space-y-2 text-gray-700">
-                <li><strong>AI Interviewer is a tool, not a decision-maker.</strong> All hiring decisions remain the sole responsibility of the employer.</li>
+                <li><strong>AI HR Saathi is a tool, not a decision-maker.</strong> All hiring decisions remain the sole responsibility of the employer.</li>
                 <li>Employers must comply with all applicable employment laws, including anti-discrimination regulations</li>
                 <li>AI-generated evaluations should be reviewed by qualified human resources professionals</li>
                 <li>Employers should implement additional assessment methods beyond AI interviews</li>
@@ -168,7 +168,7 @@ const DisclaimerPage: React.FC = () => {
               <Info className="h-6 w-6 mr-3 text-ai-orange" /> Professional Use Disclaimer
             </h2>
             <p className="text-gray-700 leading-relaxed mb-4">
-              AI Interviewer is designed for professional recruitment purposes. Users acknowledge that:
+              AI HR Saathi is designed for professional recruitment purposes. Users acknowledge that:
             </p>
             <ul className="list-disc list-inside space-y-2 text-gray-700">
               <li>The platform is not intended for personal or non-commercial use</li>
@@ -186,7 +186,7 @@ const DisclaimerPage: React.FC = () => {
             </h2>
             <div className="bg-ai-coral/10 border border-ai-coral/20 rounded-lg p-6">
               <p className="text-gray-700 leading-relaxed mb-4">
-                <strong>To the maximum extent permitted by law, AI Interviewer shall not be liable for:</strong>
+                <strong>To the maximum extent permitted by law, AI HR Saathi shall not be liable for:</strong>
               </p>
               <ul className="list-disc list-inside space-y-2 text-gray-700">
                 <li>Any hiring decisions made based on AI-generated evaluations</li>
@@ -233,7 +233,7 @@ const DisclaimerPage: React.FC = () => {
           <section className="bg-ai-teal/10 border border-ai-teal/20 rounded-lg p-6">
             <h2 className="text-xl font-semibold text-ai-teal mb-4">Acknowledgment</h2>
             <p className="text-gray-700 leading-relaxed">
-              By using AI Interviewer, you acknowledge that you have read, understood, and agree to the limitations 
+              By using AI HR Saathi, you acknowledge that you have read, understood, and agree to the limitations 
               and disclaimers outlined in this document. You understand that AI technology has inherent limitations 
               and that human judgment should always be employed in making important decisions.
             </p>

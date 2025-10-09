@@ -1,5 +1,5 @@
 // Amazon Polly Text-to-Speech Service
-// Alternative to ElevenLabs for AI Interviewer
+// Alternative to ElevenLabs for AI HR Saathi
 
 export interface PollyTTSRequest {
   text: string;

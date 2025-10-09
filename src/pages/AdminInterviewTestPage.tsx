@@ -261,7 +261,7 @@ const AdminInterviewTestPage: React.FC = () => {
     }
 
     try {
-      const testText = "Hello! This is a test of the voice system for the AI Interviewer. How does this sound?";
+      const testText = "Hello! This is a test of the voice system for the AI HR Saathi. How does this sound?";
       const voiceConfig = ttsManager.getCurrentVoiceConfig();
       const response = await ttsManager.textToSpeech({
         text: testText,

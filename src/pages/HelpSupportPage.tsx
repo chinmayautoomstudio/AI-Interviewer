@@ -76,7 +76,7 @@ const HelpSupportPage: React.FC = () => {
       id: 6,
       category: 'technical',
       question: 'Why is my microphone not working during interviews?',
-      answer: 'Check your browser permissions for microphone access. Go to your browser settings and ensure the AI Interviewer site has permission to use your microphone. Also, check that no other applications are using your microphone.'
+      answer: 'Check your browser permissions for microphone access. Go to your browser settings and ensure the AI HR Saathi site has permission to use your microphone. Also, check that no other applications are using your microphone.'
     },
     {
       id: 7,

@@ -95,10 +95,10 @@ const LoginPage: React.FC = () => {
                 <div className="flex items-center space-x-2 sm:space-x-3 mb-6 sm:mb-8">
                   <img 
                     src="/AI-Interviewer-logo.png" 
-                    alt="AI Interviewer" 
+                    alt="AI HR Saathi" 
                     className="h-6 sm:h-8 w-auto"
                   />
-                  <span className="text-white font-bold text-sm sm:text-lg">AI INTERVIEWER</span>
+                  <span className="text-white font-bold text-sm sm:text-lg">AI HR SAATHI</span>
                 </div>
                 
                 {/* Welcome Content */}

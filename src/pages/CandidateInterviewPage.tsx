@@ -396,7 +396,7 @@ const CandidateInterviewPage: React.FC = () => {
 
             {/* AI Agent Info */}
             {aiAgent && (
-              <Card title="AI Interviewer">
+              <Card title="AI HR Saathi">
                 <div className="space-y-3">
                   <div>
                     <p className="text-sm font-medium text-gray-700">Name</p>

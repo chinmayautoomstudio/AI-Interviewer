@@ -186,7 +186,7 @@ const ScheduleInterviewModal: React.FC<ScheduleInterviewModalProps> = ({
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
               <Bot className="w-4 h-4 inline mr-1" />
-              AI Interviewer *
+              AI HR Saathi *
             </label>
             <select
               value={formData.aiAgentId}

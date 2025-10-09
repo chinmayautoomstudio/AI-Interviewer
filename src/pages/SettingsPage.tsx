@@ -287,7 +287,7 @@ const SettingsPage: React.FC = () => {
               </div>
               <div>
                 <h3 className="text-lg font-medium text-gray-900">User Guide</h3>
-                <p className="text-gray-600">Learn how to use AI Interviewer effectively</p>
+                <p className="text-gray-600">Learn how to use AI HR Saathi effectively</p>
               </div>
             </div>
             <Button variant="outline">

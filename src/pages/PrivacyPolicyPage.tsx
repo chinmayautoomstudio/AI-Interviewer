@@ -56,9 +56,9 @@ const PrivacyPolicyPage: React.FC = () => {
               <span>Introduction</span>
             </h2>
             <p className="text-gray-700 leading-relaxed">
-              At AI Interviewer, we are committed to protecting your privacy and ensuring the security of your personal information. 
+              At AI HR Saathi, we are committed to protecting your privacy and ensuring the security of your personal information. 
               This Privacy Policy explains how we collect, use, disclose, and safeguard your information when you use our AI-powered 
-              interview platform and related services.
+              HR management platform and related services.
             </p>
             <p className="text-gray-700 leading-relaxed">
               By using our services, you agree to the collection and use of information in accordance with this policy. 

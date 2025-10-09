@@ -2,7 +2,7 @@
 @tailwind components;
 @tailwind utilities;
 
-/* AI Interviewer Custom Color Variables */
+/* AI HR Saathi Custom Color Variables */
 :root {
   --ai-teal: #00a19d;
   --ai-cream: #fff8e5;
@@ -32,7 +32,7 @@ code {
     monospace;
 }
 
-/* Custom AI Interviewer Components */
+/* Custom AI HR Saathi Components */
 @layer components {
   .btn-primary {
     @apply bg-ai-teal hover:bg-ai-teal-dark text-white font-medium py-2 px-4 rounded-lg transition-colors duration-200;

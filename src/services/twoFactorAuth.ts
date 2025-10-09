@@ -76,9 +76,9 @@ export class TwoFactorAuthService {
       // Use the existing email service to send verification email
       const emailContent = {
         to: email,
-        subject: 'AI Interviewer - Two-Factor Authentication Code',
+        subject: 'AI HR Saathi - Two-Factor Authentication Code',
         html: this.generateVerificationEmailTemplate(code),
-        text: `Your AI Interviewer verification code is: ${code}. This code will expire in 10 minutes.`
+        text: `Your AI HR Saathi verification code is: ${code}. This code will expire in 10 minutes.`
       };
 
       // Try to send via Netlify function first
@@ -215,7 +215,7 @@ export class TwoFactorAuthService {
           </div>
 
           <p>Hello,</p>
-          <p>You've requested to sign in to your AI Interviewer account. To complete the login process, please use the verification code below:</p>
+          <p>You've requested to sign in to your AI HR Saathi account. To complete the login process, please use the verification code below:</p>
 
           <div class="code-container">
             <div class="code-label">Your verification code:</div>
@@ -231,7 +231,7 @@ export class TwoFactorAuthService {
             <h4>🔒 Security Tips:</h4>
             <ul>
               <li>Never share this code with anyone</li>
-              <li>AI Interviewer will never ask for your verification code via phone or email</li>
+              <li>AI HR Saathi will never ask for your verification code via phone or email</li>
               <li>If you didn't request this code, please ignore this email</li>
               <li>For security, this code can only be used once</li>
             </ul>
@@ -240,8 +240,8 @@ export class TwoFactorAuthService {
           <p>If you didn't request this verification code, please ignore this email or contact our support team if you have concerns about your account security.</p>
 
           <div class="footer">
-            <p>This is an automated message from AI Interviewer. Please do not reply to this email.</p>
-            <p>© 2024 AI Interviewer. All rights reserved.</p>
+            <p>This is an automated message from AI HR Saathi. Please do not reply to this email.</p>
+            <p>© 2024 AI HR Saathi. All rights reserved.</p>
           </div>
         </div>
       </body>

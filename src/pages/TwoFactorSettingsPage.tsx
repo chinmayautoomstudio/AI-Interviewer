@@ -272,7 +272,7 @@ const TwoFactorSettingsPage: React.FC = () => {
               <ul className="text-sm text-amber-800 space-y-1">
                 <li>• Keep your email account secure and accessible</li>
                 <li>• Never share verification codes with anyone</li>
-                <li>• AI Interviewer will never ask for your verification code via phone or email</li>
+                <li>• AI HR Saathi will never ask for your verification code via phone or email</li>
                 <li>• If you lose access to your email, contact support immediately</li>
               </ul>
             </div>

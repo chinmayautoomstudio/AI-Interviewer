@@ -1,4 +1,4 @@
-// Voice Configuration for AI Interviewer
+// Voice Configuration for AI HR Saathi
 // This file contains voice settings and presets for different interview scenarios
 
 export interface VoiceConfig {

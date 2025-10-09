@@ -29,10 +29,10 @@ const TermsAndConditionsPage: React.FC = () => {
               <Scale className="h-6 w-6 mr-3 text-ai-orange" /> Introduction
             </h2>
             <p className="text-gray-700 leading-relaxed">
-              Welcome to AI Interviewer. These Terms and Conditions ("Terms") govern your use of our AI-powered interview platform and services. By accessing or using our platform, you agree to be bound by these Terms. If you do not agree to these Terms, please do not use our services.
+              Welcome to AI HR Saathi. These Terms and Conditions ("Terms") govern your use of our AI-powered HR management platform and services. By accessing or using our platform, you agree to be bound by these Terms. If you do not agree to these Terms, please do not use our services.
             </p>
             <p className="text-gray-700 leading-relaxed mt-4">
-              These Terms constitute a legally binding agreement between you and AI Interviewer. Please read them carefully before using our services.
+              These Terms constitute a legally binding agreement between you and AI HR Saathi. Please read them carefully before using our services.
             </p>
           </section>
 
@@ -58,7 +58,7 @@ const TermsAndConditionsPage: React.FC = () => {
               <Users className="h-6 w-6 mr-3 text-ai-orange" /> Service Description
             </h2>
             <p className="text-gray-700 leading-relaxed mb-4">
-              AI Interviewer provides an AI-powered interview platform that enables:
+              AI HR Saathi provides an AI-powered HR management platform that enables:
             </p>
             <ul className="list-disc list-inside space-y-2 text-gray-700">
               <li>Conducting automated interviews using artificial intelligence</li>
@@ -125,7 +125,7 @@ const TermsAndConditionsPage: React.FC = () => {
               <div>
                 <h3 className="text-lg font-medium text-ai-teal mb-2">Our Rights</h3>
                 <p className="text-gray-700 leading-relaxed">
-                  The AI Interviewer platform, including its design, functionality, algorithms, and content, is protected by intellectual property laws. We retain all rights, title, and interest in our platform.
+                  The AI HR Saathi platform, including its design, functionality, algorithms, and content, is protected by intellectual property laws. We retain all rights, title, and interest in our platform.
                 </p>
               </div>
               
@@ -160,7 +160,7 @@ const TermsAndConditionsPage: React.FC = () => {
               <AlertTriangle className="h-6 w-6 mr-3 text-ai-orange" /> Limitation of Liability
             </h2>
             <p className="text-gray-700 leading-relaxed mb-4">
-              To the maximum extent permitted by law, AI Interviewer shall not be liable for any indirect, incidental, special, consequential, or punitive damages, including but not limited to:
+              To the maximum extent permitted by law, AI HR Saathi shall not be liable for any indirect, incidental, special, consequential, or punitive damages, including but not limited to:
             </p>
             <ul className="list-disc list-inside space-y-2 text-gray-700">
               <li>Loss of profits, data, or business opportunities</li>
@@ -229,7 +229,7 @@ const TermsAndConditionsPage: React.FC = () => {
           <section className="bg-ai-teal/10 border border-ai-teal/20 rounded-lg p-6">
             <h2 className="text-xl font-semibold text-ai-teal mb-4">Acknowledgment</h2>
             <p className="text-gray-700 leading-relaxed">
-              By using AI Interviewer, you acknowledge that you have read, understood, and agree to be bound by these Terms and Conditions. You also acknowledge that you have read and understood our Privacy Policy.
+              By using AI HR Saathi, you acknowledge that you have read, understood, and agree to be bound by these Terms and Conditions. You also acknowledge that you have read and understood our Privacy Policy.
             </p>
           </section>
         </Card>

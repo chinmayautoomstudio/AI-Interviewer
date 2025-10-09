@@ -1,4 +1,4 @@
-// Core types for the AI Interviewer Platform
+// Core types for the AI HR Saathi Platform
 
 export interface User {
   id: string;

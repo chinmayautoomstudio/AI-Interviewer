@@ -133,10 +133,10 @@ const RegisterPage: React.FC = () => {
                 <div className="flex items-center space-x-3 mb-8">
                   <img 
                     src="/AI-Interviewer-logo.png" 
-                    alt="AI Interviewer" 
+                    alt="AI HR Saathi" 
                     className="h-8 w-auto"
                   />
-                  <span className="text-white font-bold text-lg">AI INTERVIEWER</span>
+                  <span className="text-white font-bold text-lg">AI HR SAATHI</span>
                 </div>
                 
                 {/* Welcome Content */}
