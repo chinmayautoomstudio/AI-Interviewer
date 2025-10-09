@@ -177,7 +177,7 @@ const CandidateDashboardPage: React.FC = () => {
 
   const handleLogout = () => {
     localStorage.removeItem('candidateSession');
-    navigate('/candidate');
+    navigate('/candidate/login');
   };
 
   const formatSalary = (salaryRange: { min: number; max: number; currency: string }) => {
@@ -216,7 +216,7 @@ const CandidateDashboardPage: React.FC = () => {
             <AlertCircle className="h-12 w-12 text-red-500 mx-auto mb-4" />
             <h2 className="text-xl font-semibold text-gray-900 mb-2">Error</h2>
             <p className="text-gray-600 mb-4">{error}</p>
-            <Button variant="primary" onClick={() => navigate('/candidate')}>
+            <Button variant="primary" onClick={() => navigate('/candidate/login')}>
               Back to Login
             </Button>
           </div>
@@ -233,7 +233,7 @@ const CandidateDashboardPage: React.FC = () => {
             <AlertCircle className="h-12 w-12 text-yellow-500 mx-auto mb-4" />
             <h2 className="text-xl font-semibold text-gray-900 mb-2">No Data Found</h2>
             <p className="text-gray-600 mb-4">Unable to load dashboard data.</p>
-            <Button variant="primary" onClick={() => navigate('/candidate')}>
+            <Button variant="primary" onClick={() => navigate('/candidate/login')}>
               Back to Login
             </Button>
           </div>
