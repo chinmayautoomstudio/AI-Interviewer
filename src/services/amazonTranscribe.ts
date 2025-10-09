@@ -224,9 +224,6 @@ class AmazonTranscribeService {
     }
 
     try {
-      // Convert blob to audio data
-      const arrayBuffer = await audioBlob.arrayBuffer();
-      
       // In a real implementation, you would:
       // 1. Upload the audio file to S3
       // 2. Start a transcription job

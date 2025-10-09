@@ -27,7 +27,7 @@ export class InterviewSystemService {
     console.log('🧹 Clearing response cache for session:', sessionId);
     // Remove all entries for this session
     const entries = Array.from(this.responseCache.entries());
-    for (const [key, value] of entries) {
+    for (const [key] of entries) {
       if (key.startsWith(sessionId)) {
         this.responseCache.delete(key);
       }
@@ -150,7 +150,6 @@ export class InterviewSystemService {
       console.log('✅ Job description found:', jobDescription?.title);
 
       // Get AI agent if specified
-      let aiAgent = null;
       if (request.aiAgentId) {
         console.log('🤖 Fetching AI agent data for ID:', request.aiAgentId);
         const { data: agent, error: agentError } = await supabase
@@ -263,7 +262,6 @@ export class InterviewSystemService {
       console.log('✅ Job description found:', jobDescription?.title);
 
       // Get AI agent if specified
-      let aiAgent = null;
       if (request.aiAgentId) {
         console.log('🤖 Fetching AI agent data for ID:', request.aiAgentId);
         const { data: agent, error: agentError } = await supabase

@@ -1,4 +1,4 @@
-import { Interview, InterviewResults, JobDescription, Candidate, ResumeUploadResponse, AddCandidateRequest } from '../types';
+import { JobDescription, ResumeUploadResponse, AddCandidateRequest } from '../types';
 import { supabase } from './supabase';
 
 export interface N8nWorkflowResponse {

@@ -95,7 +95,7 @@ const JobDescriptionsPage: React.FC = () => {
   const [responsibilitiesInput, setResponsibilitiesInput] = useState('');
   const [benefitsInput, setBenefitsInput] = useState('');
   const [skillsInput, setSkillsInput] = useState('');
-  const [qualificationsInput, setQualificationsInput] = useState('');
+  const [, setQualificationsInput] = useState('');
   const [salaryMin, setSalaryMin] = useState('');
   const [salaryMax, setSalaryMax] = useState('');
   const [salaryCurrency, setSalaryCurrency] = useState('INR');

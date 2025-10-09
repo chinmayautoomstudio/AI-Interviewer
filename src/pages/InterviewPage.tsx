@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Mic, ArrowLeft, Clock } from 'lucide-react';
 import { InterviewSystemService } from '../services/interviewSystem';
-import { ttsManager } from '../services/ttsManager';
 import { detectInterviewEnd, shouldAutoEndInterview } from '../utils/interviewEndDetection';
 import LoadingSpinner from '../components/ui/LoadingSpinner';
 import VoiceRecorder from '../components/interview/VoiceRecorder';

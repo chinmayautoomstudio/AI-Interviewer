@@ -2,10 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { Mic, MicOff, Play, Users, Briefcase, Bot, Volume2, TestTube } from 'lucide-react';
 import { InterviewSystemService } from '../services/interviewSystem';
 import { ttsManager } from '../services/ttsManager';
-import { getBestIndianVoice, getVoiceForJobType, getVoiceForDepartment } from '../config/voiceConfig';
+import { getVoiceForJobType } from '../config/voiceConfig';
 import LoadingSpinner from '../components/ui/LoadingSpinner';
 import VoiceRecorder from '../components/interview/VoiceRecorder';
-import VoicePlayer from '../components/interview/VoicePlayer';
 import InterviewSetupPage from './InterviewSetupPage';
 import InterviewPage from './InterviewPage';
 import { Candidate, JobDescription, AIAgent, InterviewSession, InterviewMessage } from '../types';
@@ -24,7 +23,7 @@ const AdminInterviewTestPage: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [isVoiceMode, setIsVoiceMode] = useState(false);
   const [isVoiceAvailable, setIsVoiceAvailable] = useState(false);
-  const [currentVoice, setCurrentVoice] = useState<string>('');
+  const [currentVoice] = useState<string>('');
   const [error, setError] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState<'setup' | 'interview' | 'main'>('main');
 
