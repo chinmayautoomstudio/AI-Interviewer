@@ -1,21 +1,15 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { 
   ChevronLeft, 
   ChevronRight, 
   Calendar as CalendarIcon, 
   Clock, 
-  User, 
-  Building,
   Plus,
-  MoreVertical,
-  Edit,
-  Trash2,
   Play,
   CheckCircle,
   XCircle
 } from 'lucide-react';
 import { Interview, Candidate, JobDescription, AIAgent } from '../../types';
-import { InterviewsService } from '../../services/interviews';
 import Button from '../ui/Button';
 
 interface InterviewCalendarProps {
@@ -45,8 +39,6 @@ const InterviewCalendar: React.FC<InterviewCalendarProps> = ({
 }) => {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [viewMode, setViewMode] = useState<ViewMode>('month');
-  const [selectedDate, setSelectedDate] = useState<Date | null>(null);
-  const [hoveredInterview, setHoveredInterview] = useState<string | null>(null);
   const [hoveredDate, setHoveredDate] = useState<Date | null>(null);
 
   // Get month name and year
@@ -78,13 +70,6 @@ const InterviewCalendar: React.FC<InterviewCalendarProps> = ({
     });
   };
 
-  // Get interviews for a date range
-  const getInterviewsForRange = (startDate: Date, endDate: Date) => {
-    return interviews.filter(interview => {
-      const interviewDate = new Date(interview.scheduledAt);
-      return interviewDate >= startDate && interviewDate <= endDate;
-    });
-  };
 
   // Generate calendar days for month view
   const generateCalendarDays = (date: Date) => {
@@ -92,7 +77,6 @@ const InterviewCalendar: React.FC<InterviewCalendarProps> = ({
     const month = date.getMonth();
     
     const firstDay = new Date(year, month, 1);
-    const lastDay = new Date(year, month + 1, 0);
     const startDate = new Date(firstDay);
     startDate.setDate(startDate.getDate() - firstDay.getDay());
     
@@ -169,6 +153,15 @@ const InterviewCalendar: React.FC<InterviewCalendarProps> = ({
     return job?.title || 'Unknown Position';
   };
 
+  // Check if a date is in the past (before today)
+  const isPastDate = (date: Date) => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0); // Reset time to start of day
+    const compareDate = new Date(date);
+    compareDate.setHours(0, 0, 0, 0); // Reset time to start of day
+    return compareDate < today;
+  };
+
   // Render month view
   const renderMonthView = () => {
     const days = generateCalendarDays(currentDate);
@@ -230,20 +223,35 @@ const InterviewCalendar: React.FC<InterviewCalendarProps> = ({
               <div
                 key={index}
                 className={`min-h-[80px] sm:min-h-[120px] border-r border-b border-gray-200 p-1 sm:p-2 relative group ${
-                  isCurrentMonth ? 'bg-white' : 'bg-gray-50'
-                } ${isToday ? 'bg-blue-50' : ''}`}
+                  isCurrentMonth 
+                    ? isToday
+                      ? 'bg-teal-50 border-teal-200' // Today - teal background with teal border
+                      : isPastDate(day) 
+                        ? 'bg-gray-100' // Past dates - light gray background
+                        : 'bg-white'    // Current/future dates - white background
+                    : 'bg-gray-50'    // Other month dates - very light gray
+                }`}
                 onMouseEnter={() => setHoveredDate(day)}
                 onMouseLeave={() => setHoveredDate(null)}
               >
                 <div className="flex items-center justify-between mb-1">
-                  <div className={`text-xs sm:text-sm font-medium ${
-                    isCurrentMonth ? 'text-gray-900' : 'text-gray-400'
-                  } ${isToday ? 'text-blue-600' : ''}`}>
+                  <div className={`text-xs sm:text-sm font-medium relative ${
+                    isCurrentMonth 
+                      ? isToday
+                        ? 'text-teal-700 font-bold' // Today - teal color and bold
+                        : isPastDate(day) 
+                          ? 'text-gray-500' // Past dates - muted gray
+                          : 'text-gray-900' // Current/future dates - dark gray
+                      : 'text-gray-400'   // Other month dates - light gray
+                  }`}>
                     {day.getDate()}
+                    {isToday && (
+                      <div className="absolute -bottom-1 left-1/2 transform -translate-x-1/2 w-1 h-1 bg-teal-500 rounded-full"></div>
+                    )}
                   </div>
                   
-                  {/* Hover + Button */}
-                  {hoveredDate && hoveredDate.toDateString() === day.toDateString() && isCurrentMonth && (
+                  {/* Hover + Button - Only show for current and future dates */}
+                  {hoveredDate && hoveredDate.toDateString() === day.toDateString() && isCurrentMonth && !isPastDate(day) && (
                     <button
                       onClick={() => {
                         const selectedDate = day.toISOString().slice(0, 10); // YYYY-MM-DD format
@@ -265,8 +273,6 @@ const InterviewCalendar: React.FC<InterviewCalendarProps> = ({
                         key={interview.id}
                         className={`text-xs p-1 rounded border cursor-pointer hover:shadow-sm transition-shadow ${getStatusColor(interview.status)}`}
                         onClick={() => onInterviewClick(interview)}
-                        onMouseEnter={() => setHoveredInterview(interview.id)}
-                        onMouseLeave={() => setHoveredInterview(null)}
                       >
                         <div className="flex items-center gap-1">
                           <StatusIcon className="w-3 h-3 flex-shrink-0" />
@@ -296,7 +302,6 @@ const InterviewCalendar: React.FC<InterviewCalendarProps> = ({
   // Render week view
   const renderWeekView = () => {
     const weekDays = getWeekDates(currentDate);
-    const weekInterviews = getInterviewsForRange(weekDays[0], weekDays[6]);
     
     return (
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
@@ -347,25 +352,40 @@ const InterviewCalendar: React.FC<InterviewCalendarProps> = ({
             return (
               <div key={index} className="border-r border-gray-200 last:border-r-0 min-w-[120px] sm:min-w-0">
                 <div className={`p-2 sm:p-3 text-center border-b border-gray-200 relative group ${
-                  isToday ? 'bg-blue-50' : 'bg-gray-50'
+                  isToday 
+                    ? 'bg-teal-50 border-teal-200' // Today - teal background with teal border
+                    : isPastDate(day) 
+                      ? 'bg-gray-100' // Past dates - light gray background
+                      : 'bg-gray-50'  // Current/future dates - very light gray
                 }`}
                 onMouseEnter={() => setHoveredDate(day)}
                 onMouseLeave={() => setHoveredDate(null)}>
                   <div className={`text-xs sm:text-sm font-medium ${
-                    isToday ? 'text-blue-600' : 'text-gray-900'
+                    isToday 
+                      ? 'text-teal-700 font-bold' // Today - teal color and bold
+                      : isPastDate(day) 
+                        ? 'text-gray-500' // Past dates - muted gray
+                        : 'text-gray-900' // Current/future dates - dark gray
                   }`}>
                     <span className="hidden sm:inline">{day.toLocaleDateString('en-US', { weekday: 'short' })}</span>
                     <span className="sm:hidden">{day.toLocaleDateString('en-US', { weekday: 'short' }).charAt(0)}</span>
                   </div>
                   <div className="flex items-center justify-center gap-1 sm:gap-2">
-                    <div className={`text-sm sm:text-lg font-semibold ${
-                      isToday ? 'text-blue-600' : 'text-gray-900'
+                    <div className={`text-sm sm:text-lg font-semibold relative ${
+                      isToday 
+                        ? 'text-teal-700 font-bold' // Today - teal color and bold
+                        : isPastDate(day) 
+                          ? 'text-gray-500' // Past dates - muted gray
+                          : 'text-gray-900' // Current/future dates - dark gray
                     }`}>
                       {day.getDate()}
+                      {isToday && (
+                        <div className="absolute -bottom-1 left-1/2 transform -translate-x-1/2 w-1.5 h-1.5 bg-teal-500 rounded-full"></div>
+                      )}
                     </div>
                     
-                    {/* Hover + Button for Week View */}
-                    {hoveredDate && hoveredDate.toDateString() === day.toDateString() && (
+                    {/* Hover + Button for Week View - Only show for current and future dates */}
+                    {hoveredDate && hoveredDate.toDateString() === day.toDateString() && !isPastDate(day) && (
                       <button
                         onClick={() => {
                           const selectedDate = day.toISOString().slice(0, 10); // YYYY-MM-DD format
@@ -414,7 +434,6 @@ const InterviewCalendar: React.FC<InterviewCalendarProps> = ({
   // Render day view
   const renderDayView = () => {
     const dayInterviews = getInterviewsForDate(currentDate);
-    const isToday = currentDate.toDateString() === new Date().toDateString();
     
     return (
       <div className="bg-white rounded-lg shadow-sm border border-gray-200">
@@ -462,14 +481,16 @@ const InterviewCalendar: React.FC<InterviewCalendarProps> = ({
             >
               <ChevronRight className="w-4 h-4" />
             </Button>
-            <Button
-              onClick={() => onScheduleInterview(currentDate.toISOString().slice(0, 10))}
-              size="sm"
-              className="flex-1 sm:flex-none"
-            >
-              <Plus className="w-4 h-4 mr-1" />
-              <span className="hidden sm:inline">Schedule</span>
-            </Button>
+            {!isPastDate(currentDate) && (
+              <Button
+                onClick={() => onScheduleInterview(currentDate.toISOString().slice(0, 10))}
+                size="sm"
+                className="flex-1 sm:flex-none"
+              >
+                <Plus className="w-4 h-4 mr-1" />
+                <span className="hidden sm:inline">Schedule</span>
+              </Button>
+            )}
           </div>
         </div>
 
@@ -480,10 +501,12 @@ const InterviewCalendar: React.FC<InterviewCalendarProps> = ({
               <CalendarIcon className="w-8 h-8 sm:w-12 sm:h-12 text-gray-400 mx-auto mb-4" />
               <h3 className="text-base sm:text-lg font-medium text-gray-900 mb-2">No interviews scheduled</h3>
               <p className="text-sm sm:text-base text-gray-500 mb-4">This day is free for scheduling new interviews.</p>
-              <Button onClick={() => onScheduleInterview(currentDate.toISOString().slice(0, 10))} size="sm" className="sm:size-md">
-                <Plus className="w-4 h-4 mr-2" />
-                Schedule Interview
-              </Button>
+              {!isPastDate(currentDate) && (
+                <Button onClick={() => onScheduleInterview(currentDate.toISOString().slice(0, 10))} size="sm" className="sm:size-md">
+                  <Plus className="w-4 h-4 mr-2" />
+                  Schedule Interview
+                </Button>
+              )}
             </div>
           ) : (
             <div className="space-y-3 sm:space-y-4">

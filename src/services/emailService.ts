@@ -249,7 +249,8 @@ export class EmailService {
           .cta-button { 
             display: inline-block; 
             background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%); 
-            color: white; 
+            background-color: #3b82f6; /* Fallback for email clients that don't support gradients */
+            color: #ffffff !important; 
             padding: 16px 32px; 
             text-decoration: none; 
             border-radius: 8px; 
@@ -259,6 +260,7 @@ export class EmailService {
             text-align: center;
             box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
             transition: all 0.2s ease;
+            border: none;
           }
           .cta-button:hover {
             transform: translateY(-1px);
@@ -458,7 +460,7 @@ export class EmailService {
                 <div class="card-title">Interview Access</div>
               </div>
               <p style="color: #4b5563; margin-bottom: 20px;">Your interview will be conducted online. Click the button below to access the candidate login page:</p>
-              <a href="${interviewLink}" class="cta-button">Access Interview Platform</a>
+              <a href="${interviewLink}" class="cta-button" style="color: #ffffff !important; text-decoration: none; font-weight: 600;">Access Interview Platform</a>
               <p style="color: #6b7280; font-size: 14px; margin-top: 12px;">Please join 5 minutes before your scheduled time.</p>
             </div>
             ` : ''}
