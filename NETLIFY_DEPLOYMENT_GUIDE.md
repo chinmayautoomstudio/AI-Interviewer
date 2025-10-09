@@ -5,8 +5,21 @@ The email functionality is failing in production because:
 1. Netlify Functions are not properly configured
 2. Environment variables are missing
 3. CORS is blocking direct API calls
+4. **404 Error**: Function not deployed (most common issue)
 
 ## ✅ Solution Steps
+
+### Step 0: Verify Function Deployment (CRITICAL)
+
+1. **Test the function endpoint first:**
+   - Visit: `https://ai-interviewer-sys.netlify.app/.netlify/functions/test`
+   - You should see: `{"success": true, "message": "Test function is working!"}`
+   - If you get 404, the functions are not deployed
+
+2. **If test function fails (404):**
+   - Go to Netlify Dashboard → Functions tab
+   - Check if any functions are listed
+   - If no functions appear, the deployment is not including the functions directory
 
 ### Step 1: Set Environment Variables in Netlify
 
@@ -55,13 +68,43 @@ If Netlify Functions continue to fail, we can implement a serverless solution us
 
 ## 🔧 Troubleshooting
 
+### 404 Error - Function Not Found (MOST COMMON)
+
+**Symptoms:**
+- `POST https://ai-interviewer-sys.netlify.app/.netlify/functions/send-email 404 (Not Found)`
+- Test function also returns 404
+
+**Solutions:**
+
+1. **Check Functions Tab:**
+   - Go to Netlify Dashboard → Functions tab
+   - If no functions are listed, the functions directory is not being deployed
+
+2. **Force Redeploy:**
+   - Go to Deploys tab
+   - Click "Trigger deploy" → "Clear cache and deploy site"
+   - This forces a complete rebuild
+
+3. **Check Build Logs:**
+   - Go to Deploys tab → Click on latest deploy
+   - Look for "Functions" section in build logs
+   - Should show: "Functions directory: netlify/functions"
+
+4. **Verify Directory Structure:**
+   - Ensure `netlify/functions/` directory exists in your repo
+   - Ensure `netlify.toml` has correct functions configuration
+
+5. **Alternative: Manual Function Upload:**
+   - If automatic deployment fails, you can manually upload functions
+   - Go to Functions tab → "Add function" → Upload the function files
+
 ### Check Function Logs
 1. Go to Netlify Dashboard → Functions tab
 2. Click on `send-email` function
 3. Check the logs for any errors
 
 ### Common Issues:
-- **404 Error**: Function not deployed → Redeploy site
+- **404 Error**: Function not deployed → Force redeploy with cache clear
 - **500 Error**: Environment variables missing → Add env vars and redeploy
 - **CORS Error**: Function not responding → Check function logs
 

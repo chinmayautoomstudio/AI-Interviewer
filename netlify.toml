@@ -10,3 +10,7 @@
 
 [build.environment]
   NODE_VERSION = "18"
+
+# Ensure functions are deployed
+[functions]
+  directory = "netlify/functions"
