@@ -6,7 +6,9 @@ import {
   CheckCircle, 
   Clock, 
   TrendingUp,
-  FileText
+  FileText,
+  Play,
+  Activity
 } from 'lucide-react';
 import Card from '../components/ui/Card';
 import Button from '../components/ui/Button';
@@ -16,9 +18,11 @@ import AdvancedAddCandidateModal from '../components/modals/AdvancedAddCandidate
 import { InterviewSystemService } from '../services/interviewSystem';
 import { getCandidates } from '../services/candidates';
 import { getJobDescriptions } from '../services/jobDescriptions';
+import { useNotifications } from '../contexts/NotificationContext';
 
 const DashboardPage: React.FC = () => {
   const navigate = useNavigate();
+  const { notifications, isConnected } = useNotifications();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [dashboardData, setDashboardData] = useState({
@@ -162,6 +166,24 @@ const DashboardPage: React.FC = () => {
     }
   };
 
+  const formatNotificationTime = (timestamp: string) => {
+    const date = new Date(timestamp);
+    const now = new Date();
+    const diffInMinutes = Math.floor((now.getTime() - date.getTime()) / (1000 * 60));
+    
+    if (diffInMinutes < 1) {
+      return 'just now';
+    } else if (diffInMinutes < 60) {
+      return `${diffInMinutes} minute${diffInMinutes > 1 ? 's' : ''} ago`;
+    } else if (diffInMinutes < 1440) {
+      const hours = Math.floor(diffInMinutes / 60);
+      return `${hours} hour${hours > 1 ? 's' : ''} ago`;
+    } else {
+      const days = Math.floor(diffInMinutes / 1440);
+      return `${days} day${days > 1 ? 's' : ''} ago`;
+    }
+  };
+
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'suitable': return 'bg-green-100 text-green-800';
@@ -281,6 +303,63 @@ const DashboardPage: React.FC = () => {
             })}
           </div>
         </div>
+      </div>
+
+      {/* Live Interview Status - Full width */}
+      <div>
+        <Card className="p-4 sm:p-5 lg:p-6">
+          <div className="flex items-center justify-between mb-3 lg:mb-4">
+            <h3 className="text-base sm:text-lg lg:text-xl font-semibold text-ai-teal">Live Interview Status</h3>
+            <div className="flex items-center space-x-2">
+              <div className={`w-2 h-2 rounded-full ${isConnected ? 'bg-green-500' : 'bg-red-500'}`}></div>
+              <span className="text-xs text-gray-500">
+                {isConnected ? 'Connected' : 'Disconnected'}
+              </span>
+            </div>
+          </div>
+          
+          {notifications.length === 0 ? (
+            <div className="text-center py-8">
+              <Activity className="h-12 w-12 mx-auto text-gray-300 mb-4" />
+              <p className="text-gray-500 text-sm">No active interviews</p>
+              <p className="text-gray-400 text-xs mt-1">
+                Real-time notifications will appear here when candidates start interviews
+              </p>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {notifications
+                .filter(n => n.type === 'interview_started')
+                .slice(0, 5)
+                .map((notification) => (
+                  <div key={notification.id} className="flex items-center justify-between p-3 bg-blue-50 rounded-lg border border-blue-200">
+                    <div className="flex items-center space-x-3">
+                      <div className="p-2 bg-blue-100 rounded-full">
+                        <Play className="h-4 w-4 text-blue-600" />
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium text-gray-900">
+                          {notification.candidateName}
+                        </p>
+                        <p className="text-xs text-gray-600">
+                          Interviewing for {notification.jobTitle}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-xs text-gray-500">
+                        Started {formatNotificationTime(notification.timestamp)}
+                      </p>
+                      <div className="flex items-center space-x-1 mt-1">
+                        <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                        <span className="text-xs text-green-600 font-medium">Live</span>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+            </div>
+          )}
+        </Card>
       </div>
 
       {/* Recent Interview Reports - Full width */}

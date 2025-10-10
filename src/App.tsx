@@ -3,6 +3,7 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 // import './utils/testConnection'; // Auto-test Supabase connection - disabled to prevent errors
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { LayoutProvider } from './contexts/LayoutContext';
+import { NotificationProvider } from './contexts/NotificationContext';
 import LoginPage from './pages/LoginPage';
 import DashboardPage from './pages/DashboardPage';
 import CandidatesPage from './pages/CandidatesPage';
@@ -98,9 +99,11 @@ function App() {
   return (
     <AuthProvider>
       <LayoutProvider>
-        <Router>
-          <AppContent />
-        </Router>
+        <NotificationProvider>
+          <Router>
+            <AppContent />
+          </Router>
+        </NotificationProvider>
       </LayoutProvider>
     </AuthProvider>
   );

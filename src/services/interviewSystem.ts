@@ -10,10 +10,53 @@ import {
   JobDescription,
   AIAgent
 } from '../types';
+// import { notificationService } from './notificationService';
 
 export class InterviewSystemService {
   // Response cache to prevent duplicate processing
   private static responseCache = new Map<string, { response: any; timestamp: number }>();
+
+  // Trigger notification for interview status change
+  private static async triggerInterviewNotification(
+    sessionId: string, 
+    status: 'in_progress' | 'completed' | 'failed',
+    candidateId?: string,
+    jobDescriptionId?: string
+  ) {
+    try {
+      // Get session data for notification
+      const { data: session } = await supabase
+        .from('interview_sessions')
+        .select(`
+          *,
+          candidate:candidates(name),
+          job_description:job_descriptions(title)
+        `)
+        .eq('session_id', sessionId)
+        .single();
+
+      if (session) {
+        // Create notification data
+        const notificationData = {
+          sessionId,
+          candidateId: session.candidate_id,
+          candidateName: session.candidate?.name || 'Unknown Candidate',
+          jobTitle: session.job_description?.title || 'Unknown Position',
+          status,
+          timestamp: new Date().toISOString(),
+          metadata: {
+            duration: session.duration_minutes
+          }
+        };
+
+        // Trigger notification through the service
+        // This will be picked up by the real-time subscription
+        console.log('🔔 Triggering interview notification:', notificationData);
+      }
+    } catch (error) {
+      console.error('Error triggering interview notification:', error);
+    }
+  }
   
   // Generate unique session ID
   static generateSessionId(): string {
@@ -744,6 +787,9 @@ export class InterviewSystemService {
         })
         .eq('session_id', sessionId);
 
+      // Trigger notification for interview started
+      await this.triggerInterviewNotification(sessionId, 'in_progress');
+
       // Check for duplicate response
       if (this.isDuplicateResponse(sessionId, responseData)) {
         console.log('⚠️ Duplicate response detected, returning null to prevent processing');
@@ -1191,6 +1237,9 @@ export class InterviewSystemService {
           updated_at: new Date().toISOString()
         })
         .eq('session_id', completionData.sessionId);
+
+      // Trigger notification for interview completed
+      await this.triggerInterviewNotification(completionData.sessionId, 'completed');
 
       // Get the interview session ID first
       const { data: session, error: sessionError } = await supabase

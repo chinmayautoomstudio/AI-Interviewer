@@ -13,10 +13,12 @@ import {
   AlertTriangle,
   CheckCircle,
   Clock,
-  ChevronDown
+  ChevronDown,
+  Play
 } from 'lucide-react';
 import Button from '../ui/Button';
 import { useLayout } from '../../contexts/LayoutContext';
+import { useNotifications } from '../../contexts/NotificationContext';
 
 interface HeaderProps {
   user?: {
@@ -27,18 +29,10 @@ interface HeaderProps {
   onLogout?: () => void;
 }
 
-interface Notification {
-  id: string;
-  title: string;
-  message: string;
-  type: 'info' | 'success' | 'warning' | 'error';
-  timestamp: string;
-  read: boolean;
-}
-
 const Header: React.FC<HeaderProps> = ({ user, onLogout }) => {
   const navigate = useNavigate();
   const { sidebarOpen, toggleSidebar } = useLayout();
+  const { notifications, unreadCount, markAsRead, isConnected } = useNotifications();
   
   // Dropdown states
   const [notificationsOpen, setNotificationsOpen] = useState(false);
@@ -49,44 +43,6 @@ const Header: React.FC<HeaderProps> = ({ user, onLogout }) => {
   const notificationsRef = useRef<HTMLDivElement>(null);
   const settingsRef = useRef<HTMLDivElement>(null);
   const profileRef = useRef<HTMLDivElement>(null);
-
-  // Mock notifications data
-  const [notifications] = useState<Notification[]>([
-    {
-      id: '1',
-      title: 'New Interview Scheduled',
-      message: 'Interview with John Doe for Software Engineer position is scheduled for tomorrow at 2:00 PM',
-      type: 'info',
-      timestamp: '2 hours ago',
-      read: false
-    },
-    {
-      id: '2',
-      title: 'Interview Completed',
-      message: 'Interview with Sarah Wilson has been completed. Report is ready for review.',
-      type: 'success',
-      timestamp: '4 hours ago',
-      read: false
-    },
-    {
-      id: '3',
-      title: 'System Maintenance',
-      message: 'Scheduled maintenance will occur tonight from 11 PM to 1 AM. Some features may be temporarily unavailable.',
-      type: 'warning',
-      timestamp: '1 day ago',
-      read: true
-    },
-    {
-      id: '4',
-      title: 'New Candidate Registered',
-      message: 'Mike Johnson has registered for the Frontend Developer position.',
-      type: 'info',
-      timestamp: '2 days ago',
-      read: true
-    }
-  ]);
-
-  const unreadCount = notifications.filter(n => !n.read).length;
 
   // Close dropdowns when clicking outside
   useEffect(() => {
@@ -110,14 +66,59 @@ const Header: React.FC<HeaderProps> = ({ user, onLogout }) => {
 
   const getNotificationIcon = (type: string) => {
     switch (type) {
-      case 'success':
+      case 'interview_started':
+        return <Play className="h-4 w-4 text-blue-500" />;
+      case 'interview_completed':
         return <CheckCircle className="h-4 w-4 text-green-500" />;
-      case 'warning':
-        return <AlertTriangle className="h-4 w-4 text-yellow-500" />;
-      case 'error':
+      case 'interview_failed':
         return <X className="h-4 w-4 text-red-500" />;
       default:
         return <Bell className="h-4 w-4 text-blue-500" />;
+    }
+  };
+
+  const getNotificationTitle = (type: string) => {
+    switch (type) {
+      case 'interview_started':
+        return 'Interview Started';
+      case 'interview_completed':
+        return 'Interview Completed';
+      case 'interview_failed':
+        return 'Interview Failed';
+      default:
+        return 'Notification';
+    }
+  };
+
+  const getNotificationMessage = (notification: any) => {
+    switch (notification.type) {
+      case 'interview_started':
+        return `${notification.candidateName} has started their interview for ${notification.jobTitle}`;
+      case 'interview_completed':
+        const score = notification.metadata?.score ? ` (Score: ${notification.metadata.score}/10)` : '';
+        return `${notification.candidateName} has completed their interview for ${notification.jobTitle}${score}`;
+      case 'interview_failed':
+        return `${notification.candidateName}'s interview for ${notification.jobTitle} has failed`;
+      default:
+        return 'New notification received';
+    }
+  };
+
+  const formatNotificationTime = (timestamp: string) => {
+    const date = new Date(timestamp);
+    const now = new Date();
+    const diffInMinutes = Math.floor((now.getTime() - date.getTime()) / (1000 * 60));
+    
+    if (diffInMinutes < 1) {
+      return 'Just now';
+    } else if (diffInMinutes < 60) {
+      return `${diffInMinutes} minute${diffInMinutes > 1 ? 's' : ''} ago`;
+    } else if (diffInMinutes < 1440) {
+      const hours = Math.floor(diffInMinutes / 60);
+      return `${hours} hour${hours > 1 ? 's' : ''} ago`;
+    } else {
+      const days = Math.floor(diffInMinutes / 1440);
+      return `${days} day${days > 1 ? 's' : ''} ago`;
     }
   };
 
@@ -228,26 +229,45 @@ const Header: React.FC<HeaderProps> = ({ user, onLogout }) => {
                   <p className="text-sm text-gray-600">{unreadCount} unread notifications</p>
                 </div>
                 <div className="max-h-96 overflow-y-auto">
-                  {notifications.map((notification) => (
-                    <div
-                      key={notification.id}
-                      className={`p-4 border-b border-gray-100 hover:bg-gray-50 cursor-pointer ${
-                        !notification.read ? 'bg-blue-50' : ''
-                      }`}
-                    >
-                      <div className="flex items-start space-x-3">
-                        {getNotificationIcon(notification.type)}
-                        <div className="flex-1 min-w-0">
-                          <p className="text-sm font-medium text-gray-900">{notification.title}</p>
-                          <p className="text-sm text-gray-600 mt-1">{notification.message}</p>
-                          <p className="text-xs text-gray-500 mt-2 flex items-center">
-                            <Clock className="h-3 w-3 mr-1" />
-                            {notification.timestamp}
-                          </p>
+                  {notifications.length === 0 ? (
+                    <div className="p-4 text-center text-gray-500">
+                      <Bell className="h-8 w-8 mx-auto mb-2 text-gray-300" />
+                      <p className="text-sm">No notifications yet</p>
+                      <p className="text-xs text-gray-400 mt-1">
+                        {isConnected ? 'Real-time notifications are active' : 'Connecting to notifications...'}
+                      </p>
+                    </div>
+                  ) : (
+                    notifications.map((notification) => (
+                      <div
+                        key={notification.id}
+                        onClick={() => {
+                          if (!notification.read) {
+                            markAsRead(notification.id);
+                          }
+                        }}
+                        className={`p-4 border-b border-gray-100 hover:bg-gray-50 cursor-pointer ${
+                          !notification.read ? 'bg-blue-50' : ''
+                        }`}
+                      >
+                        <div className="flex items-start space-x-3">
+                          {getNotificationIcon(notification.type)}
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-medium text-gray-900">
+                              {getNotificationTitle(notification.type)}
+                            </p>
+                            <p className="text-sm text-gray-600 mt-1">
+                              {getNotificationMessage(notification)}
+                            </p>
+                            <p className="text-xs text-gray-500 mt-2 flex items-center">
+                              <Clock className="h-3 w-3 mr-1" />
+                              {formatNotificationTime(notification.timestamp)}
+                            </p>
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  ))}
+                    ))
+                  )}
                 </div>
                 <div className="p-3 border-t border-gray-200">
                   <button className="w-full text-sm text-ai-teal hover:text-ai-orange font-medium">
