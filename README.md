@@ -1,6 +1,6 @@
-# 🎤 AI Interviewer Platform
+# 🤖 AI HR Saathi Platform
 
-A comprehensive AI-powered interview platform with voice integration, intelligent resume parsing, and advanced candidate management capabilities.
+A comprehensive AI-powered HR management platform with intelligent interview capabilities, voice integration, resume parsing, and advanced candidate management features.
 
 ## ✨ Features
 
@@ -11,6 +11,8 @@ A comprehensive AI-powered interview platform with voice integration, intelligen
 - **Job Description Parsing**: Intelligent JD analysis and matching
 - **Candidate Management**: Complete candidate lifecycle management
 - **Interview Scheduling**: Automated interview scheduling and management
+- **Two-Factor Authentication**: Enhanced security with email-based 2FA
+- **Candidate Reports**: Performance analytics and detailed interview reports
 
 ### 🚀 **Advanced Features**
 - **Multi-Modal Interviews**: Text and voice interview modes
@@ -19,6 +21,9 @@ A comprehensive AI-powered interview platform with voice integration, intelligen
 - **Candidate Authentication**: Secure candidate login and dashboard
 - **Admin Testing Interface**: Comprehensive testing tools for administrators
 - **Voice Configuration**: Customizable AI voice settings and presets
+- **Email Notifications**: Automated email communications for interviews and reports
+- **Performance Analytics**: Detailed candidate performance tracking and reporting
+- **Security Features**: Two-factor authentication and secure session management
 
 ## 🏗️ **Architecture**
 
@@ -33,6 +38,8 @@ A comprehensive AI-powered interview platform with voice integration, intelligen
 - **n8n** for workflow automation
 - **ElevenLabs** for voice processing
 - **OpenAI/Claude** for AI analysis
+- **Resend** for email communications
+- **Netlify Functions** for serverless backend operations
 
 ### **Database**
 - **PostgreSQL** (via Supabase)
@@ -52,8 +59,8 @@ A comprehensive AI-powered interview platform with voice integration, intelligen
 
 1. **Clone the repository**
 ```bash
-git clone https://github.com/YOUR_USERNAME/ai-interviewer-platform.git
-cd ai-interviewer-platform
+git clone https://github.com/chinmayautoomstudio/AI-Interviewer.git
+cd AI-Interviewer/ai-interviewer
 ```
 
 2. **Install dependencies**
@@ -88,12 +95,20 @@ REACT_APP_ELEVEN_LABS_DEFAULT_MODEL=eleven_multilingual_v2
 # Voice Configuration
 REACT_APP_DEFAULT_VOICE_PRESET=professional
 REACT_APP_AUTO_VOICE_SELECTION=true
+
+# Email Configuration (for 2FA and notifications)
+REACT_APP_RESEND_API_KEY=your_resend_api_key
+REACT_APP_COMPANY_NAME=AI HR Saathi
+REACT_APP_FROM_EMAIL=noreply@updates.aihrsaathi.com
+REACT_APP_SUPPORT_EMAIL=support@updates.aihrsaathi.com
+REACT_APP_WEBSITE=https://aihrsaathi.com
 ```
 
 5. **Database Setup**
 ```bash
 # Run SQL scripts in Supabase SQL Editor
 # See sql/README_DATABASE_SETUP.md for detailed instructions
+# Important: Run create_2fa_verification_table.sql for 2FA functionality
 ```
 
 6. **Start the application**
@@ -131,6 +146,7 @@ ai-interviewer/
    - `sql/fix_interview_tables_step_by_step.sql`
    - `sql/add_candidate_auth_fields.sql`
    - `sql/add_summary_fields.sql`
+   - `sql/create_2fa_verification_table.sql` (for 2FA functionality)
 
 ### **n8n Workflow Setup**
 1. Import workflow JSON files from `n8n/` directory
@@ -150,6 +166,9 @@ ai-interviewer/
 - [n8n Integration Setup](VOICE_N8N_SETUP_GUIDE.md)
 - [Enhanced Resume Analyzer](docs/ENHANCED_RESUME_ANALYZER.md)
 - [Summary Fields Integration](docs/SUMMARY_FIELDS_INTEGRATION.md)
+- [Two-Factor Authentication Setup](TWO_FACTOR_AUTH_SETUP.md)
+- [Candidate Paid Reports Feature](CANDIDATE_PAID_REPORTS_FEATURE.md)
+- [Changelog Overview](CHANGELOG_OVERVIEW.md)
 
 ## 🎯 **Key Features Deep Dive**
 
@@ -166,22 +185,26 @@ ai-interviewer/
 - **Transcription**: Speech-to-text conversion
 
 ### **Candidate Management**
-- **Authentication**: Secure candidate login system
+- **Authentication**: Secure candidate login system with 2FA support
 - **Dashboard**: Personalized candidate interface
 - **Profile Management**: Complete candidate profile system
 - **Application Tracking**: Job application status tracking
+- **Performance Reports**: Detailed interview performance analytics
+- **Paid Reports**: Premium candidate performance insights
 
 ## 🚀 **Deployment**
 
 ### **Frontend Deployment**
-- **Vercel**: Recommended for React applications
-- **Netlify**: Alternative deployment option
+- **Netlify**: Primary deployment platform (auto-deploy from GitHub)
+- **Vercel**: Alternative deployment option
 - **GitHub Pages**: Free hosting option
 
 ### **Backend Services**
 - **Supabase**: Database and authentication
 - **n8n Cloud**: Workflow automation
 - **ElevenLabs**: Voice processing
+- **Resend**: Email communications and 2FA
+- **Netlify Functions**: Serverless backend operations
 
 ## 🤝 **Contributing**
 
@@ -201,6 +224,8 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 - **n8n** for workflow automation
 - **ElevenLabs** for voice processing
 - **OpenAI** for AI analysis capabilities
+- **Resend** for email communications
+- **Netlify** for deployment and serverless functions
 - **React** and **TypeScript** communities
 
 ## 📞 **Support**
@@ -212,4 +237,29 @@ For support and questions:
 
 ---
 
-**Built with ❤️ for modern recruitment and AI-powered interviewing**
+**Built with ❤️ for modern HR management and AI-powered recruitment**
+
+## 🔄 **Recent Updates**
+
+### **v2.0 - AI HR Saathi Rebranding**
+- **Complete rebranding** from "AI Interviewer" to "AI HR Saathi"
+- **Enhanced security** with two-factor authentication (2FA)
+- **Email communications** integration with Resend
+- **Performance analytics** and detailed candidate reports
+- **Code quality improvements** with ESLint warning cleanup
+- **Bundle size optimization** and performance enhancements
+
+### **Key Features Added**
+- ✅ Two-Factor Authentication (2FA) with email verification
+- ✅ Email notifications for interviews and reports
+- ✅ Candidate performance analytics
+- ✅ Enhanced security and session management
+- ✅ Improved UI/UX with functional notifications and settings
+- ✅ Comprehensive documentation and changelogs
+
+### **Technical Improvements**
+- ✅ Code quality cleanup (unused variables, imports)
+- ✅ Bundle size optimization (39 bytes reduction)
+- ✅ Build performance improvements
+- ✅ Enhanced error handling and user experience
+- ✅ Updated deployment configuration for Netlify
