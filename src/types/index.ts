@@ -422,3 +422,304 @@ export interface InterviewCompletionData {
     weaknesses: string[];
   };
 }
+
+// ===== EXAM SYSTEM TYPES =====
+
+export interface QuestionTopic {
+  id: string;
+  name: string;
+  description?: string;
+  parent_topic_id?: string;
+  category: 'technical' | 'aptitude';
+  level: number;
+  is_active: boolean;
+  sort_order: number;
+  created_at: string;
+  updated_at: string;
+  children?: QuestionTopic[];
+}
+
+export interface JobQuestionCategory {
+  id: string;
+  job_description_id: string;
+  topic_id: string;
+  weight_percentage: number;
+  min_questions: number;
+  max_questions: number;
+  easy_percentage: number;
+  medium_percentage: number;
+  hard_percentage: number;
+  is_required: boolean;
+  priority: number;
+  created_at: string;
+  updated_at: string;
+  topic?: QuestionTopic;
+}
+
+export interface ExamQuestion {
+  id: string;
+  job_description_id?: string;
+  question_text: string;
+  question_type: 'mcq' | 'text';
+  question_category: 'technical' | 'aptitude';
+  difficulty_level: 'easy' | 'medium' | 'hard';
+  mcq_options?: Array<{option: string; text: string}>;
+  correct_answer?: string;
+  answer_explanation?: string;
+  points: number;
+  time_limit_seconds: number;
+  tags: string[];
+  topic_id?: string;
+  subtopic?: string;
+  created_by: 'hr' | 'ai';
+  created_by_user_id?: string;
+  status: 'draft' | 'approved' | 'rejected';
+  hr_notes?: string;
+  last_modified_by?: string;
+  last_modified_at?: string;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+  // Joined data
+  topic?: QuestionTopic;
+}
+
+export interface ExamSession {
+  id: string;
+  candidate_id: string;
+  job_description_id: string;
+  exam_token: string;
+  status: 'pending' | 'in_progress' | 'completed' | 'expired' | 'terminated';
+  total_questions: number;
+  duration_minutes: number;
+  initial_question_count: number;
+  adaptive_questions_added: number;
+  max_adaptive_questions: number;
+  started_at?: string;
+  completed_at?: string;
+  expires_at: string;
+  ip_address?: string;
+  user_agent?: string;
+  performance_metadata: Record<string, any>;
+  created_at: string;
+  updated_at: string;
+  // Joined data
+  candidate?: Candidate;
+  job_description?: JobDescription;
+}
+
+export interface ExamResponse {
+  id: string;
+  exam_session_id: string;
+  question_id: string;
+  answer_text: string;
+  is_correct?: boolean;
+  points_earned: number;
+  time_taken_seconds?: number;
+  answered_at: string;
+  // Joined data
+  question?: ExamQuestion;
+}
+
+export interface ExamResult {
+  id: string;
+  exam_session_id: string;
+  candidate_id: string;
+  total_score: number;
+  max_score: number;
+  percentage: number;
+  correct_answers: number;
+  wrong_answers: number;
+  skipped_questions: number;
+  technical_score?: number;
+  aptitude_score?: number;
+  time_taken_minutes?: number;
+  evaluation_status: 'pending' | 'passed' | 'failed';
+  ai_evaluation?: Record<string, any>;
+  created_at: string;
+  // Joined data
+  exam_session?: ExamSession;
+  candidate?: Candidate;
+}
+
+// Exam Creation and Management Types
+export interface CreateExamSessionRequest {
+  candidate_id: string;
+  job_description_id: string;
+  duration_minutes?: number;
+  total_questions?: number;
+  expires_in_hours?: number;
+}
+
+export interface ExamInvitationRequest {
+  candidate_id: string;
+  job_description_id: string;
+  exam_duration_minutes?: number;
+  expires_in_hours?: number;
+  send_email?: boolean;
+}
+
+export interface SubmitAnswerRequest {
+  exam_session_id: string;
+  question_id: string;
+  answer_text: string;
+  time_taken_seconds?: number;
+}
+
+export interface ExamPerformanceMetrics {
+  accuracy_rate: number;
+  average_time_per_question: number;
+  questions_answered: number;
+  correct_answers: number;
+  time_remaining: number;
+  should_add_questions: boolean;
+  recommended_difficulty: 'easy' | 'medium' | 'hard';
+}
+
+// Question Generation Types
+export interface QuestionGenerationRequest {
+  job_description_id?: string;
+  job_description_text?: string;
+  topic_id?: string;
+  question_count?: number;
+  difficulty_distribution?: {
+    easy: number;
+    medium: number;
+    hard: number;
+  };
+  question_types?: {
+    mcq: number;
+    text: number;
+  };
+  input_method: 'existing_jd' | 'upload_pdf' | 'manual_input' | 'custom_topic';
+  custom_topic?: string;
+  custom_insights?: string;
+}
+
+export interface GeneratedQuestion {
+  question_text: string;
+  question_type: 'mcq' | 'text';
+  difficulty_level: 'easy' | 'medium' | 'hard';
+  category: 'technical' | 'aptitude';
+  mcq_options?: Array<{option: string; text: string}>;
+  correct_answer?: string;
+  answer_explanation?: string;
+  points: number;
+  time_limit_seconds: number;
+  tags: string[];
+  topic_id?: string;
+  subtopic?: string;
+}
+
+// PDF Text Extraction Types
+export interface PDFExtractionRequest {
+  file: File;
+  max_size_mb?: number;
+}
+
+export interface PDFExtractionResponse {
+  success: boolean;
+  extracted_text?: string;
+  error?: string;
+  file_info?: {
+    name: string;
+    size: number;
+    pages?: number;
+  };
+}
+
+// Exam UI Component Types
+export interface ExamTimerProps {
+  duration_minutes: number;
+  onTimeUp: () => void;
+  onWarning?: (timeRemaining: number) => void;
+  isActive: boolean;
+}
+
+export interface MCQQuestionProps {
+  question: ExamQuestion;
+  selectedAnswer?: string;
+  onAnswerSelect: (answer: string) => void;
+  disabled?: boolean;
+}
+
+export interface TextQuestionProps {
+  question: ExamQuestion;
+  answer?: string;
+  onAnswerChange: (answer: string) => void;
+  disabled?: boolean;
+  maxLength?: number;
+}
+
+export interface QuestionNavigatorProps {
+  questions: ExamQuestion[];
+  currentQuestionIndex: number;
+  answeredQuestions: Set<number>;
+  onQuestionSelect: (index: number) => void;
+  disabled?: boolean;
+}
+
+export interface ExamProgressProps {
+  currentQuestion: number;
+  totalQuestions: number;
+  answeredQuestions: number;
+  timeRemaining: number;
+}
+
+// Exam Results and Analytics Types
+export interface ExamAnalytics {
+  total_exams: number;
+  completed_exams: number;
+  average_score: number;
+  pass_rate: number;
+  average_time_taken: number;
+  difficulty_distribution: {
+    easy: number;
+    medium: number;
+    hard: number;
+  };
+  category_performance: {
+    technical: number;
+    aptitude: number;
+  };
+  top_performing_candidates: Array<{
+    candidate_id: string;
+    candidate_name: string;
+    score: number;
+    percentage: number;
+  }>;
+}
+
+export interface ExamReportData {
+  exam_result: ExamResult;
+  detailed_responses: ExamResponse[];
+  performance_breakdown: {
+    by_category: Record<string, number>;
+    by_difficulty: Record<string, number>;
+    by_topic: Record<string, number>;
+  };
+  time_analysis: {
+    total_time: number;
+    average_per_question: number;
+    time_distribution: Record<string, number>;
+  };
+  recommendations: string[];
+}
+
+// Combined Evaluation Types (Interview + Exam)
+export interface CombinedEvaluation {
+  candidate_id: string;
+  candidate_name: string;
+  job_description_id: string;
+  job_title: string;
+  interview_result?: InterviewReport;
+  exam_result?: ExamResult;
+  combined_score: number;
+  overall_status: 'suitable' | 'not_suitable' | 'conditional' | 'needs_review';
+  evaluation_summary: string;
+  strengths: string[];
+  weaknesses: string[];
+  recommendations: string[];
+  created_at: string;
+  updated_at: string;
+}
