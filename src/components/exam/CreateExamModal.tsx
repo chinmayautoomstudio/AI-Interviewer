@@ -32,7 +32,6 @@ const CreateExamModal: React.FC<CreateExamModalProps> = ({
   const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [availableQuestions, setAvailableQuestions] = useState<{ count: number; questions: any[] }>({ count: 0, questions: [] });
   const [success, setSuccess] = useState<string | null>(null);
 
   const [config, setConfig] = useState<ExamConfig>({
@@ -50,25 +49,6 @@ const CreateExamModal: React.FC<CreateExamModalProps> = ({
     }
   }, [isOpen]);
 
-  // Load available questions when job description changes
-  useEffect(() => {
-    if (config.jobDescriptionId) {
-      loadAvailableQuestions(config.jobDescriptionId);
-    } else {
-      setAvailableQuestions({ count: 0, questions: [] });
-    }
-  }, [config.jobDescriptionId]);
-
-  const loadAvailableQuestions = async (jobDescriptionId: string) => {
-    try {
-      const result = await examService.getAvailableQuestions(jobDescriptionId);
-      setAvailableQuestions(result);
-    } catch (error) {
-      console.error('Error loading available questions:', error);
-      setAvailableQuestions({ count: 0, questions: [] });
-    }
-  };
-
   const loadData = async () => {
     try {
       setLoading(true);
@@ -79,7 +59,7 @@ const CreateExamModal: React.FC<CreateExamModalProps> = ({
       setCandidates(candidatesData);
 
       // Load job descriptions
-      const jobDescriptionsData = await JobDescriptionsService.getJobDescriptions();
+      const jobDescriptionsData = await JobDescriptionsService.getJobDescriptionsWithQuestions();
       setJobDescriptions(jobDescriptionsData.data || []);
 
     } catch (err) {
@@ -232,33 +212,17 @@ const CreateExamModal: React.FC<CreateExamModalProps> = ({
             </select>
           </div>
 
-          {/* Available Questions Info */}
-          {config.jobDescriptionId && (
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-              <div className="flex items-center space-x-2">
-                <BookOpen className="w-5 h-5 text-blue-600" />
-                <span className="font-medium text-blue-900">Available Questions</span>
-              </div>
-              <div className="mt-2 text-sm text-blue-800">
-                <p>Total approved questions: <span className="font-semibold">{availableQuestions.count}</span></p>
-                {availableQuestions.count > 0 && (
-                  <p className="text-blue-600">
-                    You can create exams with up to {availableQuestions.count} questions.
-                    {config.totalQuestions > availableQuestions.count && (
-                      <span className="text-orange-600 font-medium">
-                        {' '}Note: Requested questions ({config.totalQuestions}) exceeds available ({availableQuestions.count}).
-                      </span>
-                    )}
-                  </p>
-                )}
-                {availableQuestions.count === 0 && (
-                  <p className="text-red-600 font-medium">
-                    No approved questions available. Please add questions to the question bank first.
-                  </p>
-                )}
-              </div>
+          {/* Info Message */}
+          <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+            <div className="flex items-center space-x-2">
+              <CheckCircle className="w-5 h-5 text-green-600" />
+              <span className="font-medium text-green-900">Ready to Create Exam</span>
             </div>
-          )}
+            <div className="mt-2 text-sm text-green-800">
+              <p>All job descriptions shown have approved questions available.</p>
+              <p>You can create exams with confidence knowing questions are ready.</p>
+            </div>
+          </div>
 
           {/* Exam Configuration */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">

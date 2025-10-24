@@ -8,6 +8,96 @@ export interface JobDescriptionResponse {
 
 
 export class JobDescriptionsService {
+  // Get job descriptions that have approved questions
+  static async getJobDescriptionsWithQuestions(): Promise<JobDescriptionResponse> {
+    try {
+      // First, get all job descriptions
+      const { data: allJobs, error: jobsError } = await supabase
+        .from('job_descriptions')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (jobsError) {
+        console.error('❌ JobDescriptionsService: Error fetching job descriptions:', jobsError);
+        return { data: [], error: jobsError.message };
+      }
+
+      // Get job description IDs that have approved questions
+      const { data: jobsWithQuestions, error: questionsError } = await supabase
+        .from('exam_questions')
+        .select('job_description_id')
+        .eq('status', 'approved')
+        .eq('is_active', true);
+
+      if (questionsError) {
+        console.error('❌ JobDescriptionsService: Error fetching questions:', questionsError);
+        return { data: [], error: questionsError.message };
+      }
+
+      // Create a set of job description IDs that have questions
+      const jobIdsWithQuestions = new Set(
+        jobsWithQuestions?.map(q => q.job_description_id) || []
+      );
+
+      // Filter job descriptions to only include those with questions
+      const filteredJobs = allJobs?.filter(job => jobIdsWithQuestions.has(job.id)) || [];
+
+      // Helper function to ensure array fields are properly formatted
+      const ensureArray = (field: any): string[] => {
+        if (!field) return [];
+        if (Array.isArray(field)) return field;
+        if (typeof field === 'string') {
+          try {
+            const parsed = JSON.parse(field);
+            return Array.isArray(parsed) ? parsed : [field];
+          } catch {
+            return [field];
+          }
+        }
+        return [];
+      };
+
+      // Transform data to match our JobDescription interface
+      const jobDescriptions: JobDescription[] = filteredJobs.map(job => ({
+        id: job.id,
+        job_description_id: job.job_description_id,
+        title: job.title,
+        department: job.department,
+        location: job.location,
+        employmentType: job.employment_type,
+        experienceLevel: job.experience_level,
+        salaryRange: (job.salary_min !== null && job.salary_min !== undefined && job.salary_max !== null && job.salary_max !== undefined) ? {
+          min: job.salary_min,
+          max: job.salary_max,
+          currency: job.currency || 'INR'
+        } : undefined,
+        description: job.description,
+        requirements: ensureArray(job.requirements),
+        responsibilities: ensureArray(job.responsibilities),
+        benefits: ensureArray(job.benefits),
+        skills: ensureArray(job.skills),
+        qualifications: ensureArray(job.qualifications),
+        status: job.status,
+        createdBy: job.created_by,
+        createdAt: job.created_at,
+        updatedAt: job.updated_at,
+        publishedAt: job.published_at,
+        // Additional fields
+        companyName: job.company_name,
+        workMode: job.work_mode,
+        jobCategory: job.job_category,
+        contactEmail: job.contact_email,
+        applicationDeadline: job.application_deadline,
+      }));
+
+      console.log(`✅ JobDescriptionsService: Found ${jobDescriptions.length} job descriptions with questions`);
+      return { data: jobDescriptions };
+    } catch (error) {
+      console.error('❌ JobDescriptionsService: Unexpected error:', error);
+      return { data: [], error: 'An unexpected error occurred' };
+    }
+  }
+
   // Get all job descriptions
   static async getJobDescriptions(): Promise<JobDescriptionResponse> {
     try {

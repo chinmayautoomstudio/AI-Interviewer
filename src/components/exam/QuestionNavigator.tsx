@@ -82,14 +82,14 @@ export const QuestionNavigator: React.FC<QuestionNavigatorProps> = ({
 
   return (
     <div className="bg-white rounded-2xl border border-gray-200/50 p-6 shadow-lg">
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex items-center justify-between mb-4">
         <h3 className="text-lg font-semibold text-gray-900">Question Navigator</h3>
-        <div className="flex items-center space-x-4 text-sm text-gray-600">
-          <div className="flex items-center space-x-2">
+        <div className="flex flex-col space-y-1 text-sm text-gray-600">
+          <div className="flex items-center space-x-1">
             <CheckCircle className="w-4 h-4 text-green-600" />
             <span className="font-medium">{answeredQuestions.size} answered</span>
           </div>
-          <div className="flex items-center space-x-2">
+          <div className="flex items-center space-x-1">
             <Circle className="w-4 h-4 text-gray-400" />
             <span className="font-medium">{questions.length - answeredQuestions.size} remaining</span>
           </div>

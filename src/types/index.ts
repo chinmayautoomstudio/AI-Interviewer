@@ -747,6 +747,7 @@ export interface ExamProgressProps {
   totalQuestions: number;
   answeredQuestions: number;
   timeRemaining: number;
+  totalDuration: number; // Total exam duration in minutes
 }
 
 // Exam Results and Analytics Types

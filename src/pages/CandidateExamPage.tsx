@@ -37,7 +37,7 @@ export const CandidateExamPage: React.FC = () => {
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [answers, setAnswers] = useState<Map<string, string>>(new Map());
   const [answeredQuestions, setAnsweredQuestions] = useState<Set<number>>(new Set());
-  const [timeRemaining, setTimeRemaining] = useState(30); // minutes
+  const [timeRemaining, setTimeRemaining] = useState(0); // minutes - will be set from session
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showInstructions, setShowInstructions] = useState(true);
@@ -104,8 +104,15 @@ export const CandidateExamPage: React.FC = () => {
           const now = new Date();
           const elapsedMinutes = (now.getTime() - startTime.getTime()) / (1000 * 60);
           const remaining = Math.max(0, examSession.duration_minutes - elapsedMinutes);
+          console.log('⏰ Time calculation:', {
+            duration_minutes: examSession.duration_minutes,
+            elapsedMinutes: elapsedMinutes,
+            remaining: remaining,
+            started_at: examSession.started_at
+          });
           setTimeRemaining(remaining);
         } else {
+          console.log('⏰ Initial time remaining:', examSession.duration_minutes);
           setTimeRemaining(examSession.duration_minutes);
         }
 
@@ -258,7 +265,7 @@ export const CandidateExamPage: React.FC = () => {
     try {
       setIsSubmitting(true);
       await examService.completeExam(session.id);
-      navigate(`/exam/results/${session.id}`);
+      navigate(`/exam/completion/${session.id}`);
     } catch (err) {
       console.error('Error completing exam:', err);
       setError('Failed to submit exam. Please contact support.');
@@ -278,7 +285,7 @@ export const CandidateExamPage: React.FC = () => {
     try {
       setIsSubmitting(true);
       await examService.completeExam(session.id);
-      navigate(`/exam/results/${session.id}`);
+      navigate(`/exam/completion/${session.id}`);
     } catch (err) {
       console.error('Error submitting exam:', err);
       setError('Failed to submit exam. Please try again.');
@@ -524,6 +531,7 @@ export const CandidateExamPage: React.FC = () => {
                 totalQuestions={questions.length}
                 answeredQuestions={answeredQuestions.size}
                 timeRemaining={timeRemaining}
+                totalDuration={session?.duration_minutes || 0}
               />
             </div>
 

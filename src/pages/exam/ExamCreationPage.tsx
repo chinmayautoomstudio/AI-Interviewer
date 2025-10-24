@@ -67,7 +67,7 @@ const ExamCreationPage: React.FC = () => {
       setCandidates(candidatesData);
 
       // Load job descriptions
-      const jobDescriptionsData = await JobDescriptionsService.getJobDescriptions();
+      const jobDescriptionsData = await JobDescriptionsService.getJobDescriptionsWithQuestions();
       setJobDescriptions(jobDescriptionsData.data || []);
 
     } catch (err) {
@@ -291,6 +291,18 @@ const ExamCreationPage: React.FC = () => {
                     </option>
                   ))}
                 </select>
+              </div>
+
+              {/* Info Message */}
+              <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                <div className="flex items-center space-x-2">
+                  <CheckCircle className="w-5 h-5 text-green-600" />
+                  <span className="font-medium text-green-900">Ready to Create Exam</span>
+                </div>
+                <div className="mt-2 text-sm text-green-800">
+                  <p>All job descriptions shown have approved questions available.</p>
+                  <p>You can create exams with confidence knowing questions are ready.</p>
+                </div>
               </div>
             </div>
 

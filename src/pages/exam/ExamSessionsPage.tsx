@@ -12,6 +12,7 @@ import {
 } from 'lucide-react';
 import { supabase } from '../../services/supabase';
 import { ExamSession } from '../../types';
+import ExamSessionDetailsModal from '../../components/exam/ExamSessionDetailsModal';
 
 const ExamSessionsPage: React.FC = () => {
   const [sessions, setSessions] = useState<ExamSession[]>([]);
@@ -19,6 +20,8 @@ const ExamSessionsPage: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedStatus, setSelectedStatus] = useState<string>('all');
   const [selectedDateRange, setSelectedDateRange] = useState<string>('all');
+  const [selectedSessionId, setSelectedSessionId] = useState<string | null>(null);
+  const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
 
   useEffect(() => {
     loadExamSessions();
@@ -145,8 +148,13 @@ const ExamSessionsPage: React.FC = () => {
   };
 
   const handleViewSession = (sessionId: string) => {
-    // Navigate to session details or open modal
-    console.log('View session:', sessionId);
+    setSelectedSessionId(sessionId);
+    setIsDetailsModalOpen(true);
+  };
+
+  const handleCloseDetailsModal = () => {
+    setIsDetailsModalOpen(false);
+    setSelectedSessionId(null);
   };
 
   const handleTerminateSession = async (sessionId: string) => {
@@ -407,6 +415,13 @@ const ExamSessionsPage: React.FC = () => {
           <p className="text-gray-600">Try adjusting your filters or create new exam sessions</p>
         </div>
       )}
+
+      {/* Exam Session Details Modal */}
+      <ExamSessionDetailsModal
+        isOpen={isDetailsModalOpen}
+        onClose={handleCloseDetailsModal}
+        sessionId={selectedSessionId || ''}
+      />
     </div>
   );
 };

@@ -9,10 +9,11 @@ export const ExamProgressBar: React.FC<ExamProgressProps> = ({
   currentQuestion,
   totalQuestions,
   answeredQuestions,
-  timeRemaining
+  timeRemaining,
+  totalDuration
 }) => {
   const progressPercentage = (answeredQuestions / totalQuestions) * 100;
-  const timeProgressPercentage = ((30 - timeRemaining) / 30) * 100; // Assuming 30 min exam
+  const timeProgressPercentage = ((totalDuration - timeRemaining) / totalDuration) * 100;
 
   const formatTime = (minutes: number): string => {
     const mins = Math.floor(minutes);
@@ -48,47 +49,47 @@ export const ExamProgressBar: React.FC<ExamProgressProps> = ({
       </div>
 
       {/* Main progress section */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+      <div className="space-y-6">
         {/* Questions progress */}
-        <div className="space-y-6">
+        <div className="space-y-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-3">
-              <Target className="w-6 h-6 text-blue-600" />
-              <span className="font-semibold text-gray-900 text-lg">Questions Progress</span>
+              <Target className="w-5 h-5 text-blue-600" />
+              <span className="font-semibold text-gray-900">Questions Progress</span>
             </div>
             <span className="text-sm text-gray-600 font-medium">
               {answeredQuestions} of {totalQuestions} completed
             </span>
           </div>
           
-          <div className="space-y-3">
+          <div className="space-y-2">
             <div className="flex justify-between text-sm text-gray-600">
               <span className="font-medium">Progress</span>
               <span className="font-semibold">{Math.round(progressPercentage)}%</span>
             </div>
-            <div className="w-full bg-gray-200 rounded-full h-4 shadow-inner">
+            <div className="w-full bg-gray-200 rounded-full h-3 shadow-inner">
               <div
-                className="bg-gradient-to-r from-blue-600 to-indigo-600 h-4 rounded-full transition-all duration-500 ease-out shadow-sm"
+                className="bg-gradient-to-r from-blue-600 to-indigo-600 h-3 rounded-full transition-all duration-500 ease-out shadow-sm"
                 style={{ width: `${progressPercentage}%` }}
               />
             </div>
           </div>
 
-          <div className="grid grid-cols-3 gap-4 text-center">
-            <div className="bg-gradient-to-r from-green-50 to-green-100 rounded-xl p-4 shadow-sm">
-              <div className="text-xl font-bold text-green-800">
+          <div className="grid grid-cols-3 gap-3 text-center">
+            <div className="bg-gradient-to-r from-green-50 to-green-100 rounded-lg p-3 shadow-sm">
+              <div className="text-lg font-bold text-green-800">
                 {answeredQuestions}
               </div>
               <div className="text-xs text-green-600 font-medium">Answered</div>
             </div>
-            <div className="bg-gradient-to-r from-yellow-50 to-yellow-100 rounded-xl p-4 shadow-sm">
-              <div className="text-xl font-bold text-yellow-800">
+            <div className="bg-gradient-to-r from-yellow-50 to-yellow-100 rounded-lg p-3 shadow-sm">
+              <div className="text-lg font-bold text-yellow-800">
                 {totalQuestions - answeredQuestions}
               </div>
               <div className="text-xs text-yellow-600 font-medium">Remaining</div>
             </div>
-            <div className="bg-gradient-to-r from-blue-50 to-blue-100 rounded-xl p-4 shadow-sm">
-              <div className="text-xl font-bold text-blue-800">
+            <div className="bg-gradient-to-r from-blue-50 to-blue-100 rounded-lg p-3 shadow-sm">
+              <div className="text-lg font-bold text-blue-800">
                 {currentQuestion}
               </div>
               <div className="text-xs text-blue-600 font-medium">Current</div>
@@ -97,25 +98,25 @@ export const ExamProgressBar: React.FC<ExamProgressProps> = ({
         </div>
 
         {/* Time progress */}
-        <div className="space-y-6">
+        <div className="space-y-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-3">
-              <Clock className="w-6 h-6 text-green-600" />
-              <span className="font-semibold text-gray-900 text-lg">Time Progress</span>
+              <Clock className="w-5 h-5 text-green-600" />
+              <span className="font-semibold text-gray-900">Time Progress</span>
             </div>
             <span className="text-sm text-gray-600 font-medium">
-              {formatTime(30 - timeRemaining)} elapsed
+              {formatTime(totalDuration - timeRemaining)} elapsed
             </span>
           </div>
           
-          <div className="space-y-3">
+          <div className="space-y-2">
             <div className="flex justify-between text-sm text-gray-600">
               <span className="font-medium">Time Used</span>
               <span className="font-semibold">{Math.round(timeProgressPercentage)}%</span>
             </div>
-            <div className="w-full bg-gray-200 rounded-full h-4 shadow-inner">
+            <div className="w-full bg-gray-200 rounded-full h-3 shadow-inner">
               <div
-                className={`h-4 rounded-full transition-all duration-500 ease-out shadow-sm ${
+                className={`h-3 rounded-full transition-all duration-500 ease-out shadow-sm ${
                   timeRemaining <= 5 ? 'bg-gradient-to-r from-red-500 to-red-600' : 
                   timeRemaining <= 10 ? 'bg-gradient-to-r from-yellow-500 to-yellow-600' : 'bg-gradient-to-r from-green-500 to-green-600'
                 }`}
@@ -124,16 +125,16 @@ export const ExamProgressBar: React.FC<ExamProgressProps> = ({
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-4 text-center">
-            <div className="bg-gradient-to-r from-green-50 to-green-100 rounded-xl p-4 shadow-sm">
-              <div className="text-xl font-bold text-green-800">
+          <div className="grid grid-cols-2 gap-3 text-center">
+            <div className="bg-gradient-to-r from-green-50 to-green-100 rounded-lg p-3 shadow-sm">
+              <div className="text-lg font-bold text-green-800">
                 {formatTime(timeRemaining)}
               </div>
               <div className="text-xs text-green-600 font-medium">Remaining</div>
             </div>
-            <div className="bg-gradient-to-r from-blue-50 to-blue-100 rounded-xl p-4 shadow-sm">
-              <div className="text-xl font-bold text-blue-800">
-                {formatTime(30 - timeRemaining)}
+            <div className="bg-gradient-to-r from-blue-50 to-blue-100 rounded-lg p-3 shadow-sm">
+              <div className="text-lg font-bold text-blue-800">
+                {formatTime(totalDuration - timeRemaining)}
               </div>
               <div className="text-xs text-blue-600 font-medium">Elapsed</div>
             </div>
