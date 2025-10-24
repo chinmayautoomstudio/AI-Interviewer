@@ -79,16 +79,23 @@ export const CandidateExamPage: React.FC = () => {
 
         // Start exam if not already started
         if (examSession.status === 'pending') {
-          const startedSession = await examService.startExamSession(
-            examSession.id,
-            undefined, // IP address
-            navigator.userAgent
-          );
-          setSession(startedSession);
+          try {
+            const startedSession = await examService.startExamSession(
+              examSession.id,
+              undefined, // IP address
+              navigator.userAgent
+            );
+            setSession(startedSession);
+          } catch (startError) {
+            console.warn('Failed to start exam session, continuing with existing session:', startError);
+            // Continue with the existing session - it might already be started
+          }
         }
 
         // Load questions
+        console.log('🔄 Loading questions for session:', examSession.id);
         const examQuestions = await examService.getExamQuestions(examSession.id);
+        console.log('📚 Loaded questions:', examQuestions.length);
         setQuestions(examQuestions);
 
         // Calculate time remaining
@@ -115,33 +122,65 @@ export const CandidateExamPage: React.FC = () => {
 
   // Auto-save functionality
   const autoSave = useCallback(async () => {
-    if (!session || answers.size === 0) return;
+    if (!session || answers.size === 0) {
+      console.log('⏭️ Auto-save skipped:', { 
+        hasSession: !!session, 
+        answersCount: answers.size 
+      });
+      return;
+    }
 
     try {
+      console.log('💾 Starting auto-save:', {
+        sessionId: session.id,
+        answersCount: answers.size,
+        answers: Array.from(answers.entries()).map(([id, answer]) => ({
+          questionId: id,
+          answer: answer?.substring(0, 50) + '...'
+        }))
+      });
+
       setAutoSaveStatus('saving');
       
       // Submit all current answers
       for (const [questionId, answer] of Array.from(answers.entries())) {
+        console.log('📤 Submitting answer for question:', questionId);
         await examService.submitAnswer({
           exam_session_id: session.id,
           question_id: questionId,
           answer_text: answer
         });
+        console.log('✅ Answer submitted for question:', questionId);
       }
       
       setAutoSaveStatus('saved');
+      console.log('✅ Auto-save completed successfully');
     } catch (err) {
-      console.error('Auto-save error:', err);
+      console.error('❌ Auto-save error:', err);
       setAutoSaveStatus('error');
     }
   }, [session, answers]);
 
   // Auto-save every 30 seconds
   useEffect(() => {
-    if (!session || session.status !== 'in_progress') return;
+    if (!session || session.status !== 'in_progress') {
+      console.log('⏭️ Auto-save interval skipped:', {
+        hasSession: !!session,
+        sessionStatus: session?.status
+      });
+      return;
+    }
 
-    const interval = setInterval(autoSave, 30000); // 30 seconds
-    return () => clearInterval(interval);
+    console.log('⏰ Setting up auto-save interval for session:', session.id);
+    const interval = setInterval(() => {
+      console.log('⏰ Auto-save interval triggered');
+      autoSave();
+    }, 30000); // 30 seconds
+    
+    return () => {
+      console.log('🧹 Clearing auto-save interval');
+      clearInterval(interval);
+    };
   }, [session, autoSave]);
 
   // Timer countdown
@@ -163,10 +202,24 @@ export const CandidateExamPage: React.FC = () => {
   }, [session]);
 
   // Handle answer selection
-  const handleAnswerSelect = (questionId: string, answer: string) => {
+  const handleAnswerSelect = async (questionId: string, answer: string) => {
+    console.log('📝 Answer selected:', {
+      questionId,
+      answer: answer?.substring(0, 50) + '...',
+      currentAnswersCount: answers.size
+    });
+
     setAnswers(prev => {
       const newAnswers = new Map(prev);
       newAnswers.set(questionId, answer);
+      console.log('✅ Answer added to state:', {
+        questionId,
+        newAnswersCount: newAnswers.size,
+        allAnswers: Array.from(newAnswers.entries()).map(([id, ans]) => ({
+          questionId: id,
+          answer: ans?.substring(0, 50) + '...'
+        }))
+      });
       return newAnswers;
     });
 
@@ -174,6 +227,27 @@ export const CandidateExamPage: React.FC = () => {
     const questionIndex = questions.findIndex(q => q.id === questionId);
     if (questionIndex !== -1) {
       setAnsweredQuestions(prev => new Set([...Array.from(prev), questionIndex]));
+      console.log('✅ Question marked as answered:', questionIndex + 1);
+    }
+
+    // Immediately submit the answer to database
+    if (session && session.status === 'in_progress') {
+      try {
+        console.log('🚀 Immediately submitting answer to database...');
+        await examService.submitAnswer({
+          exam_session_id: session.id,
+          question_id: questionId,
+          answer_text: answer
+        });
+        console.log('✅ Answer immediately saved to database');
+      } catch (error) {
+        console.error('❌ Error immediately saving answer:', error);
+      }
+    } else {
+      console.log('⚠️ Cannot save answer immediately - session not in progress:', {
+        hasSession: !!session,
+        sessionStatus: session?.status
+      });
     }
   };
 
@@ -282,19 +356,26 @@ export const CandidateExamPage: React.FC = () => {
   const currentAnswer = currentQuestion ? answers.get(currentQuestion.id) : '';
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50">
       {/* Header */}
-      <div className="bg-white border-b border-gray-200 sticky top-0 z-10">
+      <div className="bg-white/95 backdrop-blur-sm border-b border-gray-200/50 sticky top-0 z-10 shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
             <div className="flex items-center space-x-4">
-              <h1 className="text-lg font-semibold text-gray-900">
-                {session?.job_description?.title || 'Online Exam'}
-              </h1>
-              <div className="flex items-center space-x-2 text-sm text-gray-600">
-                <span>Question {currentQuestionIndex + 1} of {questions.length}</span>
-                <span>•</span>
-                <span>{answeredQuestions.size} answered</span>
+              <div className="flex items-center space-x-3">
+                <div className="w-8 h-8 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-lg flex items-center justify-center">
+                  <span className="text-white font-bold text-sm">E</span>
+                </div>
+                <div>
+                  <h1 className="text-lg font-semibold text-gray-900">
+                    {session?.job_description?.title || 'Online Exam'}
+                  </h1>
+                  <div className="flex items-center space-x-2 text-sm text-gray-600">
+                    <span>Question {currentQuestionIndex + 1} of {questions.length}</span>
+                    <span>•</span>
+                    <span>{answeredQuestions.size} answered</span>
+                  </div>
+                </div>
               </div>
             </div>
             
@@ -325,7 +406,7 @@ export const CandidateExamPage: React.FC = () => {
               <button
                 onClick={handleSubmitExam}
                 disabled={isSubmitting}
-                className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
+                className="px-6 py-2.5 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-xl hover:from-green-700 hover:to-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2 shadow-lg hover:shadow-xl transition-all duration-200"
               >
                 {isSubmitting ? (
                   <>
@@ -344,29 +425,41 @@ export const CandidateExamPage: React.FC = () => {
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
           {/* Main content */}
-          <div className="lg:col-span-3 space-y-6">
+          <div className="lg:col-span-3 space-y-8">
             {/* Timer */}
-            <ExamTimer
-              duration_minutes={timeRemaining}
-              onTimeUp={handleTimeUp}
-              onWarning={(timeRemaining) => {
-                if (timeRemaining <= 60) {
-                  // Show critical warning
-                  console.log('Critical: Less than 1 minute remaining');
-                } else if (timeRemaining <= 300) {
-                  // Show warning
-                  console.log('Warning: Less than 5 minutes remaining');
-                }
-              }}
-              isActive={session?.status === 'in_progress'}
-            />
+            <div className="bg-white/80 backdrop-blur-sm rounded-2xl border border-gray-200/50 shadow-lg p-6">
+                <ExamTimer
+                  duration_minutes={Math.floor(timeRemaining)}
+                  onTimeUp={handleTimeUp}
+                  onWarning={(timeRemaining) => {
+                    if (timeRemaining <= 60) {
+                      // Show critical warning
+                      console.log('Critical: Less than 1 minute remaining');
+                    } else if (timeRemaining <= 300) {
+                      // Show warning
+                      console.log('Warning: Less than 5 minutes remaining');
+                    }
+                  }}
+                  isActive={session?.status === 'in_progress'}
+                />
+            </div>
 
             {/* Current question */}
-            {currentQuestion && (
-              <div>
+            {questions.length === 0 ? (
+              <div className="bg-white/80 backdrop-blur-sm rounded-2xl border border-gray-200/50 shadow-lg p-8 text-center">
+                <div className="text-gray-500 mb-4">
+                  <div className="text-xl font-semibold mb-2">No Questions Available</div>
+                  <p>Loading questions for this exam...</p>
+                </div>
+                <div className="text-sm text-gray-400">
+                  Debug: Questions array length: {questions.length}
+                </div>
+              </div>
+            ) : currentQuestion ? (
+              <div className="bg-white/80 backdrop-blur-sm rounded-2xl border border-gray-200/50 shadow-lg overflow-hidden">
                 {currentQuestion.question_type === 'mcq' ? (
                   <MCQQuestion
                     question={currentQuestion}
@@ -384,27 +477,37 @@ export const CandidateExamPage: React.FC = () => {
                   />
                 )}
               </div>
+            ) : (
+              <div className="bg-white/80 backdrop-blur-sm rounded-2xl border border-gray-200/50 shadow-lg p-8 text-center">
+                <div className="text-gray-500 mb-4">
+                  <div className="text-xl font-semibold mb-2">Question Not Found</div>
+                  <p>Unable to load the current question.</p>
+                </div>
+                <div className="text-sm text-gray-400">
+                  Debug: Current index: {currentQuestionIndex}, Questions length: {questions.length}
+                </div>
+              </div>
             )}
 
             {/* Navigation buttons */}
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between bg-white/80 backdrop-blur-sm rounded-2xl border border-gray-200/50 shadow-lg p-6">
               <button
                 onClick={handlePreviousQuestion}
                 disabled={currentQuestionIndex === 0}
-                className="flex items-center space-x-2 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="flex items-center space-x-2 px-6 py-3 bg-gradient-to-r from-gray-100 to-gray-200 text-gray-700 rounded-xl hover:from-gray-200 hover:to-gray-300 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 shadow-md hover:shadow-lg"
               >
                 <ArrowLeft className="w-4 h-4" />
                 <span>Previous</span>
               </button>
 
-              <div className="text-sm text-gray-600">
+              <div className="text-sm text-gray-600 bg-gray-50 px-4 py-2 rounded-lg">
                 Question {currentQuestionIndex + 1} of {questions.length}
               </div>
 
               <button
                 onClick={handleNextQuestion}
                 disabled={currentQuestionIndex === questions.length - 1}
-                className="flex items-center space-x-2 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="flex items-center space-x-2 px-6 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl hover:from-blue-700 hover:to-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 shadow-md hover:shadow-lg"
               >
                 <span>Next</span>
                 <ArrowRight className="w-4 h-4" />
@@ -413,23 +516,27 @@ export const CandidateExamPage: React.FC = () => {
           </div>
 
           {/* Sidebar */}
-          <div className="space-y-6">
+          <div className="space-y-8">
             {/* Progress */}
-            <ExamProgressBar
-              currentQuestion={currentQuestionIndex + 1}
-              totalQuestions={questions.length}
-              answeredQuestions={answeredQuestions.size}
-              timeRemaining={timeRemaining}
-            />
+            <div className="bg-white/80 backdrop-blur-sm rounded-2xl border border-gray-200/50 shadow-lg overflow-hidden">
+              <ExamProgressBar
+                currentQuestion={currentQuestionIndex + 1}
+                totalQuestions={questions.length}
+                answeredQuestions={answeredQuestions.size}
+                timeRemaining={timeRemaining}
+              />
+            </div>
 
             {/* Question Navigator */}
-            <QuestionNavigator
-              questions={questions}
-              currentQuestionIndex={currentQuestionIndex}
-              answeredQuestions={answeredQuestions}
-              onQuestionSelect={handleQuestionSelect}
-              disabled={session?.status !== 'in_progress'}
-            />
+            <div className="bg-white/80 backdrop-blur-sm rounded-2xl border border-gray-200/50 shadow-lg overflow-hidden">
+              <QuestionNavigator
+                questions={questions}
+                currentQuestionIndex={currentQuestionIndex}
+                answeredQuestions={answeredQuestions}
+                onQuestionSelect={handleQuestionSelect}
+                disabled={session?.status !== 'in_progress'}
+              />
+            </div>
           </div>
         </div>
       </div>

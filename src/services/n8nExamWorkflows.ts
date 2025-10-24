@@ -172,6 +172,9 @@ export class N8NExamWorkflows {
    */
   async generateQuestions(request: QuestionGenerationRequest): Promise<QuestionGenerationResponse> {
     try {
+      console.log('🚀 Calling N8N question generation webhook:', N8N_QUESTION_GENERATOR_WEBHOOK);
+      console.log('📋 Request payload:', JSON.stringify(request, null, 2));
+      
       const response = await fetch(N8N_QUESTION_GENERATOR_WEBHOOK, {
         method: 'POST',
         headers: {
@@ -181,14 +184,74 @@ export class N8NExamWorkflows {
         body: JSON.stringify(request),
       });
 
+      console.log('📥 Response status:', response.status, response.statusText);
+
       if (!response.ok) {
-        throw new Error(`N8N workflow failed: ${response.status} ${response.statusText}`);
+        const errorText = await response.text();
+        console.error('❌ N8N workflow failed:', errorText);
+        throw new Error(`N8N workflow failed: ${response.status} ${response.statusText} - ${errorText}`);
       }
 
       const result = await response.json();
-      return result;
+      console.log('📥 Raw N8N response:', result);
+
+      // Handle different response formats
+      let generatedQuestions: GeneratedQuestion[] = [];
+      let generationMetadata: any = {};
+
+      if (Array.isArray(result)) {
+        // Direct array response (current n8n format)
+        console.log('📋 Processing direct array response with', result.length, 'questions');
+        generatedQuestions = result;
+        
+        // Generate metadata from the questions
+        generationMetadata = {
+          total_generated: result.length,
+          technical_count: result.filter(q => q.question_category === 'technical').length,
+          aptitude_count: result.filter(q => q.question_category === 'aptitude').length,
+          mcq_count: result.filter(q => q.question_type === 'mcq').length,
+          text_count: result.filter(q => q.question_type === 'text').length,
+          difficulty_breakdown: {
+            easy: result.filter(q => q.difficulty_level === 'easy').length,
+            medium: result.filter(q => q.difficulty_level === 'medium').length,
+            hard: result.filter(q => q.difficulty_level === 'hard').length,
+          },
+          topic_distribution: {},
+          generation_time: new Date().toISOString(),
+          ai_model_used: 'Multi-Agent System',
+          confidence_score: 0.9
+        };
+
+        // Calculate topic distribution
+        result.forEach(question => {
+          const topic = question.topic || 'Unknown';
+          generationMetadata.topic_distribution[topic] = (generationMetadata.topic_distribution[topic] || 0) + 1;
+        });
+
+      } else if (result.generated_questions && Array.isArray(result.generated_questions)) {
+        // Expected format with generated_questions array
+        console.log('📋 Processing structured response with', result.generated_questions.length, 'questions');
+        generatedQuestions = result.generated_questions;
+        generationMetadata = result.generation_metadata || {};
+      } else {
+        console.error('❌ Unexpected response format:', result);
+        throw new Error('Unexpected response format from N8N workflow');
+      }
+
+      console.log('✅ Processed questions:', {
+        total: generatedQuestions.length,
+        technical: generationMetadata.technical_count,
+        aptitude: generationMetadata.aptitude_count,
+        mcq: generationMetadata.mcq_count,
+        text: generationMetadata.text_count
+      });
+
+      return {
+        generated_questions: generatedQuestions,
+        generation_metadata: generationMetadata
+      };
     } catch (error) {
-      console.error('Error calling N8N question generation workflow:', error);
+      console.error('❌ Error calling N8N question generation workflow:', error);
       throw new Error(`Failed to generate questions: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   }

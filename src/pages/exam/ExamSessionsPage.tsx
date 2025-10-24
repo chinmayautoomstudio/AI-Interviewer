@@ -10,21 +10,8 @@ import {
   Filter,
   Search
 } from 'lucide-react';
-
-interface ExamSession {
-  id: string;
-  candidateName: string;
-  candidateEmail: string;
-  jobTitle: string;
-  status: 'pending' | 'in_progress' | 'completed' | 'expired' | 'terminated';
-  totalQuestions: number;
-  durationMinutes: number;
-  startedAt?: string;
-  completedAt?: string;
-  expiresAt: string;
-  score?: number;
-  percentage?: number;
-}
+import { supabase } from '../../services/supabase';
+import { ExamSession } from '../../types';
 
 const ExamSessionsPage: React.FC = () => {
   const [sessions, setSessions] = useState<ExamSession[]>([]);
@@ -34,64 +21,70 @@ const ExamSessionsPage: React.FC = () => {
   const [selectedDateRange, setSelectedDateRange] = useState<string>('all');
 
   useEffect(() => {
-    // TODO: Fetch exam sessions from backend
-    setTimeout(() => {
-      setSessions([
-        {
-          id: '1',
-          candidateName: 'John Doe',
-          candidateEmail: 'john.doe@email.com',
-          jobTitle: 'Frontend Developer',
-          status: 'completed',
-          totalQuestions: 15,
-          durationMinutes: 30,
-          startedAt: '2024-01-15T10:00:00Z',
-          completedAt: '2024-01-15T10:25:00Z',
-          expiresAt: '2024-01-15T10:30:00Z',
-          score: 12,
-          percentage: 80
-        },
-        {
-          id: '2',
-          candidateName: 'Jane Smith',
-          candidateEmail: 'jane.smith@email.com',
-          jobTitle: 'Backend Developer',
-          status: 'in_progress',
-          totalQuestions: 15,
-          durationMinutes: 30,
-          startedAt: '2024-01-15T11:00:00Z',
-          expiresAt: '2024-01-15T11:30:00Z'
-        },
-        {
-          id: '3',
-          candidateName: 'Mike Johnson',
-          candidateEmail: 'mike.johnson@email.com',
-          jobTitle: 'Full Stack Developer',
-          status: 'pending',
-          totalQuestions: 15,
-          durationMinutes: 30,
-          expiresAt: '2024-01-15T12:00:00Z'
-        },
-        {
-          id: '4',
-          candidateName: 'Sarah Wilson',
-          candidateEmail: 'sarah.wilson@email.com',
-          jobTitle: 'Data Scientist',
-          status: 'expired',
-          totalQuestions: 15,
-          durationMinutes: 30,
-          expiresAt: '2024-01-15T09:00:00Z'
-        }
-      ]);
-      setLoading(false);
-    }, 1000);
+    loadExamSessions();
   }, []);
 
+  const loadExamSessions = async () => {
+    try {
+      setLoading(true);
+      
+      const { data: examSessions, error } = await supabase
+        .from('exam_sessions')
+        .select(`
+          *,
+          candidate:candidates(*),
+          job_description:job_descriptions(*)
+        `)
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        console.error('Error loading exam sessions:', error);
+        return;
+      }
+
+      // Transform the data to match our interface
+      const transformedSessions: ExamSession[] = examSessions?.map(session => ({
+        id: session.id,
+        candidate_id: session.candidate_id,
+        job_description_id: session.job_description_id,
+        exam_token: session.exam_token,
+        total_questions: session.total_questions,
+        duration_minutes: session.duration_minutes,
+        initial_question_count: session.initial_question_count || session.total_questions,
+        adaptive_questions_added: session.adaptive_questions_added || 0,
+        max_adaptive_questions: session.max_adaptive_questions || 0,
+        status: session.status,
+        started_at: session.started_at,
+        completed_at: session.completed_at,
+        expires_at: session.expires_at,
+        score: session.score,
+        percentage: session.percentage,
+        ip_address: session.ip_address,
+        user_agent: session.user_agent,
+        performance_metadata: session.performance_metadata || {},
+        created_at: session.created_at,
+        updated_at: session.updated_at,
+        candidate: Array.isArray(session.candidate) ? session.candidate[0] : session.candidate,
+        job_description: Array.isArray(session.job_description) ? session.job_description[0] : session.job_description
+      })) || [];
+
+      setSessions(transformedSessions);
+    } catch (error) {
+      console.error('Error loading exam sessions:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const filteredSessions = sessions.filter(session => {
+    const candidateName = session.candidate?.name || 'Unknown';
+    const candidateEmail = session.candidate?.email || '';
+    const jobTitle = session.job_description?.title || 'Unknown';
+    
     const matchesSearch = 
-      session.candidateName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      session.candidateEmail.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      session.jobTitle.toLowerCase().includes(searchTerm.toLowerCase());
+      candidateName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      candidateEmail.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      jobTitle.toLowerCase().includes(searchTerm.toLowerCase());
     
     const matchesStatus = selectedStatus === 'all' || session.status === selectedStatus;
     
@@ -149,6 +142,30 @@ const ExamSessionsPage: React.FC = () => {
       return `${hours}h ${minutes % 60}m`;
     }
     return `${minutes}m`;
+  };
+
+  const handleViewSession = (sessionId: string) => {
+    // Navigate to session details or open modal
+    console.log('View session:', sessionId);
+  };
+
+  const handleTerminateSession = async (sessionId: string) => {
+    try {
+      const { error } = await supabase
+        .from('exam_sessions')
+        .update({ status: 'terminated' })
+        .eq('id', sessionId);
+
+      if (error) {
+        console.error('Error terminating session:', error);
+        return;
+      }
+
+      // Reload sessions
+      loadExamSessions();
+    } catch (error) {
+      console.error('Error terminating session:', error);
+    }
   };
 
   if (loading) {
@@ -324,15 +341,15 @@ const ExamSessionsPage: React.FC = () => {
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div>
                       <div className="text-sm font-medium text-gray-900">
-                        {session.candidateName}
+                        {session.candidate?.name || 'Unknown'}
                       </div>
                       <div className="text-sm text-gray-500">
-                        {session.candidateEmail}
+                        {session.candidate?.email || ''}
                       </div>
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm text-gray-900">{session.jobTitle}</div>
+                    <div className="text-sm text-gray-900">{session.job_description?.title || 'Unknown'}</div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="flex items-center space-x-2">
@@ -344,22 +361,37 @@ const ExamSessionsPage: React.FC = () => {
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="text-sm text-gray-900">
-                      {session.totalQuestions} questions
+                      {session.total_questions} questions
                     </div>
                     <div className="text-sm text-gray-500">
-                      {session.durationMinutes} minutes
+                      {session.duration_minutes} minutes
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    {session.status === 'in_progress' ? getTimeRemaining(session.expiresAt) : '-'}
+                    {session.status === 'in_progress' ? getTimeRemaining(session.expires_at) : '-'}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    {session.score ? `${session.score}/${session.totalQuestions} (${session.percentage}%)` : '-'}
+                    {session.score ? `${session.score}/${session.total_questions} (${session.percentage}%)` : '-'}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                    <button className="text-ai-teal hover:text-ai-teal/80">
-                      <Eye className="h-4 w-4" />
-                    </button>
+                    <div className="flex space-x-2">
+                      <button 
+                        onClick={() => handleViewSession(session.id)}
+                        className="text-ai-teal hover:text-ai-teal/80"
+                        title="View Session"
+                      >
+                        <Eye className="h-4 w-4" />
+                      </button>
+                      {session.status === 'in_progress' && (
+                        <button 
+                          onClick={() => handleTerminateSession(session.id)}
+                          className="text-red-600 hover:text-red-800"
+                          title="Terminate Session"
+                        >
+                          <XCircle className="h-4 w-4" />
+                        </button>
+                      )}
+                    </div>
                   </td>
                 </tr>
               ))}

@@ -12,7 +12,8 @@ import {
   Save
 } from 'lucide-react';
 import { questionPaperExtractionService, ExtractedQuestion, QuestionPaperExtractionRequest } from '../../services/questionPaperExtractionService';
-import { questionService, QuestionFormData } from '../../services/questionService';
+import { questionService } from '../../services/questionService';
+import { QuestionFormData } from '../../types';
 import { QuestionTopic } from '../../services/topicManagementService';
 
 interface QuestionPaperUploadModalProps {

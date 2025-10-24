@@ -1,5 +1,86 @@
 // Core types for the AI HR Saathi Platform
 
+// Question Management Types
+export interface CreateQuestionRequest {
+  job_description_id: string;
+  question_text: string;
+  question_type: 'mcq' | 'text';
+  question_category: 'technical' | 'aptitude';
+  difficulty_level: 'easy' | 'medium' | 'hard';
+  mcq_options?: Array<{ option: string; text: string }>;
+  correct_answer?: string;
+  answer_explanation?: string;
+  points?: number;
+  time_limit_seconds?: number;
+  tags?: string[];
+  topic_id?: string;
+  subtopic?: string;
+  created_by?: string;
+  status?: 'draft' | 'pending' | 'approved' | 'rejected';
+  hr_notes?: string;
+}
+
+export interface UpdateQuestionRequest {
+  question_text?: string;
+  question_type?: 'mcq' | 'text';
+  question_category?: 'technical' | 'aptitude';
+  difficulty_level?: 'easy' | 'medium' | 'hard';
+  mcq_options?: Array<{ option: string; text: string }>;
+  correct_answer?: string;
+  answer_explanation?: string;
+  points?: number;
+  time_limit_seconds?: number;
+  tags?: string[];
+  topic_id?: string;
+  subtopic?: string;
+  status?: 'draft' | 'pending' | 'approved' | 'rejected';
+  hr_notes?: string;
+  is_active?: boolean;
+}
+
+export interface QuestionFilter {
+  search?: string;
+  category?: string;
+  difficulty?: string;
+  status?: string;
+  job_description_id?: string;
+  topic_id?: string;
+  limit?: number;
+  offset?: number;
+}
+
+export interface QuestionGenerationResponse {
+  generated_questions: GeneratedQuestion[];
+  generation_metadata: any;
+}
+
+export interface QuestionFormData {
+  job_description_id: string;
+  question_text: string;
+  question_type: 'mcq' | 'text';
+  question_category: 'technical' | 'aptitude';
+  difficulty_level: 'easy' | 'medium' | 'hard';
+  mcq_options?: Array<{ option: string; text: string }>;
+  correct_answer?: string;
+  answer_explanation?: string;
+  points: number;
+  time_limit_seconds: number;
+  tags: string[];
+  subtopic?: string;
+}
+
+export interface InterviewEmailData {
+  candidate: Candidate;
+  jobDescription: JobDescription;
+  aiAgent: any;
+  interview: Interview;
+  interviewLink: string;
+  candidateLoginCredentials: {
+    username: string;
+    temporaryPassword: string;
+  };
+}
+
 export interface User {
   id: string;
   email: string;
@@ -498,6 +579,8 @@ export interface ExamSession {
   started_at?: string;
   completed_at?: string;
   expires_at: string;
+  score?: number;
+  percentage?: number;
   ip_address?: string;
   user_agent?: string;
   performance_metadata: Record<string, any>;

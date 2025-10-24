@@ -2,18 +2,12 @@ import React, { useState, useEffect } from 'react';
 import { 
   X, 
   Plus, 
-  Trash2, 
   Save, 
   AlertCircle,
-  CheckCircle,
   Brain,
   FileText,
-  Upload,
-  Type,
-  BookOpen,
   FileCheck
 } from 'lucide-react';
-import QuestionPaperUploadModal from './QuestionPaperUploadModal';
 import { QuestionTopic } from '../../services/topicManagementService';
 
 interface MCQOption {
@@ -78,7 +72,6 @@ const AddQuestionModal: React.FC<AddQuestionModalProps> = ({
   const [tagInput, setTagInput] = useState('');
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [saving, setSaving] = useState(false);
-  const [showQuestionPaperUpload, setShowQuestionPaperUpload] = useState(false);
 
   // Filter topics based on selected category
   const filteredTopics = topics.filter(topic => topic.category === formData.question_category);
@@ -211,7 +204,6 @@ const AddQuestionModal: React.FC<AddQuestionModalProps> = ({
     if (onQuestionsAdded) {
       onQuestionsAdded(questions);
     }
-    setShowQuestionPaperUpload(false);
   };
 
   if (!isOpen) return null;
@@ -224,11 +216,11 @@ const AddQuestionModal: React.FC<AddQuestionModalProps> = ({
           <h2 className="text-xl font-semibold text-gray-900">Add New Question</h2>
           <div className="flex items-center space-x-3">
             <button
-              onClick={() => setShowQuestionPaperUpload(true)}
               className="px-3 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center space-x-2"
+              disabled
             >
               <FileCheck className="h-4 w-4" />
-              <span>Upload Question Paper</span>
+              <span>Upload Question Paper (Coming Soon)</span>
             </button>
             <button
               onClick={onClose}
@@ -581,15 +573,6 @@ const AddQuestionModal: React.FC<AddQuestionModalProps> = ({
           </button>
         </div>
       </div>
-
-      {/* Question Paper Upload Modal */}
-      <QuestionPaperUploadModal
-        isOpen={showQuestionPaperUpload}
-        onClose={() => setShowQuestionPaperUpload(false)}
-        onQuestionsAdded={handleQuestionsAdded}
-        topics={topics}
-        loading={saving}
-      />
     </div>
   );
 };

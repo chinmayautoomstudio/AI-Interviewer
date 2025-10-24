@@ -14,7 +14,36 @@ import {
 import { topicManagementService } from './topicManagementService';
 
 export class ExamService {
-  // ===== EXAM SESSION MANAGEMENT =====
+  /**
+   * Get available questions for a job description
+   */
+  async getAvailableQuestions(jobDescriptionId: string): Promise<{ count: number; questions: ExamQuestion[] }> {
+    try {
+      const { data: questions, error } = await supabase
+        .from('exam_questions')
+        .select(`
+          *,
+          topic:question_topics(*)
+        `)
+        .eq('job_description_id', jobDescriptionId)
+        .eq('status', 'approved')
+        .eq('is_active', true)
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        console.error('Error fetching available questions:', error);
+        throw new Error(`Failed to fetch questions: ${error.message}`);
+      }
+
+      return {
+        count: questions?.length || 0,
+        questions: questions || []
+      };
+    } catch (error) {
+      console.error('Error in getAvailableQuestions:', error);
+      throw error;
+    }
+  }
 
   /**
    * Create a new exam session for a candidate
@@ -35,6 +64,32 @@ export class ExamService {
     const expires_at = new Date();
     expires_at.setHours(expires_at.getHours() + expires_in_hours);
 
+    // Check if we have enough questions for this job description
+    const { data: availableQuestions, error: questionsError } = await supabase
+      .from('exam_questions')
+      .select('id')
+      .eq('job_description_id', job_description_id)
+      .eq('status', 'approved')
+      .eq('is_active', true);
+
+    if (questionsError) {
+      console.error('Error checking available questions:', questionsError);
+      throw new Error(`Failed to check available questions: ${questionsError.message}`);
+    }
+
+    const availableCount = availableQuestions?.length || 0;
+    console.log(`📊 Available questions for job description ${job_description_id}: ${availableCount}`);
+
+    if (availableCount < total_questions) {
+      console.warn(`⚠️ Not enough questions available. Requested: ${total_questions}, Available: ${availableCount}`);
+      // Adjust total questions to available count
+      const adjustedTotal = Math.min(total_questions, availableCount);
+      if (adjustedTotal === 0) {
+        throw new Error('No approved questions available for this job description. Please add questions first.');
+      }
+      console.log(`🔄 Adjusted total questions to: ${adjustedTotal}`);
+    }
+
     // Create exam session
     const { data, error } = await supabase
       .from('exam_sessions')
@@ -42,9 +97,9 @@ export class ExamService {
         candidate_id,
         job_description_id,
         exam_token,
-        total_questions,
+        total_questions: Math.min(total_questions, availableCount),
         duration_minutes,
-        initial_question_count: total_questions,
+        initial_question_count: Math.min(total_questions, availableCount),
         expires_at: expires_at.toISOString(),
         performance_metadata: {}
       }])
@@ -164,27 +219,38 @@ export class ExamService {
       throw new Error('Exam session not found');
     }
 
-    // Get question distribution for the job
-    const distribution = await topicManagementService.getQuestionDistribution(
-      session.job_description_id,
-      session.total_questions
-    );
+    console.log('🔍 Getting questions for session:', sessionId);
+    console.log('📋 Job description ID:', session.job_description_id);
+    console.log('📊 Total questions needed:', session.total_questions);
 
-    // Select questions based on distribution
-    const selectedQuestions: ExamQuestion[] = [];
+    // Simplified approach: Get questions directly by job description
+    const { data: questions, error } = await supabase
+      .from('exam_questions')
+      .select(`
+        *,
+        topic:question_topics(*)
+      `)
+      .eq('job_description_id', session.job_description_id)
+      .eq('status', 'approved')
+      .eq('is_active', true)
+      .order('created_at', { ascending: false })
+      .limit(session.total_questions);
+
+    if (error) {
+      console.error('Error fetching questions:', error);
+      throw new Error(`Failed to fetch questions: ${error.message}`);
+    }
+
+    console.log('✅ Found', questions?.length || 0, 'questions');
     
-    for (const dist of distribution) {
-      const questions = await this.selectQuestionsForTopic(
-        session.job_description_id,
-        dist.topic_id,
-        dist.question_count,
-        dist.difficulty_breakdown
-      );
-      selectedQuestions.push(...questions);
+    if (questions && questions.length > 0) {
+      questions.forEach((q, index) => {
+        console.log(`  ${index + 1}. [${q.question_type.toUpperCase()}] [${q.difficulty_level}] ${q.question_text?.substring(0, 50)}...`);
+      });
     }
 
     // Shuffle questions to randomize order
-    return this.shuffleArray(selectedQuestions);
+    return this.shuffleArray(questions || []);
   }
 
   /**
@@ -234,7 +300,7 @@ export class ExamService {
       .eq('difficulty_level', difficulty)
       .eq('status', 'approved')
       .eq('is_active', true)
-      .order('random()')
+      .order('created_at', { ascending: false })
       .limit(limit);
 
     if (error) {
@@ -253,44 +319,68 @@ export class ExamService {
   async submitAnswer(request: SubmitAnswerRequest): Promise<ExamResponse> {
     const { exam_session_id, question_id, answer_text, time_taken_seconds } = request;
 
-    // Get the question to validate the answer
-    const question = await this.getQuestionById(question_id);
-    if (!question) {
-      throw new Error('Question not found');
-    }
+    console.log('🔄 Submitting answer:', {
+      exam_session_id,
+      question_id,
+      answer_text: answer_text?.substring(0, 50) + '...',
+      time_taken_seconds
+    });
 
-    // Calculate if answer is correct and points earned
-    const { is_correct, points_earned } = this.evaluateAnswer(question, answer_text);
+    try {
+      // Get the question to validate the answer
+      const question = await this.getQuestionById(question_id);
+      if (!question) {
+        console.error('❌ Question not found:', question_id);
+        throw new Error('Question not found');
+      }
 
-    // Upsert the response
-    const { data, error } = await supabase
-      .from('exam_responses')
-      .upsert([{
-        exam_session_id,
-        question_id,
-        answer_text,
+      console.log('✅ Question found:', question.question_text?.substring(0, 50) + '...');
+
+      // Calculate if answer is correct and points earned
+      const { is_correct, points_earned } = this.evaluateAnswer(question, answer_text);
+      
+      console.log('📊 Answer evaluation:', {
         is_correct,
         points_earned,
-        time_taken_seconds,
-        answered_at: new Date().toISOString()
-      }], {
-        onConflict: 'exam_session_id,question_id'
-      })
-      .select(`
-        *,
-        question:exam_questions(*)
-      `)
-      .single();
+        question_type: question.question_type,
+        correct_answer: question.correct_answer
+      });
 
-    if (error) {
-      console.error('Error submitting answer:', error);
-      throw new Error(`Failed to submit answer: ${error.message}`);
+      // Upsert the response
+      const { data, error } = await supabase
+        .from('exam_responses')
+        .upsert([{
+          exam_session_id,
+          question_id,
+          answer_text,
+          is_correct,
+          points_earned,
+          time_taken_seconds,
+          answered_at: new Date().toISOString()
+        }], {
+          onConflict: 'exam_session_id,question_id'
+        })
+        .select(`
+          *,
+          question:exam_questions(*)
+        `)
+        .single();
+
+      if (error) {
+        console.error('❌ Error submitting answer:', error);
+        throw new Error(`Failed to submit answer: ${error.message}`);
+      }
+
+      console.log('✅ Answer submitted successfully:', data.id);
+
+      // Check if we should add adaptive questions
+      await this.checkAndAddAdaptiveQuestions(exam_session_id);
+
+      return data;
+    } catch (error) {
+      console.error('❌ submitAnswer error:', error);
+      throw error;
     }
-
-    // Check if we should add adaptive questions
-    await this.checkAndAddAdaptiveQuestions(exam_session_id);
-
-    return data;
   }
 
   /**
@@ -545,6 +635,8 @@ export class ExamService {
    * Get session by ID
    */
   private async getSessionById(sessionId: string): Promise<ExamSession | null> {
+    console.log('🔍 getSessionById called with:', sessionId);
+    
     const { data, error } = await supabase
       .from('exam_sessions')
       .select('*')
@@ -552,12 +644,14 @@ export class ExamService {
       .single();
 
     if (error) {
+      console.error('❌ Error in getSessionById:', error);
       if (error.code === 'PGRST116') {
         return null;
       }
       throw new Error(`Failed to fetch session: ${error.message}`);
     }
 
+    console.log('✅ Session found:', data?.id, data?.status);
     return data;
   }
 
@@ -565,6 +659,8 @@ export class ExamService {
    * Get question by ID
    */
   private async getQuestionById(questionId: string): Promise<ExamQuestion | null> {
+    console.log('🔍 Getting question by ID:', questionId);
+    
     const { data, error } = await supabase
       .from('exam_questions')
       .select('*')
@@ -572,11 +668,20 @@ export class ExamService {
       .single();
 
     if (error) {
+      console.error('❌ Error fetching question:', error);
       if (error.code === 'PGRST116') {
+        console.log('⚠️ Question not found (PGRST116)');
         return null;
       }
       throw new Error(`Failed to fetch question: ${error.message}`);
     }
+
+    console.log('✅ Question fetched successfully:', {
+      id: data.id,
+      question_text: data.question_text?.substring(0, 50) + '...',
+      question_type: data.question_type,
+      correct_answer: data.correct_answer
+    });
 
     return data;
   }
@@ -615,7 +720,7 @@ export class ExamService {
       .eq('difficulty_level', difficulty)
       .eq('status', 'approved')
       .eq('is_active', true)
-      .order('random()')
+      .order('created_at', { ascending: false })
       .limit(limit);
 
     if (error) {

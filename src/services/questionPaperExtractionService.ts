@@ -1,4 +1,4 @@
-import { QuestionFormData } from './questionService';
+import { QuestionFormData } from '../types';
 
 export interface ExtractedQuestion {
   question_text: string;
@@ -196,8 +196,9 @@ export class QuestionPaperExtractionService {
   /**
    * Converts extracted questions to the format expected by the question service
    */
-  convertToQuestionFormData(extractedQuestions: ExtractedQuestion[]): QuestionFormData[] {
+  convertToQuestionFormData(extractedQuestions: ExtractedQuestion[], jobDescriptionId: string = ''): QuestionFormData[] {
     return extractedQuestions.map(question => ({
+      job_description_id: jobDescriptionId,
       question_text: question.question_text,
       question_type: question.question_type,
       question_category: this.determineCategory(question.topic || ''),

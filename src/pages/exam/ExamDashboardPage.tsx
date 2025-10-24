@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { 
   BookOpen, 
   Users, 
@@ -9,8 +10,15 @@ import {
   BarChart3,
   Plus,
   Eye,
-  Edit
+  Edit,
+  Copy,
+  ExternalLink,
+  CheckCircle
 } from 'lucide-react';
+import { ExamSession } from '../../types';
+import CreateExamModal from '../../components/exam/CreateExamModal';
+import EmailInvitationModal from '../../components/exam/EmailInvitationModal';
+import { supabase } from '../../services/supabase';
 
 interface ExamStats {
   totalQuestions: number;
@@ -31,6 +39,7 @@ interface RecentSession {
 }
 
 const ExamDashboardPage: React.FC = () => {
+  const navigate = useNavigate();
   const [stats, setStats] = useState<ExamStats>({
     totalQuestions: 0,
     totalSessions: 0,
@@ -42,49 +51,122 @@ const ExamDashboardPage: React.FC = () => {
 
   const [recentSessions, setRecentSessions] = useState<RecentSession[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isCreateExamModalOpen, setIsCreateExamModalOpen] = useState(false);
+  const [isEmailInvitationModalOpen, setIsEmailInvitationModalOpen] = useState(false);
+  const [createdExamToken, setCreatedExamToken] = useState<string | null>(null);
+  const [selectedExamSessions, setSelectedExamSessions] = useState<ExamSession[]>([]);
 
   useEffect(() => {
-    // TODO: Fetch exam statistics and recent sessions
-    // This will be implemented when we connect to the backend
-    setTimeout(() => {
-      setStats({
-        totalQuestions: 150,
-        totalSessions: 45,
-        activeSessions: 8,
-        completedSessions: 37,
-        averageScore: 78.5,
-        totalTopics: 14
-      });
+    loadDashboardData();
+  }, []);
 
-      setRecentSessions([
-        {
-          id: '1',
-          candidateName: 'John Doe',
-          jobTitle: 'Frontend Developer',
-          status: 'completed',
-          score: 85,
-          startedAt: '2024-01-15T10:30:00Z'
-        },
-        {
-          id: '2',
-          candidateName: 'Jane Smith',
-          jobTitle: 'Backend Developer',
-          status: 'in_progress',
-          startedAt: '2024-01-15T11:00:00Z'
-        },
-        {
-          id: '3',
-          candidateName: 'Mike Johnson',
-          jobTitle: 'Full Stack Developer',
-          status: 'completed',
-          score: 92,
-          startedAt: '2024-01-15T09:15:00Z'
-        }
+  const loadDashboardData = async () => {
+    try {
+      setLoading(true);
+      
+      // Load exam statistics
+      const [questionsResult, sessionsResult, topicsResult] = await Promise.all([
+        supabase.from('exam_questions').select('id', { count: 'exact', head: true }),
+        supabase.from('exam_sessions').select('id, status, score, percentage', { count: 'exact' }),
+        supabase.from('question_topics').select('id', { count: 'exact', head: true })
       ]);
 
+      const totalQuestions = questionsResult.count || 0;
+      const totalSessions = sessionsResult.count || 0;
+      const totalTopics = topicsResult.count || 0;
+
+      // Calculate active sessions
+      const activeSessions = sessionsResult.data?.filter(s => s.status === 'in_progress').length || 0;
+      
+      // Calculate completed sessions
+      const completedSessions = sessionsResult.data?.filter(s => s.status === 'completed').length || 0;
+      
+      // Calculate average score
+      const completedWithScores = sessionsResult.data?.filter(s => s.status === 'completed' && s.percentage) || [];
+      const averageScore = completedWithScores.length > 0 
+        ? completedWithScores.reduce((sum, s) => sum + (s.percentage || 0), 0) / completedWithScores.length
+        : 0;
+
+      setStats({
+        totalQuestions,
+        totalSessions,
+        activeSessions,
+        completedSessions,
+        averageScore: Math.round(averageScore * 10) / 10,
+        totalTopics
+      });
+
+      // Load recent sessions
+      const { data: recentSessionsData, error: sessionsError } = await supabase
+        .from('exam_sessions')
+        .select(`
+          id,
+          status,
+          score,
+          percentage,
+          started_at,
+          candidate:candidates(name),
+          job_description:job_descriptions(title)
+        `)
+        .order('created_at', { ascending: false })
+        .limit(5);
+
+      if (!sessionsError && recentSessionsData) {
+        const recentSessions = recentSessionsData.map((session: any) => ({
+          id: session.id,
+          candidateName: Array.isArray(session.candidate) 
+            ? session.candidate[0]?.name || 'Unknown'
+            : session.candidate?.name || 'Unknown',
+          jobTitle: Array.isArray(session.job_description) 
+            ? session.job_description[0]?.title || 'Unknown'
+            : session.job_description?.title || 'Unknown',
+          status: session.status,
+          score: session.score,
+          startedAt: session.started_at || ''
+        }));
+        
+        setRecentSessions(recentSessions);
+      }
+
+    } catch (error) {
+      console.error('Error loading dashboard data:', error);
+    } finally {
       setLoading(false);
-    }, 1000);
-  }, []);
+    }
+  };
+
+  const handleCreateExamSuccess = (examToken: string) => {
+    setCreatedExamToken(examToken);
+    console.log('Exam created successfully with token:', examToken);
+  };
+
+  const handleEmailInvitationSuccess = () => {
+    setIsEmailInvitationModalOpen(false);
+    setSelectedExamSessions([]);
+    // Refresh data after sending invitations
+    loadDashboardData();
+  };
+
+  const handleSendInvitations = (sessions: ExamSession[]) => {
+    setSelectedExamSessions(sessions);
+    setIsEmailInvitationModalOpen(true);
+  };
+
+  const copyExamLink = () => {
+    if (createdExamToken) {
+      const examUrl = `${window.location.origin}/candidate/exam/${createdExamToken}`;
+      navigator.clipboard.writeText(examUrl);
+      // You could add a toast notification here
+      console.log('Exam link copied to clipboard:', examUrl);
+    }
+  };
+
+  const openExamLink = () => {
+    if (createdExamToken) {
+      const examUrl = `${window.location.origin}/candidate/exam/${createdExamToken}`;
+      window.open(examUrl, '_blank');
+    }
+  };
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -126,16 +208,63 @@ const ExamDashboardPage: React.FC = () => {
 
   return (
     <div className="p-6">
-      {/* Header */}
+      {/* Success Message for Created Exam */}
+      {createdExamToken && (
+        <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-lg">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-3">
+              <div className="p-2 bg-green-100 rounded-lg">
+                <CheckCircle className="w-5 h-5 text-green-600" />
+              </div>
+              <div>
+                <h3 className="font-semibold text-green-900">Exam Created Successfully!</h3>
+                <p className="text-sm text-green-700">Share this link with the candidate to start the exam</p>
+              </div>
+            </div>
+            <div className="flex items-center space-x-2">
+              <button
+                onClick={copyExamLink}
+                className="flex items-center space-x-2 px-3 py-2 text-sm bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+              >
+                <Copy className="w-4 h-4" />
+                <span>Copy Link</span>
+              </button>
+              <button
+                onClick={openExamLink}
+                className="flex items-center space-x-2 px-3 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+              >
+                <ExternalLink className="w-4 h-4" />
+                <span>Open Exam</span>
+              </button>
+            </div>
+          </div>
+          <div className="mt-3 p-3 bg-white rounded-lg border">
+            <p className="text-sm text-gray-600 mb-1">Exam Link:</p>
+            <code className="text-sm text-gray-800 break-all">
+              {`${window.location.origin}/candidate/exam/${createdExamToken}`}
+            </code>
+          </div>
+        </div>
+      )}
       <div className="flex justify-between items-center mb-6">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Exam Dashboard</h1>
           <p className="text-gray-600 mt-1">Overview of your exam system</p>
         </div>
         <div className="flex space-x-3">
-          <button className="bg-ai-teal text-white px-4 py-2 rounded-lg hover:bg-ai-teal/90 transition-colors flex items-center space-x-2">
+          <button 
+            onClick={() => navigate('/exams/create')}
+            className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors flex items-center space-x-2"
+          >
             <Plus className="h-4 w-4" />
             <span>Create Exam</span>
+          </button>
+          <button 
+            onClick={() => setIsCreateExamModalOpen(true)}
+            className="bg-gray-600 text-white px-4 py-2 rounded-lg hover:bg-gray-700 transition-colors flex items-center space-x-2"
+          >
+            <Calendar className="h-4 w-4" />
+            <span>Quick Create</span>
           </button>
         </div>
       </div>
@@ -306,6 +435,21 @@ const ExamDashboardPage: React.FC = () => {
           </button>
         </div>
       </div>
+
+      {/* Create Exam Modal */}
+      <CreateExamModal
+        isOpen={isCreateExamModalOpen}
+        onClose={() => setIsCreateExamModalOpen(false)}
+        onSuccess={handleCreateExamSuccess}
+      />
+
+      {/* Email Invitation Modal */}
+      <EmailInvitationModal
+        isOpen={isEmailInvitationModalOpen}
+        onClose={() => setIsEmailInvitationModalOpen(false)}
+        examSessions={selectedExamSessions}
+        onSuccess={handleEmailInvitationSuccess}
+      />
     </div>
   );
 };

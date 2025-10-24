@@ -18,33 +18,33 @@ export const MCQQuestion: React.FC<MCQQuestionProps> = ({
   };
 
   return (
-    <div className="bg-white rounded-lg border border-gray-200 p-6">
+    <div className="bg-white rounded-2xl border border-gray-200/50 p-8 shadow-lg">
       {/* Question Header */}
-      <div className="mb-6">
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center space-x-2">
-            <span className="bg-blue-100 text-blue-800 text-xs font-medium px-2.5 py-0.5 rounded">
+      <div className="mb-8">
+        <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center space-x-3">
+            <span className="bg-gradient-to-r from-blue-100 to-blue-200 text-blue-800 text-sm font-semibold px-3 py-1.5 rounded-full shadow-sm">
               MCQ
             </span>
-            <span className="bg-gray-100 text-gray-800 text-xs font-medium px-2.5 py-0.5 rounded">
+            <span className="bg-gradient-to-r from-gray-100 to-gray-200 text-gray-800 text-sm font-semibold px-3 py-1.5 rounded-full shadow-sm">
               {question.difficulty_level}
             </span>
-            <span className="bg-green-100 text-green-800 text-xs font-medium px-2.5 py-0.5 rounded">
+            <span className="bg-gradient-to-r from-green-100 to-green-200 text-green-800 text-sm font-semibold px-3 py-1.5 rounded-full shadow-sm">
               {question.points} point{question.points !== 1 ? 's' : ''}
             </span>
           </div>
-          <div className="text-sm text-gray-500">
+          <div className="text-sm text-gray-500 bg-gray-50 px-3 py-1.5 rounded-lg">
             Time limit: {question.time_limit_seconds}s
           </div>
         </div>
         
-        <h3 className="text-lg font-semibold text-gray-900 leading-relaxed">
+        <h3 className="text-xl font-semibold text-gray-900 leading-relaxed">
           {question.question_text}
         </h3>
       </div>
 
       {/* Options */}
-      <div className="space-y-3">
+      <div className="space-y-4">
         {question.mcq_options?.map((option, index) => {
           const isSelected = selectedAnswer === option.option;
           const isCorrect = question.correct_answer === option.option;
@@ -53,13 +53,13 @@ export const MCQQuestion: React.FC<MCQQuestionProps> = ({
             <div
               key={option.option}
               className={`
-                flex items-start space-x-3 p-4 rounded-lg border-2 cursor-pointer transition-all duration-200
+                flex items-start space-x-4 p-5 rounded-xl border-2 cursor-pointer transition-all duration-200 shadow-sm hover:shadow-md
                 ${disabled 
                   ? 'cursor-not-allowed opacity-60' 
                   : 'hover:bg-gray-50 hover:border-gray-300'
                 }
                 ${isSelected 
-                  ? 'border-blue-500 bg-blue-50' 
+                  ? 'border-blue-500 bg-blue-50 shadow-md' 
                   : 'border-gray-200'
                 }
                 ${disabled && isCorrect 
@@ -72,19 +72,19 @@ export const MCQQuestion: React.FC<MCQQuestionProps> = ({
               {/* Option indicator */}
               <div className="flex-shrink-0 mt-1">
                 {isSelected ? (
-                  <CheckCircle className="w-5 h-5 text-blue-600" />
+                  <CheckCircle className="w-6 h-6 text-blue-600" />
                 ) : (
-                  <Circle className="w-5 h-5 text-gray-400" />
+                  <Circle className="w-6 h-6 text-gray-400" />
                 )}
               </div>
               
               {/* Option content */}
               <div className="flex-1">
-                <div className="flex items-center space-x-3">
-                  <span className="font-semibold text-gray-700 min-w-[24px]">
+                <div className="flex items-center space-x-4">
+                  <span className="font-bold text-gray-700 min-w-[32px] text-lg">
                     {option.option}.
                   </span>
-                  <span className="text-gray-900 leading-relaxed">
+                  <span className="text-gray-900 leading-relaxed text-lg">
                     {option.text}
                   </span>
                 </div>
@@ -96,9 +96,9 @@ export const MCQQuestion: React.FC<MCQQuestionProps> = ({
 
       {/* Answer explanation (show when disabled and answer is selected) */}
       {disabled && selectedAnswer && question.answer_explanation && (
-        <div className="mt-6 p-4 bg-gray-50 rounded-lg border border-gray-200">
-          <h4 className="font-medium text-gray-900 mb-2">Explanation:</h4>
-          <p className="text-gray-700 leading-relaxed">
+        <div className="mt-8 p-6 bg-gradient-to-r from-gray-50 to-blue-50 rounded-xl border border-gray-200 shadow-sm">
+          <h4 className="font-semibold text-gray-900 mb-3 text-lg">Explanation:</h4>
+          <p className="text-gray-700 leading-relaxed text-lg">
             {question.answer_explanation}
           </p>
         </div>
@@ -106,16 +106,16 @@ export const MCQQuestion: React.FC<MCQQuestionProps> = ({
 
       {/* Topic and tags */}
       {(question.topic || question.tags.length > 0) && (
-        <div className="mt-4 flex flex-wrap gap-2">
+        <div className="mt-6 flex flex-wrap gap-3">
           {question.topic && (
-            <span className="bg-purple-100 text-purple-800 text-xs font-medium px-2.5 py-0.5 rounded">
+            <span className="bg-gradient-to-r from-purple-100 to-purple-200 text-purple-800 text-sm font-semibold px-3 py-1.5 rounded-full shadow-sm">
               {question.topic.name}
             </span>
           )}
           {question.tags.map((tag, index) => (
             <span
               key={index}
-              className="bg-gray-100 text-gray-800 text-xs font-medium px-2.5 py-0.5 rounded"
+              className="bg-gradient-to-r from-gray-100 to-gray-200 text-gray-800 text-sm font-semibold px-3 py-1.5 rounded-full shadow-sm"
             >
               {tag}
             </span>

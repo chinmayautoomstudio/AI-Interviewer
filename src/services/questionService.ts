@@ -1,253 +1,186 @@
+// Question Service
+// Service for managing exam questions, AI generation, and approval workflow
+
 import { supabase } from './supabase';
-import { QuestionTopic } from '../types';
+import { 
+  ExamQuestion, 
+  CreateQuestionRequest, 
+  UpdateQuestionRequest,
+  QuestionFilter,
+  QuestionGenerationRequest,
+  QuestionGenerationResponse
+} from '../types';
 
-export interface QuestionFormData {
-  question_text: string;
-  question_type: 'mcq' | 'text';
-  question_category: 'technical' | 'aptitude';
-  difficulty_level: 'easy' | 'medium' | 'hard';
-  topic_id: string;
-  subtopic: string;
-  points: number;
-  time_limit_seconds: number;
-  mcq_options: Array<{
-    option: string;
-    text: string;
-  }>;
-  correct_answer: string;
-  answer_explanation: string;
-  tags: string[];
+export interface QuestionServiceResponse<T> {
+  success: boolean;
+  data?: T;
+  error?: string;
 }
-
-export interface Question {
-  id: string;
-  question_text: string;
-  question_type: 'mcq' | 'text';
-  question_category: 'technical' | 'aptitude';
-  difficulty_level: 'easy' | 'medium' | 'hard';
-  topic_id: string;
-  subtopic?: string;
-  points: number;
-  time_limit_seconds: number;
-  mcq_options?: Array<{
-    option: string;
-    text: string;
-  }>;
-  correct_answer: string;
-  answer_explanation: string;
-  tags: string[];
-  created_by: 'hr' | 'ai';
-  created_by_user_id?: string;
-  status: 'draft' | 'approved' | 'rejected';
-  hr_notes?: string;
-  is_active: boolean;
-  created_at: string;
-  updated_at: string;
-  topic?: QuestionTopic;
-}
-
-// Using QuestionTopic from types instead of local Topic interface
 
 export class QuestionService {
-  /**
-   * Create a new question
-   */
-  async createQuestion(questionData: QuestionFormData, userId?: string): Promise<Question> {
-    try {
-      const { data, error } = await supabase
-        .from('exam_questions')
-        .insert({
-          question_text: questionData.question_text,
-          question_type: questionData.question_type,
-          question_category: questionData.question_category,
-          difficulty_level: questionData.difficulty_level,
-          topic_id: questionData.topic_id,
-          subtopic: questionData.subtopic || null,
-          points: questionData.points,
-          time_limit_seconds: questionData.time_limit_seconds,
-          mcq_options: questionData.question_type === 'mcq' ? questionData.mcq_options : null,
-          correct_answer: questionData.correct_answer,
-          answer_explanation: questionData.answer_explanation,
-          tags: questionData.tags,
-          created_by: 'hr',
-          created_by_user_id: userId,
-          status: 'draft',
-          is_active: true
-        })
-        .select(`
-          *,
-          topic:question_topics(id, name, category)
-        `)
-        .single();
-
-      if (error) {
-        throw new Error(`Failed to create question: ${error.message}`);
-      }
-
-      return data;
-    } catch (error) {
-      console.error('Error creating question:', error);
-      throw error;
-    }
-  }
+  // ===== QUESTION CRUD OPERATIONS =====
 
   /**
-   * Get all questions with filters
+   * Get all questions with filtering and pagination
    */
-  async getQuestions(filters?: {
-    category?: 'technical' | 'aptitude';
-    difficulty?: 'easy' | 'medium' | 'hard';
-    type?: 'mcq' | 'text';
-    status?: 'draft' | 'approved' | 'rejected';
-    topic_id?: string;
-    search?: string;
-  }): Promise<Question[]> {
+  async getQuestions(filter: QuestionFilter = {}): Promise<QuestionServiceResponse<ExamQuestion[]>> {
     try {
       let query = supabase
         .from('exam_questions')
         .select(`
           *,
-          topic:question_topics(id, name, category)
+          topic:question_topics(*)
         `)
-        .eq('is_active', true)
         .order('created_at', { ascending: false });
 
-      if (filters?.category) {
-        query = query.eq('question_category', filters.category);
+      // Apply filters
+      if (filter.category) {
+        query = query.eq('question_category', filter.category);
+      }
+      if (filter.difficulty) {
+        query = query.eq('difficulty_level', filter.difficulty);
+      }
+      if (filter.status) {
+        query = query.eq('status', filter.status);
+      }
+      if (filter.job_description_id) {
+        query = query.eq('job_description_id', filter.job_description_id);
+      }
+      if (filter.search) {
+        query = query.ilike('question_text', `%${filter.search}%`);
+      }
+      if (filter.topic_id) {
+        query = query.eq('topic_id', filter.topic_id);
       }
 
-      if (filters?.difficulty) {
-        query = query.eq('difficulty_level', filters.difficulty);
+      // Pagination
+      if (filter.limit) {
+        query = query.limit(filter.limit);
       }
-
-      if (filters?.type) {
-        query = query.eq('question_type', filters.type);
-      }
-
-      if (filters?.status) {
-        query = query.eq('status', filters.status);
-      }
-
-      if (filters?.topic_id) {
-        query = query.eq('topic_id', filters.topic_id);
-      }
-
-      if (filters?.search) {
-        query = query.ilike('question_text', `%${filters.search}%`);
+      if (filter.offset) {
+        query = query.range(filter.offset, filter.offset + (filter.limit || 50) - 1);
       }
 
       const { data, error } = await query;
 
       if (error) {
-        throw new Error(`Failed to fetch questions: ${error.message}`);
+        console.error('Error fetching questions:', error);
+        return { success: false, error: error.message };
       }
 
-      return data || [];
+      return { success: true, data: data || [] };
     } catch (error) {
-      console.error('Error fetching questions:', error);
-      throw error;
+      console.error('Error in getQuestions:', error);
+      return { 
+        success: false, 
+        error: error instanceof Error ? error.message : 'Failed to fetch questions' 
+      };
     }
   }
 
   /**
-   * Get a single question by ID
+   * Get question by ID
    */
-  async getQuestionById(id: string): Promise<Question | null> {
+  async getQuestionById(id: string): Promise<QuestionServiceResponse<ExamQuestion>> {
     try {
       const { data, error } = await supabase
         .from('exam_questions')
         .select(`
           *,
-          topic:question_topics(id, name, category)
+          topic:question_topics(*)
         `)
         .eq('id', id)
         .single();
 
       if (error) {
         if (error.code === 'PGRST116') {
-          return null; // Question not found
+          return { success: false, error: 'Question not found' };
         }
-        throw new Error(`Failed to fetch question: ${error.message}`);
+        console.error('Error fetching question:', error);
+        return { success: false, error: error.message };
       }
 
-      return data;
+      return { success: true, data };
     } catch (error) {
-      console.error('Error fetching question:', error);
-      throw error;
+      console.error('Error in getQuestionById:', error);
+      return { 
+        success: false, 
+        error: error instanceof Error ? error.message : 'Failed to fetch question' 
+      };
     }
   }
 
   /**
-   * Update a question
+   * Create a new question
    */
-  async updateQuestion(id: string, updates: Partial<QuestionFormData>, userId?: string): Promise<Question> {
+  async createQuestion(request: CreateQuestionRequest): Promise<QuestionServiceResponse<ExamQuestion>> {
     try {
-      const updateData: any = {
-        ...updates,
-        last_modified_by: userId,
-        last_modified_at: new Date().toISOString()
-      };
-
-      // Handle MCQ options
-      if (updates.question_type === 'mcq' && updates.mcq_options) {
-        updateData.mcq_options = updates.mcq_options;
-      } else if (updates.question_type === 'text') {
-        updateData.mcq_options = null;
-      }
-
       const { data, error } = await supabase
         .from('exam_questions')
-        .update(updateData)
-        .eq('id', id)
+        .insert([{
+          job_description_id: request.job_description_id,
+          question_text: request.question_text,
+          question_type: request.question_type,
+          question_category: request.question_category,
+          difficulty_level: request.difficulty_level,
+          mcq_options: request.mcq_options,
+          correct_answer: request.correct_answer,
+          answer_explanation: request.answer_explanation,
+          points: request.points || 1,
+          time_limit_seconds: request.time_limit_seconds || 60,
+          tags: request.tags || [],
+          topic_id: request.topic_id,
+          subtopic: request.subtopic,
+          created_by: request.created_by || 'hr',
+          status: request.status || 'draft',
+          hr_notes: request.hr_notes
+        }])
         .select(`
           *,
-          topic:question_topics(id, name, category)
+          topic:question_topics(*)
         `)
         .single();
 
       if (error) {
-        throw new Error(`Failed to update question: ${error.message}`);
+        console.error('Error creating question:', error);
+        return { success: false, error: error.message };
       }
 
-      return data;
+      return { success: true, data };
     } catch (error) {
-      console.error('Error updating question:', error);
-      throw error;
+      console.error('Error in createQuestion:', error);
+      return { 
+        success: false, 
+        error: error instanceof Error ? error.message : 'Failed to create question' 
+      };
     }
   }
 
   /**
-   * Delete a question (soft delete)
+   * Update an existing question
    */
-  async deleteQuestion(id: string): Promise<void> {
-    try {
-      const { error } = await supabase
-        .from('exam_questions')
-        .update({ is_active: false })
-        .eq('id', id);
-
-      if (error) {
-        throw new Error(`Failed to delete question: ${error.message}`);
-      }
-    } catch (error) {
-      console.error('Error deleting question:', error);
-      throw error;
-    }
-  }
-
-  /**
-   * Update question status
-   */
-  async updateQuestionStatus(id: string, status: 'draft' | 'approved' | 'rejected', notes?: string): Promise<Question> {
+  async updateQuestion(id: string, request: UpdateQuestionRequest): Promise<QuestionServiceResponse<ExamQuestion>> {
     try {
       const updateData: any = {
-        status,
         updated_at: new Date().toISOString()
       };
 
-      if (notes) {
-        updateData.hr_notes = notes;
-      }
+      // Only update provided fields
+      if (request.question_text !== undefined) updateData.question_text = request.question_text;
+      if (request.question_type !== undefined) updateData.question_type = request.question_type;
+      if (request.question_category !== undefined) updateData.question_category = request.question_category;
+      if (request.difficulty_level !== undefined) updateData.difficulty_level = request.difficulty_level;
+      if (request.mcq_options !== undefined) updateData.mcq_options = request.mcq_options;
+      if (request.correct_answer !== undefined) updateData.correct_answer = request.correct_answer;
+      if (request.answer_explanation !== undefined) updateData.answer_explanation = request.answer_explanation;
+      if (request.points !== undefined) updateData.points = request.points;
+      if (request.time_limit_seconds !== undefined) updateData.time_limit_seconds = request.time_limit_seconds;
+      if (request.tags !== undefined) updateData.tags = request.tags;
+      if (request.topic_id !== undefined) updateData.topic_id = request.topic_id;
+      if (request.subtopic !== undefined) updateData.subtopic = request.subtopic;
+      if (request.status !== undefined) updateData.status = request.status;
+      if (request.hr_notes !== undefined) updateData.hr_notes = request.hr_notes;
+      if (request.is_active !== undefined) updateData.is_active = request.is_active;
 
       const { data, error } = await supabase
         .from('exam_questions')
@@ -255,113 +188,250 @@ export class QuestionService {
         .eq('id', id)
         .select(`
           *,
-          topic:question_topics(id, name, category)
+          topic:question_topics(*)
         `)
         .single();
 
       if (error) {
-        throw new Error(`Failed to update question status: ${error.message}`);
+        console.error('Error updating question:', error);
+        return { success: false, error: error.message };
       }
 
-      return data;
+      return { success: true, data };
     } catch (error) {
-      console.error('Error updating question status:', error);
-      throw error;
+      console.error('Error in updateQuestion:', error);
+      return { 
+        success: false, 
+        error: error instanceof Error ? error.message : 'Failed to update question' 
+      };
     }
   }
 
   /**
-   * Get all topics
+   * Delete a question
    */
-  async getTopics(): Promise<QuestionTopic[]> {
+  async deleteQuestion(id: string): Promise<QuestionServiceResponse<boolean>> {
     try {
-      const { data, error } = await supabase
-        .from('question_topics')
-        .select('*')
-        .eq('is_active', true)
-        .order('category', { ascending: true })
-        .order('sort_order', { ascending: true });
+      const { error } = await supabase
+        .from('exam_questions')
+        .delete()
+        .eq('id', id);
 
       if (error) {
-        throw new Error(`Failed to fetch topics: ${error.message}`);
+        console.error('Error deleting question:', error);
+        return { success: false, error: error.message };
       }
 
-      return data || [];
+      return { success: true, data: true };
     } catch (error) {
-      console.error('Error fetching topics:', error);
-      throw error;
+      console.error('Error in deleteQuestion:', error);
+      return { 
+        success: false, 
+        error: error instanceof Error ? error.message : 'Failed to delete question' 
+      };
     }
   }
+
+  // ===== BULK OPERATIONS =====
+
+  /**
+   * Bulk update question status
+   */
+  async bulkUpdateStatus(questionIds: string[], status: string): Promise<QuestionServiceResponse<boolean>> {
+    try {
+      const { error } = await supabase
+        .from('exam_questions')
+        .update({ 
+          status,
+          updated_at: new Date().toISOString()
+        })
+        .in('id', questionIds);
+
+      if (error) {
+        console.error('Error bulk updating status:', error);
+        return { success: false, error: error.message };
+      }
+
+      return { success: true, data: true };
+    } catch (error) {
+      console.error('Error in bulkUpdateStatus:', error);
+      return { 
+        success: false, 
+        error: error instanceof Error ? error.message : 'Failed to bulk update status' 
+      };
+    }
+  }
+
+  /**
+   * Bulk delete questions
+   */
+  async bulkDelete(questionIds: string[]): Promise<QuestionServiceResponse<boolean>> {
+    try {
+      const { error } = await supabase
+        .from('exam_questions')
+        .delete()
+        .in('id', questionIds);
+
+      if (error) {
+        console.error('Error bulk deleting questions:', error);
+        return { success: false, error: error.message };
+      }
+
+      return { success: true, data: true };
+    } catch (error) {
+      console.error('Error in bulkDelete:', error);
+      return { 
+        success: false, 
+        error: error instanceof Error ? error.message : 'Failed to bulk delete questions' 
+      };
+    }
+  }
+
+  // ===== AI QUESTION GENERATION =====
+
+  /**
+   * Generate questions using AI
+   */
+  async generateQuestions(request: QuestionGenerationRequest): Promise<QuestionServiceResponse<QuestionGenerationResponse>> {
+    try {
+      console.log('🚀 Generating questions with AI:', request);
+
+      // Call the n8n question generation webhook
+      const response = await fetch(process.env.REACT_APP_N8N_QUESTION_GENERATOR || '', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(request),
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('❌ AI generation failed:', errorText);
+        return { 
+          success: false, 
+          error: `AI generation failed: ${response.status} ${response.statusText}` 
+        };
+      }
+
+      const result = await response.json();
+      console.log('✅ AI generation successful:', result);
+
+      return { success: true, data: result };
+    } catch (error) {
+      console.error('❌ Error in generateQuestions:', error);
+      return { 
+        success: false, 
+        error: error instanceof Error ? error.message : 'Failed to generate questions' 
+      };
+    }
+  }
+
+  /**
+   * Save AI-generated questions to database
+   */
+  async saveGeneratedQuestions(
+    questions: any[], 
+    jobDescriptionId: string,
+    metadata: any = {}
+  ): Promise<QuestionServiceResponse<ExamQuestion[]>> {
+    try {
+      const questionsToInsert = questions.map(q => ({
+        job_description_id: jobDescriptionId,
+        question_text: q.question_text,
+        question_type: q.question_type,
+        question_category: q.question_category,
+        difficulty_level: q.difficulty_level,
+        mcq_options: q.mcq_options,
+        correct_answer: q.correct_answer,
+        answer_explanation: q.answer_explanation,
+        points: q.points || 1,
+        time_limit_seconds: q.time_limit_seconds || 60,
+        tags: q.tags || [],
+        topic_id: q.topic_id,
+        subtopic: q.subtopic,
+        created_by: 'ai',
+        status: 'pending', // AI-generated questions need HR approval
+        hr_notes: `AI Generated - ${metadata.ai_model_used || 'Unknown Model'}`
+      }));
+
+      const { data, error } = await supabase
+        .from('exam_questions')
+        .insert(questionsToInsert)
+        .select(`
+          *,
+          topic:question_topics(*)
+        `);
+
+      if (error) {
+        console.error('Error saving generated questions:', error);
+        return { success: false, error: error.message };
+      }
+
+      return { success: true, data: data || [] };
+    } catch (error) {
+      console.error('Error in saveGeneratedQuestions:', error);
+      return { 
+        success: false, 
+        error: error instanceof Error ? error.message : 'Failed to save generated questions' 
+      };
+    }
+  }
+
+  // ===== STATISTICS =====
 
   /**
    * Get question statistics
    */
-  async getQuestionStats(): Promise<{
-    total: number;
-    by_category: { technical: number; aptitude: number };
-    by_type: { mcq: number; text: number };
-    by_difficulty: { easy: number; medium: number; hard: number };
-    by_status: { draft: number; approved: number; rejected: number };
-  }> {
+  async getQuestionStats(jobDescriptionId?: string): Promise<QuestionServiceResponse<any>> {
     try {
-      const { data, error } = await supabase
+      let query = supabase
         .from('exam_questions')
-        .select('question_category, question_type, difficulty_level, status')
-        .eq('is_active', true);
+        .select('question_category, difficulty_level, status, created_by');
+
+      if (jobDescriptionId) {
+        query = query.eq('job_description_id', jobDescriptionId);
+      }
+
+      const { data, error } = await query;
 
       if (error) {
-        throw new Error(`Failed to fetch question stats: ${error.message}`);
+        console.error('Error fetching question stats:', error);
+        return { success: false, error: error.message };
       }
 
       const stats = {
-        total: data.length,
-        by_category: { technical: 0, aptitude: 0 },
-        by_type: { mcq: 0, text: 0 },
-        by_difficulty: { easy: 0, medium: 0, hard: 0 },
-        by_status: { draft: 0, approved: 0, rejected: 0 }
+        total: data?.length || 0,
+        by_category: {
+          technical: data?.filter(q => q.question_category === 'technical').length || 0,
+          aptitude: data?.filter(q => q.question_category === 'aptitude').length || 0
+        },
+        by_difficulty: {
+          easy: data?.filter(q => q.difficulty_level === 'easy').length || 0,
+          medium: data?.filter(q => q.difficulty_level === 'medium').length || 0,
+          hard: data?.filter(q => q.difficulty_level === 'hard').length || 0
+        },
+        by_status: {
+          draft: data?.filter(q => q.status === 'draft').length || 0,
+          pending: data?.filter(q => q.status === 'pending').length || 0,
+          approved: data?.filter(q => q.status === 'approved').length || 0,
+          rejected: data?.filter(q => q.status === 'rejected').length || 0
+        },
+        by_creator: {
+          hr: data?.filter(q => q.created_by === 'hr').length || 0,
+          ai: data?.filter(q => q.created_by === 'ai').length || 0
+        }
       };
 
-      data.forEach(question => {
-        // Category stats
-        if (question.question_category === 'technical') {
-          stats.by_category.technical++;
-        } else if (question.question_category === 'aptitude') {
-          stats.by_category.aptitude++;
-        }
-
-        // Type stats
-        if (question.question_type === 'mcq') {
-          stats.by_type.mcq++;
-        } else if (question.question_type === 'text') {
-          stats.by_type.text++;
-        }
-
-        // Difficulty stats
-        if (question.difficulty_level === 'easy') {
-          stats.by_difficulty.easy++;
-        } else if (question.difficulty_level === 'medium') {
-          stats.by_difficulty.medium++;
-        } else if (question.difficulty_level === 'hard') {
-          stats.by_difficulty.hard++;
-        }
-
-        // Status stats
-        if (question.status === 'draft') {
-          stats.by_status.draft++;
-        } else if (question.status === 'approved') {
-          stats.by_status.approved++;
-        } else if (question.status === 'rejected') {
-          stats.by_status.rejected++;
-        }
-      });
-
-      return stats;
+      return { success: true, data: stats };
     } catch (error) {
-      console.error('Error fetching question stats:', error);
-      throw error;
+      console.error('Error in getQuestionStats:', error);
+      return { 
+        success: false, 
+        error: error instanceof Error ? error.message : 'Failed to fetch question statistics' 
+      };
     }
   }
 }
 
-// Export singleton instance
 export const questionService = new QuestionService();

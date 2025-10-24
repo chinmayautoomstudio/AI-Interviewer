@@ -81,23 +81,23 @@ export const ExamTimer: React.FC<ExamTimerProps> = ({
   const progressPercentage = ((duration_minutes * 60 - timeRemaining) / (duration_minutes * 60)) * 100;
 
   return (
-    <div className={`flex items-center space-x-3 p-4 rounded-lg border-2 ${getTimerBgColor()}`}>
-      <Clock className={`w-6 h-6 ${getTimerColor()}`} />
+    <div className={`flex items-center space-x-4 p-6 rounded-xl border-2 ${getTimerBgColor()} shadow-sm`}>
+      <Clock className={`w-8 h-8 ${getTimerColor()}`} />
       
       <div className="flex-1">
-        <div className="flex items-center justify-between mb-2">
-          <span className={`text-lg font-bold ${getTimerColor()}`}>
+        <div className="flex items-center justify-between mb-3">
+          <span className={`text-2xl font-bold ${getTimerColor()}`}>
             {formatTime(timeRemaining)}
           </span>
-          <span className="text-sm text-gray-600">
+          <span className="text-sm text-gray-600 font-medium">
             {isActive ? 'Time Remaining' : 'Timer Paused'}
           </span>
         </div>
         
         {/* Progress bar */}
-        <div className="w-full bg-gray-200 rounded-full h-2">
+        <div className="w-full bg-gray-200 rounded-full h-3 shadow-inner">
           <div
-            className={`h-2 rounded-full transition-all duration-1000 ${
+            className={`h-3 rounded-full transition-all duration-1000 shadow-sm ${
               isCritical ? 'bg-red-500' : isWarning ? 'bg-yellow-500' : 'bg-blue-500'
             }`}
             style={{ width: `${progressPercentage}%` }}
@@ -107,9 +107,9 @@ export const ExamTimer: React.FC<ExamTimerProps> = ({
 
       {/* Warning indicators */}
       {isWarning && (
-        <div className="flex items-center space-x-1 text-yellow-600">
-          <AlertTriangle className="w-5 h-5" />
-          <span className="text-sm font-medium">
+        <div className="flex items-center space-x-2 text-yellow-600 bg-yellow-50 px-4 py-2 rounded-lg border border-yellow-200">
+          <AlertTriangle className="w-6 h-6" />
+          <span className="text-sm font-semibold">
             {timeRemaining <= 60 ? '1 min left!' : '5 min left!'}
           </span>
         </div>

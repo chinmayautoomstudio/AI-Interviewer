@@ -81,17 +81,17 @@ export const QuestionNavigator: React.FC<QuestionNavigatorProps> = ({
   };
 
   return (
-    <div className="bg-white rounded-lg border border-gray-200 p-6">
-      <div className="flex items-center justify-between mb-4">
+    <div className="bg-white rounded-2xl border border-gray-200/50 p-6 shadow-lg">
+      <div className="flex items-center justify-between mb-6">
         <h3 className="text-lg font-semibold text-gray-900">Question Navigator</h3>
         <div className="flex items-center space-x-4 text-sm text-gray-600">
-          <div className="flex items-center space-x-1">
+          <div className="flex items-center space-x-2">
             <CheckCircle className="w-4 h-4 text-green-600" />
-            <span>{answeredQuestions.size} answered</span>
+            <span className="font-medium">{answeredQuestions.size} answered</span>
           </div>
-          <div className="flex items-center space-x-1">
+          <div className="flex items-center space-x-2">
             <Circle className="w-4 h-4 text-gray-400" />
-            <span>{questions.length - answeredQuestions.size} remaining</span>
+            <span className="font-medium">{questions.length - answeredQuestions.size} remaining</span>
           </div>
         </div>
       </div>
@@ -99,50 +99,58 @@ export const QuestionNavigator: React.FC<QuestionNavigatorProps> = ({
       {/* Progress bar */}
       <div className="mb-6">
         <div className="flex justify-between text-sm text-gray-600 mb-2">
-          <span>Progress</span>
-          <span>{Math.round((answeredQuestions.size / questions.length) * 100)}%</span>
+          <span className="font-medium">Progress</span>
+          <span className="font-semibold">{Math.round((answeredQuestions.size / questions.length) * 100)}%</span>
         </div>
-        <div className="w-full bg-gray-200 rounded-full h-2">
+        <div className="w-full bg-gray-200 rounded-full h-2 shadow-inner">
           <div
-            className="bg-blue-600 h-2 rounded-full transition-all duration-300"
+            className="bg-gradient-to-r from-blue-600 to-indigo-600 h-2 rounded-full transition-all duration-300 shadow-sm"
             style={{ width: `${(answeredQuestions.size / questions.length) * 100}%` }}
           />
         </div>
       </div>
 
       {/* Question grid */}
-      <div className="grid grid-cols-5 sm:grid-cols-6 md:grid-cols-8 lg:grid-cols-10 gap-2">
+      <div className="grid grid-cols-5 gap-2 mb-6">
         {questions.map((question, index) => (
           <button
             key={index}
             onClick={() => !disabled && onQuestionSelect(index)}
             disabled={disabled}
             className={`
-              relative flex flex-col items-center justify-center p-3 rounded-lg border-2 transition-all duration-200
+              relative flex flex-col items-center justify-center p-3 rounded-lg border-2 transition-all duration-200 shadow-sm hover:shadow-md min-h-[80px]
               ${getQuestionStyle(index)}
               ${disabled ? 'cursor-not-allowed opacity-60' : 'cursor-pointer'}
-              ${index === currentQuestionIndex ? 'ring-2 ring-blue-500 ring-offset-2' : ''}
+              ${index === currentQuestionIndex ? 'ring-2 ring-blue-500 ring-offset-1' : ''}
             `}
             title={`Question ${index + 1}: ${question.question_type.toUpperCase()} - ${question.difficulty_level}`}
           >
             {/* Question number */}
             <div className="flex items-center space-x-1 mb-1">
               {getQuestionIcon(index)}
-              <span className="text-sm font-medium">{index + 1}</span>
+              <span className="text-xs font-bold">{index + 1}</span>
             </div>
 
             {/* Question type */}
             <div className="mb-1">
-              {getQuestionTypeIcon(question.question_type)}
+              {question.question_type === 'mcq' ? (
+                <span className="bg-blue-100 text-blue-800 text-xs font-medium px-1 py-0.5 rounded text-center">
+                  MC
+                </span>
+              ) : (
+                <span className="bg-green-100 text-green-800 text-xs font-medium px-1 py-0.5 rounded text-center">
+                  TX
+                </span>
+              )}
             </div>
 
             {/* Difficulty indicator */}
-            <div className={`text-xs font-medium ${getDifficultyColor(question.difficulty_level)}`}>
+            <div className={`text-xs font-bold ${getDifficultyColor(question.difficulty_level)}`}>
               {question.difficulty_level.charAt(0).toUpperCase()}
             </div>
 
             {/* Points indicator */}
-            <div className="absolute -top-1 -right-1 bg-gray-600 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
+            <div className="absolute -top-1 -right-1 bg-gradient-to-r from-gray-600 to-gray-700 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center shadow-lg font-bold">
               {question.points}
             </div>
           </button>
@@ -150,48 +158,26 @@ export const QuestionNavigator: React.FC<QuestionNavigatorProps> = ({
       </div>
 
       {/* Legend */}
-      <div className="mt-6 pt-4 border-t border-gray-200">
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+      <div className="pt-4 border-t border-gray-200">
+        <div className="grid grid-cols-2 gap-3 text-xs">
           <div className="flex items-center space-x-2">
             <CheckCircle className="w-4 h-4 text-green-600" />
-            <span className="text-gray-600">Answered</span>
+            <span className="text-gray-600 font-medium">Answered</span>
           </div>
           <div className="flex items-center space-x-2">
             <Circle className="w-4 h-4 text-blue-600 fill-current" />
-            <span className="text-gray-600">Current</span>
+            <span className="text-gray-600 font-medium">Current</span>
           </div>
           <div className="flex items-center space-x-2">
             <Circle className="w-4 h-4 text-gray-400" />
-            <span className="text-gray-600">Unanswered</span>
+            <span className="text-gray-600 font-medium">Unanswered</span>
           </div>
           <div className="flex items-center space-x-2">
-            <div className="w-4 h-4 bg-gray-600 text-white text-xs rounded-full flex items-center justify-center">
+            <div className="w-4 h-4 bg-gradient-to-r from-gray-600 to-gray-700 text-white text-xs rounded-full flex items-center justify-center font-bold">
               P
             </div>
-            <span className="text-gray-600">Points</span>
+            <span className="text-gray-600 font-medium">Points</span>
           </div>
-        </div>
-      </div>
-
-      {/* Quick stats */}
-      <div className="mt-4 grid grid-cols-3 gap-4 text-center">
-        <div className="bg-green-50 rounded-lg p-3">
-          <div className="text-lg font-semibold text-green-800">
-            {answeredQuestions.size}
-          </div>
-          <div className="text-xs text-green-600">Answered</div>
-        </div>
-        <div className="bg-yellow-50 rounded-lg p-3">
-          <div className="text-lg font-semibold text-yellow-800">
-            {questions.length - answeredQuestions.size}
-          </div>
-          <div className="text-xs text-yellow-600">Remaining</div>
-        </div>
-        <div className="bg-blue-50 rounded-lg p-3">
-          <div className="text-lg font-semibold text-blue-800">
-            {questions.reduce((sum, q) => sum + q.points, 0)}
-          </div>
-          <div className="text-xs text-blue-600">Total Points</div>
         </div>
       </div>
     </div>

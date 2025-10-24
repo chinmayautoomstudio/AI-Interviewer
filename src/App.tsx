@@ -30,11 +30,13 @@ import Header from './components/layout/Header';
 import Sidebar from './components/layout/Sidebar';
 // Exam pages
 import ExamDashboardPage from './pages/exam/ExamDashboardPage';
+import ExamCreationPage from './pages/exam/ExamCreationPage';
 import QuestionBankPage from './pages/exam/QuestionBankPage';
 import TopicManagementPage from './pages/exam/TopicManagementPage';
 import ExamSessionsPage from './pages/exam/ExamSessionsPage';
 import ExamResultsPage from './pages/exam/ExamResultsPage';
 import ExamAnalyticsPage from './pages/exam/ExamAnalyticsPage';
+import CandidateExamPage from './pages/CandidateExamPage';
 import LoadingSpinner from './components/ui/LoadingSpinner';
 
 const AppContent: React.FC = () => {
@@ -57,6 +59,7 @@ const AppContent: React.FC = () => {
         <Route path="/candidate/login" element={<CandidateLoginPage />} />
         <Route path="/candidate/dashboard" element={<CandidateDashboardPage />} />
         <Route path="/candidate/interview/:sessionToken" element={<CandidateInterviewPage />} />
+        <Route path="/candidate/exam/:token" element={<CandidateExamPage />} />
         <Route path="/candidate/update-password" element={<CandidatePasswordUpdatePage />} />
         <Route path="/privacy-policy" element={<PrivacyPolicyPage />} />
         <Route path="/terms-and-conditions" element={<TermsAndConditionsPage />} />
@@ -90,6 +93,7 @@ const AppContent: React.FC = () => {
             {/* Exam Routes */}
             <Route path="/exams" element={<Navigate to="/exams/dashboard" replace />} />
             <Route path="/exams/dashboard" element={<ExamDashboardPage />} />
+            <Route path="/exams/create" element={<ExamCreationPage />} />
             <Route path="/exams/questions" element={<QuestionBankPage />} />
             <Route path="/exams/topics" element={<TopicManagementPage />} />
             <Route path="/exams/sessions" element={<ExamSessionsPage />} />

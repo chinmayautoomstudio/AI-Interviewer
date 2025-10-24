@@ -8,30 +8,18 @@ import {
   Type,
   AlertCircle,
   CheckCircle,
-  Loader2,
-  Download,
-  Eye,
-  Trash2
+  Loader2
 } from 'lucide-react';
 import { n8nExamWorkflows, buildQuestionGenerationRequest } from '../../services/n8nExamWorkflows';
-import { questionService, QuestionFormData } from '../../services/questionService';
+import { questionService } from '../../services/questionService';
 import { JobDescription } from '../../types';
 import './GenerateQuestionModal.css';
-
-// Using the global JobDescription interface from types
-
-interface Topic {
-  id: string;
-  name: string;
-  category: 'technical' | 'aptitude';
-}
 
 interface GenerateQuestionModalProps {
   isOpen: boolean;
   onClose: () => void;
   onQuestionsGenerated: (questions: any[]) => void;
   jobDescriptions: JobDescription[];
-  topics: Topic[];
   loading?: boolean;
 }
 
@@ -42,7 +30,6 @@ const GenerateQuestionModal: React.FC<GenerateQuestionModalProps> = ({
   onClose,
   onQuestionsGenerated,
   jobDescriptions,
-  topics,
   loading = false
 }) => {
   const [inputMethod, setInputMethod] = useState<InputMethod>('existing_jd');
@@ -62,14 +49,6 @@ const GenerateQuestionModal: React.FC<GenerateQuestionModalProps> = ({
   const [easyQuestions, setEasyQuestions] = useState<number>(3);
   const [mediumQuestions, setMediumQuestions] = useState<number>(8);
   const [hardQuestions, setHardQuestions] = useState<number>(4);
-  
-  // Selected topics
-  const [selectedTopics, setSelectedTopics] = useState<Array<{
-    topic_id: string;
-    weight: number;
-    min_questions: number;
-    max_questions: number;
-  }>>([]);
   
   // State management
   const [generating, setGenerating] = useState(false);
@@ -91,36 +70,31 @@ const GenerateQuestionModal: React.FC<GenerateQuestionModalProps> = ({
     if (newTotal !== totalQuestions) {
       setTotalQuestions(newTotal);
     }
-  }, [easyQuestions, mediumQuestions, hardQuestions]);
+  }, [easyQuestions, mediumQuestions, hardQuestions, totalQuestions]);
 
   // Helper functions for balanced difficulty adjustment
   const adjustDifficultyBalanced = (changedType: 'easy' | 'medium' | 'hard', newValue: number) => {
-    const currentTotal = easyQuestions + mediumQuestions + hardQuestions;
     const increase = newValue - (changedType === 'easy' ? easyQuestions : changedType === 'medium' ? mediumQuestions : hardQuestions);
     
-    if (increase === 0) return; // No change needed
-    
-    // Get current values of other types
+    if (increase === 0) return;
+
     const otherTypes = ['easy', 'medium', 'hard'].filter(type => type !== changedType) as ('easy' | 'medium' | 'hard')[];
     const otherValues = otherTypes.map(type => ({
       type,
       value: type === 'easy' ? easyQuestions : type === 'medium' ? mediumQuestions : hardQuestions
     }));
-    
-    // Sort by value (highest first)
+
     otherValues.sort((a, b) => b.value - a.value);
-    
-    // Reduce from highest values first
+
     let remainingToReduce = Math.abs(increase);
     const newOtherValues = [...otherValues];
-    
+
     for (let i = 0; i < newOtherValues.length && remainingToReduce > 0; i++) {
       const canReduce = Math.min(newOtherValues[i].value, remainingToReduce);
       newOtherValues[i].value -= canReduce;
       remainingToReduce -= canReduce;
     }
-    
-    // Update all values
+
     if (changedType === 'easy') {
       setEasyQuestions(newValue);
       setMediumQuestions(newOtherValues.find(v => v.type === 'medium')?.value || 0);
@@ -152,7 +126,6 @@ const GenerateQuestionModal: React.FC<GenerateQuestionModalProps> = ({
     setEasyQuestions(3);
     setMediumQuestions(8);
     setHardQuestions(4);
-    setSelectedTopics([]);
     setGenerating(false);
     setExtracting(false);
     setErrors({});
@@ -208,85 +181,6 @@ Education Requirements: Bachelor's degree in Computer Science or related field`;
     }
   };
 
-  const handleTopicSelection = (topicId: string, checked: boolean) => {
-    if (checked) {
-      const topic = topics.find(t => t.id === topicId);
-      if (topic) {
-        setSelectedTopics(prev => [...prev, {
-          topic_id: topicId,
-          weight: 10, // Default weight
-          min_questions: 1,
-          max_questions: 3
-        }]);
-      }
-    } else {
-      setSelectedTopics(prev => prev.filter(t => t.topic_id !== topicId));
-    }
-  };
-
-  // Auto-select topics based on job description when existing_jd is selected
-  const autoSelectTopicsFromJobDescription = (jobDescriptionId: string) => {
-    const selectedJD = jobDescriptions.find(jd => jd.id === jobDescriptionId);
-    if (!selectedJD) return;
-
-    // Map job description skills to topics
-    const relevantTopics: string[] = [];
-    
-    // Check technical skills against technical topics
-    const allSkills = [
-      ...(selectedJD.required_skills || []),
-      ...(selectedJD.preferred_skills || []),
-      ...(selectedJD.skills || [])
-    ].map(skill => skill.toLowerCase());
-
-    topics.forEach(topic => {
-      const topicName = topic.name.toLowerCase();
-      const isRelevant = allSkills.some(skill => 
-        topicName.includes(skill) || 
-        skill.includes(topicName) ||
-        // Specific skill mappings
-        (skill.includes('react') && topicName.includes('web development')) ||
-        (skill.includes('javascript') && topicName.includes('web development')) ||
-        (skill.includes('python') && topicName.includes('programming')) ||
-        (skill.includes('java') && topicName.includes('programming')) ||
-        (skill.includes('sql') && topicName.includes('database')) ||
-        (skill.includes('aws') && topicName.includes('cloud')) ||
-        (skill.includes('docker') && topicName.includes('cloud')) ||
-        (skill.includes('kubernetes') && topicName.includes('cloud'))
-      );
-
-      if (isRelevant) {
-        relevantTopics.push(topic.id);
-      }
-    });
-
-    // Always include some aptitude topics
-    const aptitudeTopics = topics.filter(t => t.category === 'aptitude').slice(0, 2);
-    aptitudeTopics.forEach(topic => {
-      if (!relevantTopics.includes(topic.id)) {
-        relevantTopics.push(topic.id);
-      }
-    });
-
-    // Set selected topics with appropriate weights
-    const newSelectedTopics = relevantTopics.map(topicId => ({
-      topic_id: topicId,
-      weight: 15, // Higher weight for auto-selected topics
-      min_questions: 1,
-      max_questions: 4
-    }));
-
-    setSelectedTopics(newSelectedTopics);
-  };
-
-  const updateTopicConfig = (topicId: string, field: string, value: number) => {
-    setSelectedTopics(prev => prev.map(topic => 
-      topic.topic_id === topicId 
-        ? { ...topic, [field]: value }
-        : topic
-    ));
-  };
-
   const validateInput = (): boolean => {
     const newErrors: Record<string, string> = {};
 
@@ -304,14 +198,6 @@ Education Requirements: Bachelor's degree in Computer Science or related field`;
 
     if (inputMethod === 'custom_topic' && !customTopic.trim()) {
       newErrors.customTopic = 'Please enter a topic name';
-    }
-
-    if (selectedTopics.length === 0) {
-      if (inputMethod === 'existing_jd') {
-        newErrors.topics = 'Please select a job description to auto-select topics';
-      } else {
-        newErrors.topics = 'Please select at least one topic';
-      }
     }
 
     if (totalQuestions < 5 || totalQuestions > 50) {
@@ -380,7 +266,7 @@ Education Requirements: Bachelor's degree in Computer Science or related field`;
             key_responsibilities: [],
             education_requirements: ''
           };
-          sourceInfo = { extracted_text: extractedText };
+          sourceInfo = { uploaded_file: uploadedFile?.name, extracted_text: extractedText };
           break;
 
         case 'manual_input':
@@ -456,13 +342,7 @@ Education Requirements: Bachelor's degree in Computer Science or related field`;
         question_types: {
           mcq: mcqPercentage,
           text: textPercentage
-        },
-        topics: selectedTopics.map(topic => ({
-          name: topics.find(t => t.id === topic.topic_id)?.name || '',
-          weight: topic.weight,
-          min_questions: topic.min_questions,
-          max_questions: topic.max_questions
-        }))
+        }
       };
 
       // Build request for N8N workflow
@@ -472,9 +352,6 @@ Education Requirements: Bachelor's degree in Computer Science or related field`;
         inputMethod,
         sourceInfo
       );
-
-      // Debug: Log the request being sent to n8n
-      // Send request to n8n workflow
 
       // Call N8N workflow
       const response = await n8nExamWorkflows.generateQuestions(request);
@@ -497,40 +374,38 @@ Education Requirements: Bachelor's degree in Computer Science or related field`;
   };
 
   const handleSaveQuestions = async () => {
-    try {
-      setGenerating(true);
-      
-      // Convert generated questions to the format expected by questionService
-      const questionsToSave = generatedQuestions.map(q => ({
-        question_text: q.question_text,
-        question_type: q.question_type,
-        question_category: q.question_category,
-        difficulty_level: q.difficulty_level,
-        topic_id: topics.find(t => t.name === q.topic)?.id || '',
-        subtopic: q.subtopic || '',
-        points: q.points,
-        time_limit_seconds: q.time_limit_seconds,
-        mcq_options: q.mcq_options || [],
-        correct_answer: q.correct_answer,
-        answer_explanation: q.answer_explanation,
-        tags: q.tags || []
-      }));
+    if (generatedQuestions.length === 0) return;
 
-      // Save questions to database
+    setGenerating(true);
+    try {
+      // Save questions one by one
       const savedQuestions = [];
-      for (const questionData of questionsToSave) {
+      for (const question of generatedQuestions) {
+        const questionData = {
+          job_description_id: selectedJobDescription || '',
+          question_text: question.question_text,
+          question_type: question.question_type,
+          question_category: question.question_category,
+          difficulty_level: question.difficulty_level,
+          topic_id: 'general', // Default topic since we removed topic selection
+          subtopic: question.subtopic || 'General',
+          points: question.points,
+          time_limit_seconds: question.time_limit_seconds,
+          mcq_options: question.mcq_options || [],
+          correct_answer: question.correct_answer,
+          answer_explanation: question.answer_explanation,
+          tags: question.tags || []
+        };
+        
         const savedQuestion = await questionService.createQuestion(questionData);
         savedQuestions.push(savedQuestion);
       }
-
+      
       onQuestionsGenerated(savedQuestions);
       onClose();
-
     } catch (error) {
       console.error('Error saving questions:', error);
-      setErrors({ 
-        general: `Failed to save questions: ${error instanceof Error ? error.message : 'Unknown error'}` 
-      });
+      setErrors({ general: 'Failed to save questions. Please try again.' });
     } finally {
       setGenerating(false);
     }
@@ -540,10 +415,25 @@ Education Requirements: Bachelor's degree in Computer Science or related field`;
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-lg shadow-xl max-w-6xl w-full max-h-[90vh] overflow-y-auto">
+      <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[95vh] flex flex-col">
         {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b border-gray-200">
-          <h2 className="text-xl font-semibold text-gray-900">Generate Questions</h2>
+        <div className="flex items-center justify-between p-6 border-b border-gray-200 flex-shrink-0">
+          <div className="flex items-center space-x-3">
+            <div className="p-2 bg-ai-teal/10 rounded-lg">
+              <Brain className="h-6 w-6 text-ai-teal" />
+            </div>
+            <div>
+              <h2 className="text-xl font-semibold text-gray-900">
+                {showPreview ? 'Generated Questions' : 'Generate Questions'}
+              </h2>
+              <p className="text-sm text-gray-600">
+                {showPreview 
+                  ? `Review and save ${generatedQuestions.length} generated questions`
+                  : 'Configure and generate questions using AI'
+                }
+              </p>
+            </div>
+          </div>
           <button
             onClick={onClose}
             className="p-2 text-gray-400 hover:text-gray-600 transition-colors"
@@ -552,74 +442,88 @@ Education Requirements: Bachelor's degree in Computer Science or related field`;
           </button>
         </div>
 
-        <div className="p-6">
+        {/* Content */}
+        <div className="p-6 overflow-y-auto flex-1">
           {!showPreview ? (
+            /* Configuration Form */
             <div className="space-y-6">
-              {/* General Error */}
-              {errors.general && (
-                <div className="bg-red-50 border border-red-200 rounded-lg p-4 flex items-center space-x-2">
-                  <AlertCircle className="h-5 w-5 text-red-600" />
-                  <span className="text-red-700">{errors.general}</span>
-                </div>
-              )}
-
               {/* Input Method Selection */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-3">
-                  Select Input Method *
+                  Input Method *
                 </label>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <button
                     onClick={() => setInputMethod('existing_jd')}
-                    className={`p-4 border-2 rounded-lg text-center transition-colors ${
+                    className={`p-4 border rounded-lg text-left transition-colors ${
                       inputMethod === 'existing_jd'
-                        ? 'border-ai-teal bg-ai-teal/10 text-ai-teal'
+                        ? 'border-ai-teal bg-ai-teal/5 text-ai-teal'
                         : 'border-gray-200 hover:border-gray-300'
                     }`}
                   >
-                    <BookOpen className="h-6 w-6 mx-auto mb-2" />
-                    <span className="text-sm font-medium">Existing JD</span>
+                    <div className="flex items-center space-x-3">
+                      <FileText className="h-5 w-5" />
+                      <div>
+                        <div className="font-medium">Existing Job Description</div>
+                        <div className="text-sm text-gray-600">Select from saved job descriptions</div>
+                      </div>
+                    </div>
                   </button>
 
                   <button
                     onClick={() => setInputMethod('upload_pdf')}
-                    className={`p-4 border-2 rounded-lg text-center transition-colors ${
+                    className={`p-4 border rounded-lg text-left transition-colors ${
                       inputMethod === 'upload_pdf'
-                        ? 'border-ai-teal bg-ai-teal/10 text-ai-teal'
+                        ? 'border-ai-teal bg-ai-teal/5 text-ai-teal'
                         : 'border-gray-200 hover:border-gray-300'
                     }`}
                   >
-                    <Upload className="h-6 w-6 mx-auto mb-2" />
-                    <span className="text-sm font-medium">Upload JD</span>
+                    <div className="flex items-center space-x-3">
+                      <Upload className="h-5 w-5" />
+                      <div>
+                        <div className="font-medium">Upload PDF</div>
+                        <div className="text-sm text-gray-600">Upload a job description PDF</div>
+                      </div>
+                    </div>
                   </button>
 
                   <button
                     onClick={() => setInputMethod('manual_input')}
-                    className={`p-4 border-2 rounded-lg text-center transition-colors ${
+                    className={`p-4 border rounded-lg text-left transition-colors ${
                       inputMethod === 'manual_input'
-                        ? 'border-ai-teal bg-ai-teal/10 text-ai-teal'
+                        ? 'border-ai-teal bg-ai-teal/5 text-ai-teal'
                         : 'border-gray-200 hover:border-gray-300'
                     }`}
                   >
-                    <Type className="h-6 w-6 mx-auto mb-2" />
-                    <span className="text-sm font-medium">Type Manually</span>
+                    <div className="flex items-center space-x-3">
+                      <Type className="h-5 w-5" />
+                      <div>
+                        <div className="font-medium">Manual Input</div>
+                        <div className="text-sm text-gray-600">Type job description manually</div>
+                      </div>
+                    </div>
                   </button>
 
                   <button
                     onClick={() => setInputMethod('custom_topic')}
-                    className={`p-4 border-2 rounded-lg text-center transition-colors ${
+                    className={`p-4 border rounded-lg text-left transition-colors ${
                       inputMethod === 'custom_topic'
-                        ? 'border-ai-teal bg-ai-teal/10 text-ai-teal'
+                        ? 'border-ai-teal bg-ai-teal/5 text-ai-teal'
                         : 'border-gray-200 hover:border-gray-300'
                     }`}
                   >
-                    <Brain className="h-6 w-6 mx-auto mb-2" />
-                    <span className="text-sm font-medium">Custom Topic</span>
+                    <div className="flex items-center space-x-3">
+                      <BookOpen className="h-5 w-5" />
+                      <div>
+                        <div className="font-medium">Custom Topic</div>
+                        <div className="text-sm text-gray-600">Generate questions for a specific topic</div>
+                      </div>
+                    </div>
                   </button>
                 </div>
               </div>
 
-              {/* Input Method Content */}
+              {/* Input Method Specific Fields */}
               {inputMethod === 'existing_jd' && (
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -627,30 +531,18 @@ Education Requirements: Bachelor's degree in Computer Science or related field`;
                   </label>
                   <select
                     value={selectedJobDescription}
-          onChange={(e) => {
-            const selectedId = e.target.value;
-            setSelectedJobDescription(selectedId);
-            if (selectedId) {
-              autoSelectTopicsFromJobDescription(selectedId);
-            }
-          }}
-                    className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-ai-teal focus:border-transparent ${
-                      errors.jobDescription ? 'border-red-300' : 'border-gray-300'
-                    }`}
+                    onChange={(e) => setSelectedJobDescription(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-ai-teal focus:border-transparent"
                   >
                     <option value="">Choose a job description...</option>
-                    {jobDescriptions.length === 0 ? (
-                      <option value="" disabled>No job descriptions available</option>
-                    ) : (
-                      jobDescriptions.map(jd => (
-                        <option key={jd.id} value={jd.id}>
-                          {jd.title || 'Untitled Job Description'}
-                        </option>
-                      ))
-                    )}
+                    {jobDescriptions.map(jd => (
+                      <option key={jd.id} value={jd.id}>
+                        {jd.title} - {jd.department}
+                      </option>
+                    ))}
                   </select>
                   {errors.jobDescription && (
-                    <p className="mt-1 text-sm text-red-600">{errors.jobDescription}</p>
+                    <p className="mt-2 text-sm text-red-600">{errors.jobDescription}</p>
                   )}
                 </div>
               )}
@@ -658,7 +550,7 @@ Education Requirements: Bachelor's degree in Computer Science or related field`;
               {inputMethod === 'upload_pdf' && (
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Upload Job Description PDF *
+                    Upload PDF File *
                   </label>
                   <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
                     <input
@@ -668,42 +560,46 @@ Education Requirements: Bachelor's degree in Computer Science or related field`;
                       className="hidden"
                       id="pdf-upload"
                     />
-                    <label
-                      htmlFor="pdf-upload"
-                      className="cursor-pointer flex flex-col items-center space-y-2"
-                    >
-                      {extracting ? (
-                        <>
-                          <Loader2 className="h-8 w-8 text-ai-teal animate-spin" />
-                          <span className="text-sm text-gray-600">Extracting text...</span>
-                        </>
-                      ) : (
-                        <>
-                          <Upload className="h-8 w-8 text-gray-400" />
-                          <span className="text-sm text-gray-600">
-                            Click to upload PDF or drag and drop
-                          </span>
-                          <span className="text-xs text-gray-500">Max file size: 10MB</span>
-                        </>
-                      )}
+                    <label htmlFor="pdf-upload" className="cursor-pointer">
+                      <Upload className="h-8 w-8 text-gray-400 mx-auto mb-2" />
+                      <p className="text-sm text-gray-600">
+                        Click to upload or drag and drop
+                      </p>
+                      <p className="text-xs text-gray-500 mt-1">
+                        PDF files only, max 10MB
+                      </p>
                     </label>
                   </div>
-                  {errors.file && (
-                    <p className="mt-1 text-sm text-red-600">{errors.file}</p>
-                  )}
-                  
-                  {extractedText && (
-                    <div className="mt-4">
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Extracted Text Preview
-                      </label>
-                      <div className="bg-gray-50 border rounded-lg p-4 max-h-40 overflow-y-auto">
-                        <pre className="text-sm text-gray-700 whitespace-pre-wrap">
-                          {extractedText.substring(0, 500)}
-                          {extractedText.length > 500 && '...'}
-                        </pre>
+                  {uploadedFile && (
+                    <div className="mt-3 p-3 bg-green-50 border border-green-200 rounded-lg">
+                      <div className="flex items-center space-x-2">
+                        <CheckCircle className="h-4 w-4 text-green-600" />
+                        <span className="text-sm text-green-800">
+                          {uploadedFile.name} uploaded successfully
+                        </span>
                       </div>
                     </div>
+                  )}
+                  {extracting && (
+                    <div className="mt-3 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                      <div className="flex items-center space-x-2">
+                        <Loader2 className="h-4 w-4 text-blue-600 animate-spin" />
+                        <span className="text-sm text-blue-800">
+                          Extracting text from PDF...
+                        </span>
+                      </div>
+                    </div>
+                  )}
+                  {extractedText && (
+                    <div className="mt-3 p-3 bg-gray-50 border border-gray-200 rounded-lg">
+                      <p className="text-sm text-gray-700 font-medium mb-2">Extracted Text:</p>
+                      <p className="text-sm text-gray-600 whitespace-pre-wrap">
+                        {extractedText.substring(0, 200)}...
+                      </p>
+                    </div>
+                  )}
+                  {errors.file && (
+                    <p className="mt-2 text-sm text-red-600">{errors.file}</p>
                   )}
                 </div>
               )}
@@ -717,13 +613,11 @@ Education Requirements: Bachelor's degree in Computer Science or related field`;
                     value={manualJobDescription}
                     onChange={(e) => setManualJobDescription(e.target.value)}
                     placeholder="Enter the job description here..."
-                    className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-ai-teal focus:border-transparent resize-none ${
-                      errors.manualDescription ? 'border-red-300' : 'border-gray-300'
-                    }`}
                     rows={6}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-ai-teal focus:border-transparent"
                   />
                   {errors.manualDescription && (
-                    <p className="mt-1 text-sm text-red-600">{errors.manualDescription}</p>
+                    <p className="mt-2 text-sm text-red-600">{errors.manualDescription}</p>
                   )}
                 </div>
               )}
@@ -738,16 +632,13 @@ Education Requirements: Bachelor's degree in Computer Science or related field`;
                       type="text"
                       value={customTopic}
                       onChange={(e) => setCustomTopic(e.target.value)}
-                      placeholder="e.g., Machine Learning, Data Structures, etc."
-                      className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-ai-teal focus:border-transparent ${
-                        errors.customTopic ? 'border-red-300' : 'border-gray-300'
-                      }`}
+                      placeholder="e.g., React Development, Machine Learning, etc."
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-ai-teal focus:border-transparent"
                     />
                     {errors.customTopic && (
-                      <p className="mt-1 text-sm text-red-600">{errors.customTopic}</p>
+                      <p className="mt-2 text-sm text-red-600">{errors.customTopic}</p>
                     )}
                   </div>
-                  
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
                       Topic Insights (Optional)
@@ -755,38 +646,37 @@ Education Requirements: Bachelor's degree in Computer Science or related field`;
                     <textarea
                       value={topicInsights}
                       onChange={(e) => setTopicInsights(e.target.value)}
-                      placeholder="Provide additional context or specific areas to focus on..."
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-ai-teal focus:border-transparent resize-none"
+                      placeholder="Provide additional context or requirements for this topic..."
                       rows={4}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-ai-teal focus:border-transparent"
                     />
                   </div>
                 </div>
               )}
 
               {/* Generation Configuration */}
-              <div className="bg-gray-50 rounded-lg p-6">
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">Generation Configuration</h3>
+              <div className="space-y-6">
+                <h3 className="text-lg font-semibold text-gray-900">Generation Configuration</h3>
                 
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Total Questions *
-                    </label>
-                    <input
-                      type="number"
-                      min="5"
-                      max="50"
-                      value={totalQuestions}
-                      onChange={(e) => setTotalQuestions(parseInt(e.target.value) || 15)}
-                      className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-ai-teal focus:border-transparent ${
-                        errors.totalQuestions ? 'border-red-300' : 'border-gray-300'
-                      }`}
-                    />
-                    {errors.totalQuestions && (
-                      <p className="mt-1 text-sm text-red-600">{errors.totalQuestions}</p>
-                    )}
-                  </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Total Questions
+                  </label>
+                  <input
+                    type="number"
+                    min="5"
+                    max="50"
+                    value={totalQuestions}
+                    onChange={(e) => setTotalQuestions(parseInt(e.target.value) || 15)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-ai-teal focus:border-transparent"
+                  />
+                  <p className="text-xs text-gray-500 mt-1">Enter a number between 5 and 50</p>
+                  {errors.totalQuestions && (
+                    <p className="mt-2 text-sm text-red-600">{errors.totalQuestions}</p>
+                  )}
+                </div>
 
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
                       Technical Questions: {technicalPercentage}%
@@ -886,204 +776,81 @@ Education Requirements: Bachelor's degree in Computer Science or related field`;
                       <span>100%</span>
                     </div>
                   </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Easy Questions: {easyQuestions}
-                    </label>
-                    <input
-                      type="range"
-                      min="0"
-                      max={totalQuestions}
-                      value={easyQuestions}
-                      onChange={(e) => adjustDifficultyBalanced('easy', parseInt(e.target.value) || 0)}
-                      className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer slider"
-                      style={{
-                        background: `linear-gradient(to right, #10b981 0%, #10b981 ${(easyQuestions / totalQuestions) * 100}%, #e5e7eb ${(easyQuestions / totalQuestions) * 100}%, #e5e7eb 100%)`
-                      }}
-                    />
-                    <div className="flex justify-between text-xs text-gray-500 mt-1">
-                      <span>0</span>
-                      <span className="text-green-600 font-medium">{easyQuestions} Easy</span>
-                      <span>{totalQuestions}</span>
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Medium Questions: {mediumQuestions}
-                    </label>
-                    <input
-                      type="range"
-                      min="0"
-                      max={totalQuestions}
-                      value={mediumQuestions}
-                      onChange={(e) => adjustDifficultyBalanced('medium', parseInt(e.target.value) || 0)}
-                      className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer slider"
-                      style={{
-                        background: `linear-gradient(to right, #f59e0b 0%, #f59e0b ${(mediumQuestions / totalQuestions) * 100}%, #e5e7eb ${(mediumQuestions / totalQuestions) * 100}%, #e5e7eb 100%)`
-                      }}
-                    />
-                    <div className="flex justify-between text-xs text-gray-500 mt-1">
-                      <span>0</span>
-                      <span className="text-yellow-600 font-medium">{mediumQuestions} Medium</span>
-                      <span>{totalQuestions}</span>
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Hard Questions: {hardQuestions}
-                    </label>
-                    <input
-                      type="range"
-                      min="0"
-                      max={totalQuestions}
-                      value={hardQuestions}
-                      onChange={(e) => adjustDifficultyBalanced('hard', parseInt(e.target.value) || 0)}
-                      className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer slider"
-                      style={{
-                        background: `linear-gradient(to right, #ef4444 0%, #ef4444 ${(hardQuestions / totalQuestions) * 100}%, #e5e7eb ${(hardQuestions / totalQuestions) * 100}%, #e5e7eb 100%)`
-                      }}
-                    />
-                    <div className="flex justify-between text-xs text-gray-500 mt-1">
-                      <span>0</span>
-                      <span className="text-red-600 font-medium">{hardQuestions} Hard</span>
-                      <span>{totalQuestions}</span>
-                    </div>
-                  </div>
                 </div>
 
-                {/* Difficulty Summary */}
-                <div className="mt-4 p-3 bg-gray-50 rounded-lg">
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="text-gray-600">Difficulty Distribution:</span>
-                    <div className="flex items-center space-x-4">
-                      <span className="text-green-600 font-medium">{easyQuestions} Easy</span>
-                      <span className="text-yellow-600 font-medium">{mediumQuestions} Medium</span>
-                      <span className="text-red-600 font-medium">{hardQuestions} Hard</span>
-                    </div>
-                  </div>
-                  <div className="mt-2 flex items-center justify-between text-sm">
-                    <span className="text-gray-600">Total Questions:</span>
-                    <span className="font-medium text-green-600">
-                      {easyQuestions + mediumQuestions + hardQuestions} (Auto-balanced)
-                    </span>
-                  </div>
-                  <div className="mt-1 text-xs text-blue-600">
-                    💡 Adjust any slider to automatically balance the others
-                  </div>
-                </div>
-
-                {errors.percentages && (
-                  <p className="mt-2 text-sm text-red-600">{errors.percentages}</p>
-                )}
-                {errors.questionTypes && (
-                  <p className="mt-2 text-sm text-red-600">{errors.questionTypes}</p>
-                )}
-                {errors.difficulty && (
-                  <p className="mt-2 text-sm text-red-600">{errors.difficulty}</p>
-                )}
-              </div>
-
-              {/* Topic Selection */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-3">
-                  {inputMethod === 'existing_jd' ? 'Auto-Selected Topics (Based on Job Description)' : 'Select Topics *'}
-                </label>
-                {inputMethod === 'existing_jd' && selectedJobDescription && (
-                  <div className="mb-3 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-                    <p className="text-sm text-blue-800">
-                      <strong>Topics automatically selected based on the job description skills and requirements.</strong> 
-                      You can modify the selection below if needed.
-                    </p>
-                  </div>
-                )}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {topics.map(topic => (
-                    <div key={topic.id} className="flex items-center space-x-3 p-3 border rounded-lg">
-                      <input
-                        type="checkbox"
-                        id={`topic-${topic.id}`}
-                        checked={selectedTopics.some(t => t.topic_id === topic.id)}
-                        onChange={(e) => handleTopicSelection(topic.id, e.target.checked)}
-                        className="h-4 w-4 text-ai-teal focus:ring-ai-teal border-gray-300 rounded"
-                      />
-                      <label htmlFor={`topic-${topic.id}`} className="flex-1">
-                        <div className="flex items-center space-x-2">
-                          {topic.category === 'technical' ? (
-                            <Brain className="h-4 w-4 text-blue-600" />
-                          ) : (
-                            <FileText className="h-4 w-4 text-green-600" />
-                          )}
-                          <span className="text-sm font-medium text-gray-900">{topic.name}</span>
-                          <span className="text-xs text-gray-500 capitalize">({topic.category})</span>
-                        </div>
+                <div className="space-y-4">
+                  <h4 className="text-sm font-medium text-gray-700">Difficulty Distribution</h4>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Easy Questions: {easyQuestions}
                       </label>
+                      <input
+                        type="range"
+                        min="0"
+                        max={totalQuestions}
+                        value={easyQuestions}
+                        onChange={(e) => adjustDifficultyBalanced('easy', parseInt(e.target.value) || 0)}
+                        className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer slider"
+                        style={{
+                          background: `linear-gradient(to right, #10b981 0%, #10b981 ${(easyQuestions / totalQuestions) * 100}%, #e5e7eb ${(easyQuestions / totalQuestions) * 100}%, #e5e7eb 100%)`
+                        }}
+                      />
+                      <div className="flex justify-between text-xs text-gray-500 mt-1">
+                        <span>0</span>
+                        <span className="text-green-600 font-medium">{easyQuestions} Easy</span>
+                        <span>{totalQuestions}</span>
+                      </div>
                     </div>
-                  ))}
-                </div>
-                {errors.topics && (
-                  <p className="mt-2 text-sm text-red-600">{errors.topics}</p>
-                )}
 
-                {/* Topic Configuration */}
-                {selectedTopics.length > 0 && (
-                  <div className="mt-4 space-y-3">
-                    <h4 className="text-sm font-medium text-gray-700">Topic Configuration</h4>
-                    {selectedTopics.map(topic => {
-                      const topicInfo = topics.find(t => t.id === topic.topic_id);
-                      return (
-                        <div key={topic.topic_id} className="bg-white border rounded-lg p-4">
-                          <div className="flex items-center justify-between mb-3">
-                            <span className="text-sm font-medium text-gray-900">
-                              {topicInfo?.name}
-                            </span>
-                            <button
-                              onClick={() => handleTopicSelection(topic.topic_id, false)}
-                              className="text-red-600 hover:text-red-800"
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </button>
-                          </div>
-                          <div className="grid grid-cols-3 gap-4">
-                            <div>
-                              <label className="block text-xs text-gray-600 mb-1">Weight (%)</label>
-                              <input
-                                type="number"
-                                min="1"
-                                max="100"
-                                value={topic.weight}
-                                onChange={(e) => updateTopicConfig(topic.topic_id, 'weight', parseInt(e.target.value) || 10)}
-                                className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-ai-teal focus:border-transparent"
-                              />
-                            </div>
-                            <div>
-                              <label className="block text-xs text-gray-600 mb-1">Min Questions</label>
-                              <input
-                                type="number"
-                                min="1"
-                                value={topic.min_questions}
-                                onChange={(e) => updateTopicConfig(topic.topic_id, 'min_questions', parseInt(e.target.value) || 1)}
-                                className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-ai-teal focus:border-transparent"
-                              />
-                            </div>
-                            <div>
-                              <label className="block text-xs text-gray-600 mb-1">Max Questions</label>
-                              <input
-                                type="number"
-                                min="1"
-                                value={topic.max_questions}
-                                onChange={(e) => updateTopicConfig(topic.topic_id, 'max_questions', parseInt(e.target.value) || 3)}
-                                className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-ai-teal focus:border-transparent"
-                              />
-                            </div>
-                          </div>
-                        </div>
-                      );
-                    })}
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Medium Questions: {mediumQuestions}
+                      </label>
+                      <input
+                        type="range"
+                        min="0"
+                        max={totalQuestions}
+                        value={mediumQuestions}
+                        onChange={(e) => adjustDifficultyBalanced('medium', parseInt(e.target.value) || 0)}
+                        className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer slider"
+                        style={{
+                          background: `linear-gradient(to right, #f59e0b 0%, #f59e0b ${(mediumQuestions / totalQuestions) * 100}%, #e5e7eb ${(mediumQuestions / totalQuestions) * 100}%, #e5e7eb 100%)`
+                        }}
+                      />
+                      <div className="flex justify-between text-xs text-gray-500 mt-1">
+                        <span>0</span>
+                        <span className="text-yellow-600 font-medium">{mediumQuestions} Medium</span>
+                        <span>{totalQuestions}</span>
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Hard Questions: {hardQuestions}
+                      </label>
+                      <input
+                        type="range"
+                        min="0"
+                        max={totalQuestions}
+                        value={hardQuestions}
+                        onChange={(e) => adjustDifficultyBalanced('hard', parseInt(e.target.value) || 0)}
+                        className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer slider"
+                        style={{
+                          background: `linear-gradient(to right, #ef4444 0%, #ef4444 ${(hardQuestions / totalQuestions) * 100}%, #e5e7eb ${(hardQuestions / totalQuestions) * 100}%, #e5e7eb 100%)`
+                        }}
+                      />
+                      <div className="flex justify-between text-xs text-gray-500 mt-1">
+                        <span>0</span>
+                        <span className="text-red-600 font-medium">{hardQuestions} Hard</span>
+                        <span>{totalQuestions}</span>
+                      </div>
+                    </div>
                   </div>
-                )}
+                  {errors.difficulty && (
+                    <p className="mt-2 text-sm text-red-600">{errors.difficulty}</p>
+                  )}
+                </div>
               </div>
             </div>
           ) : (
@@ -1097,120 +864,160 @@ Education Requirements: Bachelor's degree in Computer Science or related field`;
                   onClick={() => setShowPreview(false)}
                   className="text-ai-teal hover:text-ai-teal/80 text-sm font-medium"
                 >
-                  ← Back to Configuration
+                  Back to Configuration
                 </button>
               </div>
 
-              <div className="space-y-4 max-h-96 overflow-y-auto">
+              <div className="space-y-4">
                 {generatedQuestions.map((question, index) => (
-                  <div key={index} className="bg-gray-50 border rounded-lg p-4">
+                  <div key={index} className="bg-gray-50 border border-gray-200 rounded-lg p-4">
                     <div className="flex items-start justify-between mb-3">
                       <div className="flex items-center space-x-2">
-                        <span className="text-sm font-medium text-gray-600">Q{index + 1}</span>
-                        <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                          question.question_type === 'mcq' 
-                            ? 'bg-blue-100 text-blue-600' 
-                            : 'bg-green-100 text-green-600'
-                        }`}>
-                          {question.question_type.toUpperCase()}
+                        <span className="bg-ai-teal text-white text-xs px-2 py-1 rounded">
+                          {question.question_type?.toUpperCase()}
                         </span>
-                        <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                          question.difficulty_level === 'easy' 
-                            ? 'bg-green-100 text-green-600'
-                            : question.difficulty_level === 'medium'
-                            ? 'bg-yellow-100 text-yellow-600'
-                            : 'bg-red-100 text-red-600'
+                        <span className={`text-xs px-2 py-1 rounded ${
+                          question.difficulty_level === 'easy' ? 'bg-green-100 text-green-800' :
+                          question.difficulty_level === 'medium' ? 'bg-yellow-100 text-yellow-800' :
+                          'bg-red-100 text-red-800'
                         }`}>
-                          {question.difficulty_level}
+                          {question.difficulty_level?.toUpperCase()}
                         </span>
-                        <span className="text-xs text-gray-500">{question.points} pts</span>
+                        <span className="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded">
+                          {question.question_category?.toUpperCase()}
+                        </span>
+                      </div>
+                      <div className="text-sm text-gray-500">
+                        {question.points} points • {question.time_limit_seconds}s
                       </div>
                     </div>
-
-                    <p className="text-sm text-gray-900 mb-3">{question.question_text}</p>
-
-                    {question.question_type === 'mcq' && question.mcq_options && (
+                    
+                    <p className="text-gray-900 font-medium mb-2">
+                      {question.question_text}
+                    </p>
+                    
+                    {question.mcq_options && question.mcq_options.length > 0 && (
                       <div className="space-y-1 mb-3">
-                        {question.mcq_options.map((option: any) => (
-                          <div key={option.option} className="flex items-center space-x-2">
-                            <span className="text-xs font-medium text-gray-600 w-4">
-                              {option.option}.
-                            </span>
-                            <span className={`text-xs ${
-                              option.option === question.correct_answer 
-                                ? 'text-green-600 font-medium' 
-                                : 'text-gray-700'
-                            }`}>
+                        {question.mcq_options.map((option: any, optIndex: number) => (
+                          <div key={optIndex} className="flex items-center space-x-2 text-sm">
+                            <span className="font-medium">{option.option}.</span>
+                            <span className={option.option === question.correct_answer ? 'text-green-600 font-medium' : 'text-gray-600'}>
                               {option.text}
                             </span>
                             {option.option === question.correct_answer && (
-                              <CheckCircle className="h-3 w-3 text-green-600" />
+                              <CheckCircle className="h-4 w-4 text-green-600" />
                             )}
                           </div>
                         ))}
                       </div>
                     )}
-
-                    <div className="text-xs text-gray-500">
-                      <span>Topic: {question.topic}</span>
-                      {question.subtopic && <span> • Subtopic: {question.subtopic}</span>}
-                      {question.tags && question.tags.length > 0 && (
-                        <span> • Tags: {question.tags.join(', ')}</span>
-                      )}
-                    </div>
+                    
+                    {question.answer_explanation && (
+                      <div className="text-sm text-gray-600 bg-white p-3 rounded border">
+                        <strong>Explanation:</strong> {question.answer_explanation}
+                      </div>
+                    )}
+                    
+                    {question.job_relevance && (
+                      <div className="text-sm text-blue-600 bg-blue-50 p-3 rounded border mt-2">
+                        <strong>Job Relevance:</strong> {question.job_relevance}
+                      </div>
+                    )}
                   </div>
                 ))}
+              </div>
+            </div>
+          )}
+
+          {/* Error Messages */}
+          {errors.general && (
+            <div className="mt-4 p-4 bg-red-50 border border-red-200 rounded-lg">
+              <div className="flex items-center space-x-2">
+                <AlertCircle className="h-5 w-5 text-red-600" />
+                <span className="text-sm text-red-800">{errors.general}</span>
+              </div>
+            </div>
+          )}
+
+          {errors.percentages && (
+            <div className="mt-4 p-4 bg-red-50 border border-red-200 rounded-lg">
+              <div className="flex items-center space-x-2">
+                <AlertCircle className="h-5 w-5 text-red-600" />
+                <span className="text-sm text-red-800">{errors.percentages}</span>
+              </div>
+            </div>
+          )}
+
+          {errors.questionTypes && (
+            <div className="mt-4 p-4 bg-red-50 border border-red-200 rounded-lg">
+              <div className="flex items-center space-x-2">
+                <AlertCircle className="h-5 w-5 text-red-600" />
+                <span className="text-sm text-red-800">{errors.questionTypes}</span>
               </div>
             </div>
           )}
         </div>
 
         {/* Footer */}
-        <div className="flex items-center justify-end space-x-3 p-6 border-t border-gray-200">
-          <button
-            onClick={onClose}
-            className="px-4 py-2 text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
-          >
-            Cancel
-          </button>
-          
-          {!showPreview ? (
+        <div className="flex items-center justify-between p-6 border-t border-gray-200 flex-shrink-0">
+          <div className="text-sm text-gray-600">
+            {!showPreview ? (
+              <>
+                Total: {totalQuestions} questions • 
+                Technical: {Math.round(totalQuestions * technicalPercentage / 100)} • 
+                Aptitude: {Math.round(totalQuestions * aptitudePercentage / 100)} • 
+                MCQ: {Math.round(totalQuestions * mcqPercentage / 100)} • 
+                Text: {Math.round(totalQuestions * textPercentage / 100)}
+              </>
+            ) : (
+              `${generatedQuestions.length} questions generated successfully`
+            )}
+          </div>
+          <div className="flex items-center space-x-3">
             <button
-              onClick={handleGenerateQuestions}
-              disabled={generating || loading}
-              className="px-4 py-2 bg-ai-teal text-white rounded-lg hover:bg-ai-teal/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
+              onClick={onClose}
+              className="px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
             >
-              {generating ? (
-                <>
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                  <span>Generating...</span>
-                </>
-              ) : (
-                <>
-                  <Brain className="h-4 w-4" />
-                  <span>Generate Questions</span>
-                </>
-              )}
+              Cancel
             </button>
-          ) : (
-            <button
-              onClick={handleSaveQuestions}
-              disabled={generating}
-              className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
-            >
-              {generating ? (
-                <>
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                  <span>Saving...</span>
-                </>
-              ) : (
-                <>
-                  <CheckCircle className="h-4 w-4" />
-                  <span>Save Questions</span>
-                </>
-              )}
-            </button>
-          )}
+            {!showPreview ? (
+              <button
+                onClick={handleGenerateQuestions}
+                disabled={generating || loading}
+                className="px-6 py-2 bg-ai-teal text-white rounded-lg hover:bg-ai-teal/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
+              >
+                {generating ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    <span>Generating...</span>
+                  </>
+                ) : (
+                  <>
+                    <Brain className="h-4 w-4" />
+                    <span>Generate Questions</span>
+                  </>
+                )}
+              </button>
+            ) : (
+              <button
+                onClick={handleSaveQuestions}
+                disabled={generating || loading}
+                className="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
+              >
+                {generating ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    <span>Saving...</span>
+                  </>
+                ) : (
+                  <>
+                    <CheckCircle className="h-4 w-4" />
+                    <span>Save Questions</span>
+                  </>
+                )}
+              </button>
+            )}
+          </div>
         </div>
       </div>
     </div>
