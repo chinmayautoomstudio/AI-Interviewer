@@ -1,0 +1,204 @@
+{
+  "name": "AI Question Generation Workflow",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "generate-questions",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "webhook-trigger",
+      "name": "Webhook Trigger",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [240, 300],
+      "webhookId": "generate-questions"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{ $json.job_description }}",
+              "operation": "isNotEmpty"
+            }
+          ]
+        }
+      },
+      "id": "validate-input",
+      "name": "Validate Input",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [460, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Build AI prompt for question generation\nconst jobDesc = $input.first().json.job_description;\nconst config = $input.first().json.generation_config;\nconst inputMethod = $input.first().json.input_method;\nconst sourceInfo = $input.first().json.source_info;\n\n// Create comprehensive prompt\nlet prompt = `You are an expert technical interviewer and assessment designer. Generate high-quality exam questions based on the following job description and requirements.\n\n`;\n\n// Add job description context\nprompt += `JOB DESCRIPTION:\n`;\nprompt += `Title: ${jobDesc.title}\n`;\nprompt += `Description: ${jobDesc.description}\n`;\nprompt += `Required Skills: ${jobDesc.required_skills.join(', ')}\n`;\nprompt += `Preferred Skills: ${jobDesc.preferred_skills.join(', ')}\n`;\nprompt += `Experience Level: ${jobDesc.experience_level}\n`;\nprompt += `Technical Stack: ${jobDesc.technical_stack.join(', ')}\n`;\nprompt += `Key Responsibilities: ${jobDesc.key_responsibilities.join(', ')}\n\n`;\n\n// Add generation requirements\nprompt += `GENERATION REQUIREMENTS:\n`;\nprompt += `Total Questions: ${config.total_questions}\n`;\nprompt += `Technical Questions: ${config.technical_percentage}%\n`;\nprompt += `Aptitude Questions: ${config.aptitude_percentage}%\n`;\nprompt += `Difficulty Distribution: Easy ${config.difficulty_distribution.easy}%, Medium ${config.difficulty_distribution.medium}%, Hard ${config.difficulty_distribution.hard}%\n`;\nprompt += `Question Types: MCQ ${config.question_types.mcq}%, Text ${config.question_types.text}%\n\n`;\n\n// Add topic distribution\nif (config.topics && config.topics.length > 0) {\n  prompt += `TOPIC DISTRIBUTION:\n`;\n  config.topics.forEach(topic => {\n    prompt += `- ${topic.name}: ${topic.min_questions}-${topic.max_questions} questions (weight: ${topic.weight}%)\n`;\n  });\n  prompt += `\n`;\n}\n\n// Add input method specific context\nif (inputMethod === 'upload_pdf' && sourceInfo.extracted_text) {\n  prompt += `ADDITIONAL CONTEXT FROM UPLOADED DOCUMENT:\n${sourceInfo.extracted_text}\n\n`;\n} else if (inputMethod === 'manual_input' && sourceInfo.manual_description) {\n  prompt += `ADDITIONAL MANUAL DESCRIPTION:\n${sourceInfo.manual_description}\n\n`;\n} else if (inputMethod === 'custom_topic' && sourceInfo.custom_topic) {\n  prompt += `CUSTOM TOPIC FOCUS:\nTopic: ${sourceInfo.custom_topic}\nInsights: ${sourceInfo.topic_insights || 'General knowledge'}\n\n`;\n}\n\n// Add question format requirements\nprompt += `QUESTION FORMAT REQUIREMENTS:\n`;\nprompt += `1. Each question must be clear, unambiguous, and directly relevant to the job role\n`;\nprompt += `2. MCQ questions should have 4 options (A, B, C, D) with only one correct answer\n`;\nprompt += `3. Text questions should require detailed explanations or code examples\n`;\nprompt += `4. Include appropriate difficulty level based on experience level\n`;\nprompt += `5. Provide comprehensive answer explanations\n`;\nprompt += `6. Add relevant tags for categorization\n\n`;\n\nprompt += `Please generate exactly ${config.total_questions} questions following these requirements. Return the response in the following JSON format:\n\n`;\nprompt += `{\n  \"generated_questions\": [\n    {\n      \"question_text\": \"Question text here\",\n      \"question_type\": \"mcq\" or \"text\",\n      \"question_category\": \"technical\" or \"aptitude\",\n      \"difficulty_level\": \"easy\", \"medium\", or \"hard\",\n      \"topic\": \"Topic name\",\n      \"subtopic\": \"Subtopic (optional)\",\n      \"points\": 1-5,\n      \"time_limit_seconds\": 30-180,\n      \"mcq_options\": [\n        {\"option\": \"A\", \"text\": \"Option A text\"},\n        {\"option\": \"B\", \"text\": \"Option B text\"},\n        {\"option\": \"C\", \"text\": \"Option C text\"},\n        {\"option\": \"D\", \"text\": \"Option D text\"}\n      ],\n      \"correct_answer\": \"A\", \"B\", \"C\", \"D\" (for MCQ) or expected answer text (for text questions),\n      \"answer_explanation\": \"Detailed explanation of the correct answer\",\n      \"tags\": [\"tag1\", \"tag2\", \"tag3\"]\n    }\n  ],\n  \"generation_metadata\": {\n    \"total_generated\": ${config.total_questions},\n    \"technical_count\": number,\n    \"aptitude_count\": number,\n    \"mcq_count\": number,\n    \"text_count\": number,\n    \"difficulty_breakdown\": {\n      \"easy\": number,\n      \"medium\": number,\n      \"hard\": number\n    },\n    \"topic_distribution\": {\n      \"topic_name\": count\n    },\n    \"generation_time\": \"ISO timestamp\",\n    \"ai_model_used\": \"gpt-4\",\n    \"confidence_score\": 0.0-1.0\n  }\n}`;\n\nreturn {\n  prompt: prompt,\n  originalRequest: $input.first().json\n};"
+      },
+      "id": "build-prompt",
+      "name": "Build AI Prompt",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [680, 300]
+    },
+    {
+      "parameters": {
+        "resource": "chat",
+        "operation": "create",
+        "model": "gpt-4",
+        "messages": {
+          "values": [
+            {
+              "role": "system",
+              "content": "You are an expert technical interviewer and assessment designer. Generate high-quality, job-relevant exam questions with accurate answers and explanations."
+            },
+            {
+              "role": "user",
+              "content": "={{ $json.prompt }}"
+            }
+          ]
+        },
+        "options": {
+          "temperature": 0.7,
+          "maxTokens": 4000
+        }
+      },
+      "id": "openai-chat",
+      "name": "OpenAI Chat",
+      "type": "n8n-nodes-base.openAi",
+      "typeVersion": 1,
+      "position": [900, 300],
+      "credentials": {
+        "openAiApi": {
+          "id": "openai-credentials",
+          "name": "OpenAI API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Parse and validate AI response\nconst aiResponse = $input.first().json.choices[0].message.content;\n\ntry {\n  // Parse JSON response\n  const parsedResponse = JSON.parse(aiResponse);\n  \n  // Validate structure\n  if (!parsedResponse.generated_questions || !Array.isArray(parsedResponse.generated_questions)) {\n    throw new Error('Invalid response structure: missing generated_questions array');\n  }\n  \n  if (!parsedResponse.generation_metadata) {\n    throw new Error('Invalid response structure: missing generation_metadata');\n  }\n  \n  // Validate each question\n  const validatedQuestions = parsedResponse.generated_questions.map((question, index) => {\n    const errors = [];\n    \n    // Required fields validation\n    if (!question.question_text) errors.push('Missing question_text');\n    if (!question.question_type || !['mcq', 'text'].includes(question.question_type)) {\n      errors.push('Invalid question_type');\n    }\n    if (!question.question_category || !['technical', 'aptitude'].includes(question.question_category)) {\n      errors.push('Invalid question_category');\n    }\n    if (!question.difficulty_level || !['easy', 'medium', 'hard'].includes(question.difficulty_level)) {\n      errors.push('Invalid difficulty_level');\n    }\n    if (!question.correct_answer) errors.push('Missing correct_answer');\n    if (!question.answer_explanation) errors.push('Missing answer_explanation');\n    \n    // MCQ specific validation\n    if (question.question_type === 'mcq') {\n      if (!question.mcq_options || !Array.isArray(question.mcq_options) || question.mcq_options.length !== 4) {\n        errors.push('MCQ questions must have exactly 4 options');\n      }\n      if (!['A', 'B', 'C', 'D'].includes(question.correct_answer)) {\n        errors.push('MCQ correct_answer must be A, B, C, or D');\n      }\n    }\n    \n    if (errors.length > 0) {\n      throw new Error(`Question ${index + 1} validation failed: ${errors.join(', ')}`);\n    }\n    \n    // Set defaults for optional fields\n    return {\n      ...question,\n      points: question.points || 1,\n      time_limit_seconds: question.time_limit_seconds || 60,\n      tags: question.tags || [],\n      subtopic: question.subtopic || null\n    };\n  });\n  \n  // Update metadata with actual counts\n  const metadata = {\n    ...parsedResponse.generation_metadata,\n    total_generated: validatedQuestions.length,\n    technical_count: validatedQuestions.filter(q => q.question_category === 'technical').length,\n    aptitude_count: validatedQuestions.filter(q => q.question_category === 'aptitude').length,\n    mcq_count: validatedQuestions.filter(q => q.question_type === 'mcq').length,\n    text_count: validatedQuestions.filter(q => q.question_type === 'text').length,\n    difficulty_breakdown: {\n      easy: validatedQuestions.filter(q => q.difficulty_level === 'easy').length,\n      medium: validatedQuestions.filter(q => q.difficulty_level === 'medium').length,\n      hard: validatedQuestions.filter(q => q.difficulty_level === 'hard').length\n    },\n    generation_time: new Date().toISOString(),\n    ai_model_used: 'gpt-4'\n  };\n  \n  return {\n    generated_questions: validatedQuestions,\n    generation_metadata: metadata,\n    success: true\n  };\n  \n} catch (error) {\n  console.error('Error parsing AI response:', error);\n  return {\n    error: error.message,\n    success: false,\n    raw_response: aiResponse\n  };\n}"
+      },
+      "id": "parse-response",
+      "name": "Parse & Validate Response",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1120, 300]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ $json }}"
+      },
+      "id": "success-response",
+      "name": "Success Response",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [1340, 200]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ { \"error\": \"Invalid input data\", \"message\": \"Job description is required\" } }}"
+      },
+      "id": "error-response",
+      "name": "Error Response",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [1340, 400]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ { \"error\": \"AI generation failed\", \"message\": $json.error, \"raw_response\": $json.raw_response } }}"
+      },
+      "id": "ai-error-response",
+      "name": "AI Error Response",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [1340, 500]
+    }
+  ],
+  "connections": {
+    "Webhook Trigger": {
+      "main": [
+        [
+          {
+            "node": "Validate Input",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate Input": {
+      "main": [
+        [
+          {
+            "node": "Build AI Prompt",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Error Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build AI Prompt": {
+      "main": [
+        [
+          {
+            "node": "OpenAI Chat",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat": {
+      "main": [
+        [
+          {
+            "node": "Parse & Validate Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse & Validate Response": {
+      "main": [
+        [
+          {
+            "node": "Success Response",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "AI Error Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "1",
+  "meta": {
+    "templateCredsSetupCompleted": true
+  },
+  "id": "question-generation-workflow",
+  "tags": ["exam", "ai", "question-generation"]
+}

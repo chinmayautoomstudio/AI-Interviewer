@@ -28,6 +28,13 @@ import HelpSupportPage from './pages/HelpSupportPage';
 import RegisterPage from './pages/RegisterPage';
 import Header from './components/layout/Header';
 import Sidebar from './components/layout/Sidebar';
+// Exam pages
+import ExamDashboardPage from './pages/exam/ExamDashboardPage';
+import QuestionBankPage from './pages/exam/QuestionBankPage';
+import TopicManagementPage from './pages/exam/TopicManagementPage';
+import ExamSessionsPage from './pages/exam/ExamSessionsPage';
+import ExamResultsPage from './pages/exam/ExamResultsPage';
+import ExamAnalyticsPage from './pages/exam/ExamAnalyticsPage';
 import LoadingSpinner from './components/ui/LoadingSpinner';
 
 const AppContent: React.FC = () => {
@@ -80,6 +87,14 @@ const AppContent: React.FC = () => {
             <Route path="/job-descriptions/edit/:id" element={<JobDescriptionsPage />} />
             <Route path="/ai-agents" element={<AIAgentsPage />} />
             <Route path="/admin-interview-test" element={<AdminInterviewTestPage />} />
+            {/* Exam Routes */}
+            <Route path="/exams" element={<Navigate to="/exams/dashboard" replace />} />
+            <Route path="/exams/dashboard" element={<ExamDashboardPage />} />
+            <Route path="/exams/questions" element={<QuestionBankPage />} />
+            <Route path="/exams/topics" element={<TopicManagementPage />} />
+            <Route path="/exams/sessions" element={<ExamSessionsPage />} />
+            <Route path="/exams/results" element={<ExamResultsPage />} />
+            <Route path="/exams/analytics" element={<ExamAnalyticsPage />} />
             <Route path="/settings" element={<SettingsPage />} />
             <Route path="/settings/two-factor" element={<TwoFactorSettingsPage />} />
             <Route path="/privacy-policy" element={<PrivacyPolicyPage />} />

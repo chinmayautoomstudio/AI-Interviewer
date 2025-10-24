@@ -1,0 +1,212 @@
+{
+  "name": "AI Answer Evaluation Workflow",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "evaluate-answer",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "webhook-trigger",
+      "name": "Webhook Trigger",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [240, 300],
+      "webhookId": "evaluate-answer"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{ $json.question_text }}",
+              "operation": "isNotEmpty"
+            },
+            {
+              "value1": "={{ $json.candidate_answer }}",
+              "operation": "isNotEmpty"
+            },
+            {
+              "value1": "={{ $json.correct_answer }}",
+              "operation": "isNotEmpty"
+            }
+          ]
+        }
+      },
+      "id": "validate-input",
+      "name": "Validate Input",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [460, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Build AI prompt for answer evaluation\nconst request = $input.first().json;\n\n// Create comprehensive evaluation prompt\nlet prompt = `You are an expert technical evaluator. Evaluate the candidate's answer against the correct answer and provide detailed feedback.\n\n`;\n\n// Add question context\nprompt += `QUESTION:\n${request.question_text}\n\n`;\nprompt += `QUESTION TYPE: ${request.question_type.toUpperCase()}\n`;\nprompt += `DIFFICULTY LEVEL: ${request.difficulty_level.toUpperCase()}\n`;\nprompt += `POINTS: ${request.points}\n\n`;\n\n// Add correct answer\nprompt += `CORRECT ANSWER:\n${request.correct_answer}\n\n`;\n\n// Add candidate answer\nprompt += `CANDIDATE ANSWER:\n${request.candidate_answer}\n\n`;\n\n// Add evaluation criteria\nprompt += `EVALUATION CRITERIA:\n`;\nprompt += `- Accuracy: ${(request.evaluation_criteria.accuracy_weight * 100).toFixed(0)}% weight\n`;\nprompt += `- Completeness: ${(request.evaluation_criteria.completeness_weight * 100).toFixed(0)}% weight\n`;\nprompt += `- Clarity: ${(request.evaluation_criteria.clarity_weight * 100).toFixed(0)}% weight\n`;\nprompt += `- Example/Detail: ${(request.evaluation_criteria.example_weight * 100).toFixed(0)}% weight\n\n`;\n\n// Add evaluation instructions\nprompt += `EVALUATION INSTRUCTIONS:\n`;\nprompt += `1. For MCQ questions: Check if the candidate selected the correct option\n`;\nprompt += `2. For text questions: Evaluate based on accuracy, completeness, clarity, and examples\n`;\nprompt += `3. Consider partial credit for partially correct answers\n`;\nprompt += `4. Provide constructive feedback highlighting strengths and areas for improvement\n`;\nprompt += `5. Identify key concepts that were correctly or incorrectly addressed\n`;\nprompt += `6. Be fair and objective in your evaluation\n\n`;\n\nprompt += `Please evaluate the candidate's answer and return the response in the following JSON format:\n\n`;\nprompt += `{\n  \"is_correct\": true/false,\n  \"score\": 0.0-${request.points},\n  \"max_score\": ${request.points},\n  \"percentage\": 0.0-100.0,\n  \"detailed_scores\": {\n    \"accuracy\": 0.0-1.0,\n    \"completeness\": 0.0-1.0,\n    \"clarity\": 0.0-1.0,\n    \"example\": 0.0-1.0\n  },\n  \"feedback\": {\n    \"strengths\": [\"List of what the candidate did well\"],\n    \"improvements\": [\"List of areas for improvement\"],\n    \"overall_feedback\": \"Comprehensive feedback summary\"\n  },\n  \"keywords_found\": [\"List of key concepts correctly mentioned\"],\n  \"keywords_missing\": [\"List of key concepts that were missed\"],\n  \"evaluation_confidence\": 0.0-1.0\n}`;\n\nreturn {\n  prompt: prompt,\n  originalRequest: request\n};"
+      },
+      "id": "build-evaluation-prompt",
+      "name": "Build Evaluation Prompt",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [680, 300]
+    },
+    {
+      "parameters": {
+        "resource": "chat",
+        "operation": "create",
+        "model": "gpt-4",
+        "messages": {
+          "values": [
+            {
+              "role": "system",
+              "content": "You are an expert technical evaluator. Provide fair, objective, and constructive feedback on candidate answers. Focus on accuracy, completeness, clarity, and practical understanding."
+            },
+            {
+              "role": "user",
+              "content": "={{ $json.prompt }}"
+            }
+          ]
+        },
+        "options": {
+          "temperature": 0.3,
+          "maxTokens": 2000
+        }
+      },
+      "id": "openai-evaluation",
+      "name": "OpenAI Evaluation",
+      "type": "n8n-nodes-base.openAi",
+      "typeVersion": 1,
+      "position": [900, 300],
+      "credentials": {
+        "openAiApi": {
+          "id": "openai-credentials",
+          "name": "OpenAI API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Parse and validate AI evaluation response\nconst aiResponse = $input.first().json.choices[0].message.content;\nconst originalRequest = $input.first().json.originalRequest;\n\ntry {\n  // Parse JSON response\n  const parsedResponse = JSON.parse(aiResponse);\n  \n  // Validate structure\n  const requiredFields = ['is_correct', 'score', 'max_score', 'percentage', 'detailed_scores', 'feedback'];\n  for (const field of requiredFields) {\n    if (parsedResponse[field] === undefined) {\n      throw new Error(`Missing required field: ${field}`);\n    }\n  }\n  \n  // Validate score ranges\n  if (parsedResponse.score < 0 || parsedResponse.score > originalRequest.points) {\n    throw new Error(`Invalid score: ${parsedResponse.score}. Must be between 0 and ${originalRequest.points}`);\n  }\n  \n  if (parsedResponse.percentage < 0 || parsedResponse.percentage > 100) {\n    throw new Error(`Invalid percentage: ${parsedResponse.percentage}. Must be between 0 and 100`);\n  }\n  \n  // Validate detailed scores\n  const scoreFields = ['accuracy', 'completeness', 'clarity', 'example'];\n  for (const field of scoreFields) {\n    if (parsedResponse.detailed_scores[field] < 0 || parsedResponse.detailed_scores[field] > 1) {\n      throw new Error(`Invalid detailed score for ${field}: ${parsedResponse.detailed_scores[field]}. Must be between 0 and 1`);\n    }\n  }\n  \n  // Validate feedback structure\n  if (!Array.isArray(parsedResponse.feedback.strengths)) {\n    throw new Error('Feedback strengths must be an array');\n  }\n  if (!Array.isArray(parsedResponse.feedback.improvements)) {\n    throw new Error('Feedback improvements must be an array');\n  }\n  \n  // Set defaults for optional fields\n  const result = {\n    is_correct: parsedResponse.is_correct,\n    score: Math.round(parsedResponse.score * 100) / 100, // Round to 2 decimal places\n    max_score: originalRequest.points,\n    percentage: Math.round(parsedResponse.percentage * 100) / 100,\n    detailed_scores: {\n      accuracy: Math.round(parsedResponse.detailed_scores.accuracy * 100) / 100,\n      completeness: Math.round(parsedResponse.detailed_scores.completeness * 100) / 100,\n      clarity: Math.round(parsedResponse.detailed_scores.clarity * 100) / 100,\n      example: Math.round(parsedResponse.detailed_scores.example * 100) / 100\n    },\n    feedback: {\n      strengths: parsedResponse.feedback.strengths || [],\n      improvements: parsedResponse.feedback.improvements || [],\n      overall_feedback: parsedResponse.feedback.overall_feedback || 'No additional feedback provided.'\n    },\n    keywords_found: parsedResponse.keywords_found || [],\n    keywords_missing: parsedResponse.keywords_missing || [],\n    evaluation_confidence: Math.round((parsedResponse.evaluation_confidence || 0.8) * 100) / 100\n  };\n  \n  // Additional validation for MCQ questions\n  if (originalRequest.question_type === 'mcq') {\n    const correctOptions = ['A', 'B', 'C', 'D'];\n    if (!correctOptions.includes(originalRequest.correct_answer)) {\n      throw new Error(`Invalid correct answer for MCQ: ${originalRequest.correct_answer}`);\n    }\n    \n    // For MCQ, is_correct should be boolean based on exact match\n    if (originalRequest.candidate_answer.trim().toUpperCase() === originalRequest.correct_answer.trim().toUpperCase()) {\n      result.is_correct = true;\n      result.score = originalRequest.points;\n      result.percentage = 100;\n    } else {\n      result.is_correct = false;\n      result.score = 0;\n      result.percentage = 0;\n    }\n  }\n  \n  return {\n    ...result,\n    success: true,\n    question_id: originalRequest.question_id,\n    evaluated_at: new Date().toISOString()\n  };\n  \n} catch (error) {\n  console.error('Error parsing AI evaluation response:', error);\n  return {\n    error: error.message,\n    success: false,\n    raw_response: aiResponse,\n    question_id: originalRequest.question_id\n  };\n}"
+      },
+      "id": "parse-evaluation",
+      "name": "Parse & Validate Evaluation",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1120, 300]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ $json }}"
+      },
+      "id": "success-response",
+      "name": "Success Response",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [1340, 200]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ { \"error\": \"Invalid input data\", \"message\": \"Question text, candidate answer, and correct answer are required\" } }}"
+      },
+      "id": "error-response",
+      "name": "Error Response",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [1340, 400]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ { \"error\": \"AI evaluation failed\", \"message\": $json.error, \"raw_response\": $json.raw_response } }}"
+      },
+      "id": "ai-error-response",
+      "name": "AI Error Response",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [1340, 500]
+    }
+  ],
+  "connections": {
+    "Webhook Trigger": {
+      "main": [
+        [
+          {
+            "node": "Validate Input",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate Input": {
+      "main": [
+        [
+          {
+            "node": "Build Evaluation Prompt",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Error Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Evaluation Prompt": {
+      "main": [
+        [
+          {
+            "node": "OpenAI Evaluation",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Evaluation": {
+      "main": [
+        [
+          {
+            "node": "Parse & Validate Evaluation",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse & Validate Evaluation": {
+      "main": [
+        [
+          {
+            "node": "Success Response",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "AI Error Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "1",
+  "meta": {
+    "templateCredsSetupCompleted": true
+  },
+  "id": "answer-evaluation-workflow",
+  "tags": ["exam", "ai", "answer-evaluation"]
+}

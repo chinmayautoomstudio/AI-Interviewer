@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { 
   LayoutDashboard, 
@@ -9,7 +9,13 @@ import {
   Settings,
   Bot,
   TestTube,
-  X
+  X,
+  BookOpen,
+  ClipboardList,
+  Brain,
+  TrendingUp,
+  ChevronDown,
+  ChevronRight
 } from 'lucide-react';
 import { useLayout } from '../../contexts/LayoutContext';
 
@@ -22,12 +28,21 @@ const Sidebar: React.FC<SidebarProps> = () => {
   const navigate = useNavigate();
   const { sidebarOpen, setSidebarOpen, isMobile } = useLayout();
   const currentPath = location.pathname;
+  const [expandedMenus, setExpandedMenus] = useState<string[]>([]);
   
   const navigation = [
     { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
     { name: 'Open Role - JD', href: '/job-descriptions', icon: FileText },
     { name: 'Candidates', href: '/candidates', icon: Users },
     { name: 'Interviewer', href: '/interviews', icon: Calendar },
+    { name: 'Exams', href: '/exams', icon: BookOpen, submenu: [
+      { name: 'Exam Dashboard', href: '/exams/dashboard', icon: LayoutDashboard },
+      { name: 'Question Bank', href: '/exams/questions', icon: Brain },
+      { name: 'Topic Management', href: '/exams/topics', icon: ClipboardList },
+      { name: 'Exam Sessions', href: '/exams/sessions', icon: Calendar },
+      { name: 'Exam Results', href: '/exams/results', icon: TrendingUp },
+      { name: 'Exam Analytics', href: '/exams/analytics', icon: BarChart3 }
+    ]},
     { name: 'AI Agents', href: '/ai-agents', icon: Bot },
     { name: 'Reports', href: '/reports', icon: BarChart3 },
     { name: 'Test', href: '/admin-interview-test', icon: TestTube },
@@ -39,6 +54,22 @@ const Sidebar: React.FC<SidebarProps> = () => {
     if (isMobile) {
       setSidebarOpen(false);
     }
+  };
+
+  const toggleSubmenu = (menuName: string) => {
+    setExpandedMenus(prev => 
+      prev.includes(menuName) 
+        ? prev.filter(name => name !== menuName)
+        : [...prev, menuName]
+    );
+  };
+
+  const isSubmenuExpanded = (menuName: string) => {
+    return expandedMenus.includes(menuName);
+  };
+
+  const isSubmenuActive = (submenu: any[]) => {
+    return submenu.some(item => currentPath === item.href);
   };
 
   return (
@@ -74,23 +105,67 @@ const Sidebar: React.FC<SidebarProps> = () => {
           <nav className="space-y-1 sm:space-y-2">
             {navigation.map((item) => {
               const isActive = currentPath === item.href;
+              const hasSubmenu = item.submenu && item.submenu.length > 0;
+              const isSubmenuItemActive = hasSubmenu ? isSubmenuActive(item.submenu) : false;
+              const isExpanded = hasSubmenu ? isSubmenuExpanded(item.name) : false;
               const Icon = item.icon;
               
               return (
-                <button
-                  key={item.name}
-                  onClick={() => handleNavigation(item.href)}
-                  className={`
-                    flex items-center space-x-3 px-3 py-2 sm:py-3 rounded-lg text-sm font-medium transition-colors w-full text-left
-                    ${isActive 
-                      ? 'bg-ai-teal/10 text-ai-teal border-r-2 border-ai-teal shadow-sm' 
-                      : 'text-gray-600 hover:bg-ai-cream hover:text-ai-teal'
-                    }
-                  `}
-                >
-                  <Icon className={`h-4 w-4 sm:h-5 sm:w-5 flex-shrink-0 ${isActive ? 'text-ai-teal' : 'text-gray-500'}`} />
-                  <span className="truncate">{item.name}</span>
-                </button>
+                <div key={item.name}>
+                  <button
+                    onClick={() => {
+                      if (hasSubmenu) {
+                        toggleSubmenu(item.name);
+                      } else {
+                        handleNavigation(item.href);
+                      }
+                    }}
+                    className={`
+                      flex items-center justify-between px-3 py-2 sm:py-3 rounded-lg text-sm font-medium transition-colors w-full text-left
+                      ${(isActive || isSubmenuItemActive)
+                        ? 'bg-ai-teal/10 text-ai-teal border-r-2 border-ai-teal shadow-sm' 
+                        : 'text-gray-600 hover:bg-ai-cream hover:text-ai-teal'
+                      }
+                    `}
+                  >
+                    <div className="flex items-center space-x-3">
+                      <Icon className={`h-4 w-4 sm:h-5 sm:w-5 flex-shrink-0 ${(isActive || isSubmenuItemActive) ? 'text-ai-teal' : 'text-gray-500'}`} />
+                      <span className="truncate">{item.name}</span>
+                    </div>
+                    {hasSubmenu && (
+                      isExpanded ? 
+                        <ChevronDown className="h-4 w-4 text-gray-500" /> : 
+                        <ChevronRight className="h-4 w-4 text-gray-500" />
+                    )}
+                  </button>
+                  
+                  {/* Submenu */}
+                  {hasSubmenu && isExpanded && (
+                    <div className="ml-6 mt-1 space-y-1">
+                      {item.submenu.map((subItem) => {
+                        const isSubActive = currentPath === subItem.href;
+                        const SubIcon = subItem.icon;
+                        
+                        return (
+                          <button
+                            key={subItem.name}
+                            onClick={() => handleNavigation(subItem.href)}
+                            className={`
+                              flex items-center space-x-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors w-full text-left
+                              ${isSubActive 
+                                ? 'bg-ai-teal/10 text-ai-teal border-r-2 border-ai-teal shadow-sm' 
+                                : 'text-gray-600 hover:bg-ai-cream hover:text-ai-teal'
+                              }
+                            `}
+                          >
+                            <SubIcon className={`h-4 w-4 flex-shrink-0 ${isSubActive ? 'text-ai-teal' : 'text-gray-500'}`} />
+                            <span className="truncate">{subItem.name}</span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
               );
             })}
           </nav>

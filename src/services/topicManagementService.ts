@@ -4,6 +4,9 @@
 import { supabase } from './supabase';
 import { QuestionTopic, JobQuestionCategory } from '../types';
 
+// Re-export types for easier importing
+export type { QuestionTopic, JobQuestionCategory };
+
 export class TopicManagementService {
   // ===== TOPIC MANAGEMENT =====
 
@@ -380,7 +383,7 @@ export class TopicManagementService {
     let currentTopicId: string | undefined = topicId;
 
     while (currentTopicId) {
-      const topic = await this.getTopicById(currentTopicId);
+      const topic: QuestionTopic | null = await this.getTopicById(currentTopicId);
       if (!topic) break;
       
       path.unshift(topic.name);
@@ -418,7 +421,10 @@ export class TopicManagementService {
 
     try {
       for (const topic of defaultTopics) {
-        await this.createTopic(topic);
+        await this.createTopic({
+          ...topic,
+          is_active: true
+        });
       }
       console.log('Default topics created successfully');
     } catch (error) {

@@ -121,7 +121,7 @@ export const CandidateExamPage: React.FC = () => {
       setAutoSaveStatus('saving');
       
       // Submit all current answers
-      for (const [questionId, answer] of answers) {
+      for (const [questionId, answer] of Array.from(answers.entries())) {
         await examService.submitAnswer({
           exam_session_id: session.id,
           question_id: questionId,
@@ -173,7 +173,7 @@ export const CandidateExamPage: React.FC = () => {
     // Mark question as answered
     const questionIndex = questions.findIndex(q => q.id === questionId);
     if (questionIndex !== -1) {
-      setAnsweredQuestions(prev => new Set([...prev, questionIndex]));
+      setAnsweredQuestions(prev => new Set([...Array.from(prev), questionIndex]));
     }
   };
 

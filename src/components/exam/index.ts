@@ -7,3 +7,6 @@ export { default as TextQuestion } from './TextQuestion';
 export { default as QuestionNavigator } from './QuestionNavigator';
 export { default as ExamProgressBar } from './ExamProgressBar';
 export { default as ExamInstructions } from './ExamInstructions';
+export { default as AddQuestionModal } from './AddQuestionModal';
+export { default as GenerateQuestionModal } from './GenerateQuestionModal';
+export { default as QuestionPaperUploadModal } from './QuestionPaperUploadModal';

@@ -1,0 +1,201 @@
+{
+  "type": "object",
+  "properties": {
+    "generated_questions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "question_text": {
+            "type": "string",
+            "description": "The question text"
+          },
+          "question_type": {
+            "type": "string",
+            "enum": ["mcq", "text"],
+            "description": "Type of question - multiple choice or text-based"
+          },
+          "question_category": {
+            "type": "string",
+            "enum": ["technical", "aptitude"],
+            "description": "Category of the question"
+          },
+          "difficulty_level": {
+            "type": "string",
+            "enum": ["easy", "medium", "hard"],
+            "description": "Difficulty level of the question"
+          },
+          "topic": {
+            "type": "string",
+            "description": "Main topic of the question"
+          },
+          "subtopic": {
+            "type": "string",
+            "description": "Subtopic or specific area within the main topic"
+          },
+          "points": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 5,
+            "description": "Points assigned to the question"
+          },
+          "time_limit_seconds": {
+            "type": "integer",
+            "minimum": 30,
+            "maximum": 300,
+            "description": "Time limit in seconds for answering the question"
+          },
+          "mcq_options": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "option": {
+                  "type": "string",
+                  "enum": ["A", "B", "C", "D"],
+                  "description": "Option letter"
+                },
+                "text": {
+                  "type": "string",
+                  "description": "Option text"
+                }
+              },
+              "required": ["option", "text"]
+            },
+            "minItems": 4,
+            "maxItems": 4,
+            "description": "Multiple choice options (only for MCQ questions)"
+          },
+          "correct_answer": {
+            "type": "string",
+            "description": "Correct answer - for MCQ: A, B, C, or D; for text: expected answer text"
+          },
+          "answer_explanation": {
+            "type": "string",
+            "description": "Explanation of the correct answer"
+          },
+          "tags": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Tags associated with the question"
+          },
+          "job_relevance": {
+            "type": "string",
+            "description": "Explanation of how this question relates to the job role"
+          }
+        },
+        "required": [
+          "question_text",
+          "question_type",
+          "question_category",
+          "difficulty_level",
+          "correct_answer",
+          "answer_explanation",
+          "job_relevance"
+        ]
+      }
+    },
+    "generation_metadata": {
+      "type": "object",
+      "properties": {
+        "total_generated": {
+          "type": "integer",
+          "description": "Total number of questions generated"
+        },
+        "technical_count": {
+          "type": "integer",
+          "description": "Number of technical questions"
+        },
+        "aptitude_count": {
+          "type": "integer",
+          "description": "Number of aptitude questions"
+        },
+        "mcq_count": {
+          "type": "integer",
+          "description": "Number of multiple choice questions"
+        },
+        "text_count": {
+          "type": "integer",
+          "description": "Number of text-based questions"
+        },
+        "difficulty_breakdown": {
+          "type": "object",
+          "properties": {
+            "easy": {
+              "type": "integer",
+              "description": "Number of easy questions"
+            },
+            "medium": {
+              "type": "integer",
+              "description": "Number of medium questions"
+            },
+            "hard": {
+              "type": "integer",
+              "description": "Number of hard questions"
+            }
+          },
+          "required": ["easy", "medium", "hard"]
+        },
+        "topic_distribution": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "integer"
+          },
+          "description": "Distribution of questions by topic"
+        },
+        "job_description_used": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string",
+              "description": "Job description ID"
+            },
+            "title": {
+              "type": "string",
+              "description": "Job title"
+            },
+            "key_skills_tested": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "description": "Key skills being tested"
+            }
+          },
+          "required": ["id", "title", "key_skills_tested"]
+        },
+        "generation_time": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Timestamp when questions were generated"
+        },
+        "ai_model_used": {
+          "type": "string",
+          "description": "AI model used for generation"
+        },
+        "confidence_score": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1,
+          "description": "Confidence score of the generation"
+        }
+      },
+      "required": [
+        "total_generated",
+        "technical_count",
+        "aptitude_count",
+        "mcq_count",
+        "text_count",
+        "difficulty_breakdown",
+        "topic_distribution",
+        "job_description_used",
+        "generation_time",
+        "ai_model_used",
+        "confidence_score"
+      ]
+    }
+  },
+  "required": ["generated_questions", "generation_metadata"]
+}

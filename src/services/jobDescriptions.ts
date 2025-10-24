@@ -17,7 +17,7 @@ export class JobDescriptionsService {
         .order('created_at', { ascending: false });
 
       if (error) {
-        console.error('Error fetching job descriptions:', error);
+        console.error('❌ JobDescriptionsService: Error fetching job descriptions:', error);
         return { data: [], error: error.message };
       }
 
@@ -70,6 +70,8 @@ export class JobDescriptionsService {
         contactEmail: job.contact_email,
         applicationDeadline: job.application_deadline,
       }));
+
+      // Return transformed job descriptions
 
       return { data: jobDescriptions };
     } catch (error) {

@@ -1,0 +1,204 @@
+{
+  "name": "Question Quality Assessment Workflow",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "assess-quality",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "webhook-trigger",
+      "name": "Webhook Trigger",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [240, 300],
+      "webhookId": "assess-quality"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{ $json.question_text }}",
+              "operation": "isNotEmpty"
+            }
+          ]
+        }
+      },
+      "id": "validate-input",
+      "name": "Validate Input",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [460, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Build AI prompt for quality assessment\nconst request = $input.first().json;\n\n// Create comprehensive quality assessment prompt\nlet prompt = `You are an expert in educational assessment and question design. Assess the quality of the following exam question and provide detailed feedback.\n\n`;\n\n// Add question details\nprompt += `QUESTION DETAILS:\n`;\nprompt += `Question Text: ${request.question_text}\n`;\nprompt += `Question Type: ${request.question_type.toUpperCase()}\n`;\nprompt += `Difficulty Level: ${request.difficulty_level.toUpperCase()}\n`;\nprompt += `Topic: ${request.topic}\n`;\nprompt += `Correct Answer: ${request.correct_answer}\n\n`;\n\n// Add MCQ options if applicable\nif (request.question_type === 'mcq' && request.mcq_options) {\n  prompt += `MCQ OPTIONS:\n`;\n  request.mcq_options.forEach(option => {\n    prompt += `${option.option}. ${option.text}\n`;\n  });\n  prompt += `\n`;\n}\n\n// Add assessment criteria\nprompt += `QUALITY ASSESSMENT CRITERIA:\n`;\nprompt += `1. CLARITY: Is the question clear, unambiguous, and easy to understand?\n`;\nprompt += `2. RELEVANCE: Is the question relevant to the topic and appropriate for the difficulty level?\n`;\nprompt += `3. ACCURACY: Is the correct answer accurate and well-supported?\n`;\nprompt += `4. DIFFICULTY: Does the question match the intended difficulty level?\n`;\nprompt += `5. BIAS: Is the question free from cultural, gender, or other biases?\n`;\nprompt += `6. FORMAT: Is the question properly formatted and structured?\n`;\nprompt += `7. DISTRACTORS: For MCQ questions, are the incorrect options plausible but clearly wrong?\n`;\nprompt += `8. COMPREHENSIVENESS: Does the question test the intended knowledge/skill effectively?\n\n`;\n\n// Add specific instructions\nprompt += `ASSESSMENT INSTRUCTIONS:\n`;\nprompt += `1. Evaluate each criterion on a scale of 0-1 (0 = poor, 1 = excellent)\n`;\nprompt += `2. Identify specific issues and provide constructive suggestions\n`;\nprompt += `3. Check for potential biases or unfair advantages\n`;\nprompt += `4. Validate that the difficulty level matches the question complexity\n`;\nprompt += `5. Ensure the question tests the intended learning objective\n`;\nprompt += `6. Provide actionable recommendations for improvement\n\n`;\n\nprompt += `Please assess the question quality and return the response in the following JSON format:\n\n`;\nprompt += `{\n  \"overall_quality\": \"excellent\" | \"good\" | \"fair\" | \"poor\",\n  \"quality_score\": 0.0-1.0,\n  \"issues\": [\"List of specific issues found\"],\n  \"suggestions\": [\"List of improvement suggestions\"],\n  \"difficulty_validation\": {\n    \"assessed_difficulty\": \"easy\" | \"medium\" | \"hard\",\n    \"matches_intended\": true/false,\n    \"confidence\": 0.0-1.0\n  },\n  \"bias_check\": {\n    \"has_bias\": true/false,\n    \"bias_types\": [\"List of bias types if any\"],\n    \"inclusivity_score\": 0.0-1.0\n  },\n  \"detailed_assessment\": {\n    \"clarity_score\": 0.0-1.0,\n    \"relevance_score\": 0.0-1.0,\n    \"accuracy_score\": 0.0-1.0,\n    \"format_score\": 0.0-1.0,\n    \"comprehensiveness_score\": 0.0-1.0\n  }\n}`;\n\nreturn {\n  prompt: prompt,\n  originalRequest: request\n};"
+      },
+      "id": "build-assessment-prompt",
+      "name": "Build Assessment Prompt",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [680, 300]
+    },
+    {
+      "parameters": {
+        "resource": "chat",
+        "operation": "create",
+        "model": "gpt-4",
+        "messages": {
+          "values": [
+            {
+              "role": "system",
+              "content": "You are an expert in educational assessment and question design. Provide thorough, objective quality assessments of exam questions, focusing on clarity, accuracy, bias detection, and educational effectiveness."
+            },
+            {
+              "role": "user",
+              "content": "={{ $json.prompt }}"
+            }
+          ]
+        },
+        "options": {
+          "temperature": 0.2,
+          "maxTokens": 2000
+        }
+      },
+      "id": "openai-assessment",
+      "name": "OpenAI Assessment",
+      "type": "n8n-nodes-base.openAi",
+      "typeVersion": 1,
+      "position": [900, 300],
+      "credentials": {
+        "openAiApi": {
+          "id": "openai-credentials",
+          "name": "OpenAI API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Parse and validate AI assessment response\nconst aiResponse = $input.first().json.choices[0].message.content;\nconst originalRequest = $input.first().json.originalRequest;\n\ntry {\n  // Parse JSON response\n  const parsedResponse = JSON.parse(aiResponse);\n  \n  // Validate structure\n  const requiredFields = ['overall_quality', 'quality_score', 'issues', 'suggestions', 'difficulty_validation', 'bias_check'];\n  for (const field of requiredFields) {\n    if (parsedResponse[field] === undefined) {\n      throw new Error(`Missing required field: ${field}`);\n    }\n  }\n  \n  // Validate quality score range\n  if (parsedResponse.quality_score < 0 || parsedResponse.quality_score > 1) {\n    throw new Error(`Invalid quality score: ${parsedResponse.quality_score}. Must be between 0 and 1`);\n  }\n  \n  // Validate overall quality\n  const validQualities = ['excellent', 'good', 'fair', 'poor'];\n  if (!validQualities.includes(parsedResponse.overall_quality)) {\n    throw new Error(`Invalid overall quality: ${parsedResponse.overall_quality}. Must be one of: ${validQualities.join(', ')}`);\n  }\n  \n  // Validate arrays\n  if (!Array.isArray(parsedResponse.issues)) {\n    throw new Error('Issues must be an array');\n  }\n  if (!Array.isArray(parsedResponse.suggestions)) {\n    throw new Error('Suggestions must be an array');\n  }\n  \n  // Validate difficulty validation\n  const validDifficulties = ['easy', 'medium', 'hard'];\n  if (!validDifficulties.includes(parsedResponse.difficulty_validation.assessed_difficulty)) {\n    throw new Error(`Invalid assessed difficulty: ${parsedResponse.difficulty_validation.assessed_difficulty}`);\n  }\n  \n  if (typeof parsedResponse.difficulty_validation.matches_intended !== 'boolean') {\n    throw new Error('matches_intended must be a boolean');\n  }\n  \n  if (parsedResponse.difficulty_validation.confidence < 0 || parsedResponse.difficulty_validation.confidence > 1) {\n    throw new Error('Difficulty validation confidence must be between 0 and 1');\n  }\n  \n  // Validate bias check\n  if (typeof parsedResponse.bias_check.has_bias !== 'boolean') {\n    throw new Error('has_bias must be a boolean');\n  }\n  \n  if (!Array.isArray(parsedResponse.bias_check.bias_types)) {\n    throw new Error('bias_types must be an array');\n  }\n  \n  if (parsedResponse.bias_check.inclusivity_score < 0 || parsedResponse.bias_check.inclusivity_score > 1) {\n    throw new Error('Inclusivity score must be between 0 and 1');\n  }\n  \n  // Validate detailed assessment if present\n  if (parsedResponse.detailed_assessment) {\n    const scoreFields = ['clarity_score', 'relevance_score', 'accuracy_score', 'format_score', 'comprehensiveness_score'];\n    for (const field of scoreFields) {\n      if (parsedResponse.detailed_assessment[field] !== undefined) {\n        if (parsedResponse.detailed_assessment[field] < 0 || parsedResponse.detailed_assessment[field] > 1) {\n          throw new Error(`Invalid detailed score for ${field}: ${parsedResponse.detailed_assessment[field]}. Must be between 0 and 1`);\n        }\n      }\n    }\n  }\n  \n  // Round scores to 2 decimal places\n  const result = {\n    overall_quality: parsedResponse.overall_quality,\n    quality_score: Math.round(parsedResponse.quality_score * 100) / 100,\n    issues: parsedResponse.issues || [],\n    suggestions: parsedResponse.suggestions || [],\n    difficulty_validation: {\n      assessed_difficulty: parsedResponse.difficulty_validation.assessed_difficulty,\n      matches_intended: parsedResponse.difficulty_validation.matches_intended,\n      confidence: Math.round(parsedResponse.difficulty_validation.confidence * 100) / 100\n    },\n    bias_check: {\n      has_bias: parsedResponse.bias_check.has_bias,\n      bias_types: parsedResponse.bias_check.bias_types || [],\n      inclusivity_score: Math.round(parsedResponse.bias_check.inclusivity_score * 100) / 100\n    },\n    detailed_assessment: parsedResponse.detailed_assessment ? {\n      clarity_score: Math.round((parsedResponse.detailed_assessment.clarity_score || 0) * 100) / 100,\n      relevance_score: Math.round((parsedResponse.detailed_assessment.relevance_score || 0) * 100) / 100,\n      accuracy_score: Math.round((parsedResponse.detailed_assessment.accuracy_score || 0) * 100) / 100,\n      format_score: Math.round((parsedResponse.detailed_assessment.format_score || 0) * 100) / 100,\n      comprehensiveness_score: Math.round((parsedResponse.detailed_assessment.comprehensiveness_score || 0) * 100) / 100\n    } : null,\n    assessed_at: new Date().toISOString()\n  };\n  \n  return {\n    ...result,\n    success: true\n  };\n  \n} catch (error) {\n  console.error('Error parsing AI assessment response:', error);\n  return {\n    error: error.message,\n    success: false,\n    raw_response: aiResponse\n  };\n}"
+      },
+      "id": "parse-assessment",
+      "name": "Parse & Validate Assessment",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1120, 300]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ $json }}"
+      },
+      "id": "success-response",
+      "name": "Success Response",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [1340, 200]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ { \"error\": \"Invalid input data\", \"message\": \"Question text is required\" } }}"
+      },
+      "id": "error-response",
+      "name": "Error Response",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [1340, 400]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ { \"error\": \"AI assessment failed\", \"message\": $json.error, \"raw_response\": $json.raw_response } }}"
+      },
+      "id": "ai-error-response",
+      "name": "AI Error Response",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [1340, 500]
+    }
+  ],
+  "connections": {
+    "Webhook Trigger": {
+      "main": [
+        [
+          {
+            "node": "Validate Input",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate Input": {
+      "main": [
+        [
+          {
+            "node": "Build Assessment Prompt",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Error Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Assessment Prompt": {
+      "main": [
+        [
+          {
+            "node": "OpenAI Assessment",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Assessment": {
+      "main": [
+        [
+          {
+            "node": "Parse & Validate Assessment",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse & Validate Assessment": {
+      "main": [
+        [
+          {
+            "node": "Success Response",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "AI Error Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "1",
+  "meta": {
+    "templateCredsSetupCompleted": true
+  },
+  "id": "quality-assessment-workflow",
+  "tags": ["exam", "ai", "quality-assessment"]
+}

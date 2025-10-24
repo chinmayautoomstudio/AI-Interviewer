@@ -1,0 +1,166 @@
+{
+  "generated_questions": [
+    {
+      "question_text": "What is the primary purpose of a RESTful API?",
+      "question_type": "mcq",
+      "question_category": "technical",
+      "difficulty_level": "easy",
+      "topic": "Web Development",
+      "subtopic": "API Design",
+      "points": 2,
+      "time_limit_seconds": 60,
+      "mcq_options": [
+        {
+          "option": "A",
+          "text": "To store data in databases"
+        },
+        {
+          "option": "B", 
+          "text": "To provide a standardized way for applications to communicate"
+        },
+        {
+          "option": "C",
+          "text": "To create user interfaces"
+        },
+        {
+          "option": "D",
+          "text": "To manage server hardware"
+        }
+      ],
+      "correct_answer": "B",
+      "answer_explanation": "RESTful APIs provide a standardized way for different applications to communicate over HTTP, following REST principles.",
+      "tags": ["api", "rest", "web development"],
+      "job_relevance": "Understanding RESTful APIs is essential for Full Stack Developers as they need to design and consume APIs for building scalable applications."
+    },
+    {
+      "question_text": "Explain the concept of 'Closure' in JavaScript and provide a simple code example demonstrating its use.",
+      "question_type": "text",
+      "question_category": "technical",
+      "difficulty_level": "medium",
+      "topic": "Programming Languages",
+      "subtopic": "Advanced Language Concepts",
+      "points": 4,
+      "time_limit_seconds": 120,
+      "mcq_options": [],
+      "correct_answer": "A closure is the combination of a function bundled together with references to its surrounding state. It gives you access to an outer function's scope from an inner function. Example: function makeCounter() { let count = 0; return function() { count++; return count; }; } const counter = makeCounter(); console.log(counter()); // 1",
+      "answer_explanation": "The explanation should accurately define a closure and its mechanism. The code example should demonstrate how an inner function maintains state from its outer function's scope even after the outer function has returned.",
+      "tags": ["javascript", "programming", "closure", "scope"],
+      "job_relevance": "Full Stack Developers frequently work with modern JavaScript frameworks. Understanding closures is fundamental for writing advanced, modular, and efficient JavaScript code."
+    },
+    {
+      "question_text": "Complete the series: 2, 6, 12, 20, 30, ?",
+      "question_type": "mcq",
+      "question_category": "aptitude",
+      "difficulty_level": "medium",
+      "topic": "Logical Reasoning",
+      "subtopic": "Number Series",
+      "points": 3,
+      "time_limit_seconds": 60,
+      "mcq_options": [
+        {
+          "option": "A",
+          "text": "40"
+        },
+        {
+          "option": "B",
+          "text": "42"
+        },
+        {
+          "option": "C",
+          "text": "44"
+        },
+        {
+          "option": "D",
+          "text": "46"
+        }
+      ],
+      "correct_answer": "B",
+      "answer_explanation": "The pattern involves adding consecutive even numbers to the previous term: 2 + 4 = 6; 6 + 6 = 12; 12 + 8 = 20; 20 + 10 = 30. Following this pattern, the next number would be 30 + 12 = 42.",
+      "tags": ["logical reasoning", "pattern recognition", "number series"],
+      "job_relevance": "Problem-solving and pattern recognition are critical for developers when designing algorithms, identifying software bugs, and understanding system behavior."
+    },
+    {
+      "question_text": "You are tasked with designing a real-time chat application that needs to support millions of concurrent users. Describe the key architectural considerations and technologies you would use to ensure the application is highly scalable, fault-tolerant, and delivers messages with low latency.",
+      "question_type": "text",
+      "question_category": "technical",
+      "difficulty_level": "hard",
+      "topic": "System Design",
+      "subtopic": "Distributed Systems",
+      "points": 5,
+      "time_limit_seconds": 180,
+      "mcq_options": [],
+      "correct_answer": "Key architectural considerations include: 1) Communication Protocol: WebSockets for full-duplex, low-latency communication. 2) Scalability: Horizontal scaling with multiple application servers behind a load balancer, stateless services, distributed message broker (Kafka, RabbitMQ, Redis Pub/Sub). 3) Database: Scalable NoSQL database (Cassandra, MongoDB) or horizontally sharded relational database. 4) Fault Tolerance: Redundancy, health checks, monitoring, idempotency. 5) Low Latency: CDN for static assets, Redis for caching and presence management, proximity routing. 6) Technologies: Kubernetes for orchestration, Nginx/HAProxy for load balancing, Go/Node.js for backend services.",
+      "answer_explanation": "This question assesses the candidate's ability to think at an architectural level for highly scalable, real-time systems. A good answer will discuss fundamental concepts like horizontal scaling, fault tolerance, message queues, WebSockets, and database choices.",
+      "tags": ["system design", "scalability", "real-time", "distributed systems", "microservices"],
+      "job_relevance": "The job description emphasizes building scalable applications and contributing to the entire product lifecycle from design to deployment. This question directly tests advanced understanding of system architecture required for designing robust applications."
+    },
+    {
+      "question_text": "What is the average time complexity for searching an element in a well-implemented hash map (hash table)?",
+      "question_type": "mcq",
+      "question_category": "technical",
+      "difficulty_level": "easy",
+      "topic": "Data Structures & Algorithms",
+      "subtopic": "Hash Maps",
+      "points": 2,
+      "time_limit_seconds": 30,
+      "mcq_options": [
+        {
+          "option": "A",
+          "text": "O(1)"
+        },
+        {
+          "option": "B",
+          "text": "O(log n)"
+        },
+        {
+          "option": "C",
+          "text": "O(n)"
+        },
+        {
+          "option": "D",
+          "text": "O(n log n)"
+        }
+      ],
+      "correct_answer": "A",
+      "answer_explanation": "In a well-implemented hash map with a good hash function and proper collision resolution, the average time complexity for searching is O(1) or constant time. This is because the hash function directly computes the memory address of the element.",
+      "tags": ["data structures", "algorithms", "time complexity", "hash map"],
+      "job_relevance": "Understanding the performance characteristics of basic data structures is fundamental for delivering high-quality code and optimizing application performance."
+    }
+  ],
+  "generation_metadata": {
+    "total_generated": 5,
+    "technical_count": 4,
+    "aptitude_count": 1,
+    "mcq_count": 3,
+    "text_count": 2,
+    "difficulty_breakdown": {
+      "easy": 2,
+      "medium": 2,
+      "hard": 1
+    },
+    "topic_distribution": {
+      "Web Development": 1,
+      "Programming Languages": 1,
+      "Logical Reasoning": 1,
+      "System Design": 1,
+      "Data Structures & Algorithms": 1
+    },
+    "job_description_used": {
+      "id": "97d508ce-f4f5-4693-b1b9-4b5dcad7475c",
+      "title": "Full Stack Developer",
+      "key_skills_tested": [
+        "RESTful APIs",
+        "JavaScript programming",
+        "problem solving",
+        "system design",
+        "data structures",
+        "algorithms",
+        "scalable applications",
+        "web development"
+      ]
+    },
+    "generation_time": "2024-01-15T10:30:00Z",
+    "ai_model_used": "gpt-4",
+    "confidence_score": 0.95
+  }
+}

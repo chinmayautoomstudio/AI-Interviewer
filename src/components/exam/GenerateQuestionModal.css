@@ -1,0 +1,57 @@
+/* Custom slider styles for GenerateQuestionModal */
+.slider::-webkit-slider-thumb {
+  appearance: none;
+  height: 20px;
+  width: 20px;
+  border-radius: 50%;
+  background: #14b8a6;
+  cursor: pointer;
+  border: 2px solid #ffffff;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.slider::-moz-range-thumb {
+  height: 20px;
+  width: 20px;
+  border-radius: 50%;
+  background: #14b8a6;
+  cursor: pointer;
+  border: 2px solid #ffffff;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.slider::-webkit-slider-track {
+  height: 8px;
+  border-radius: 4px;
+  background: transparent;
+}
+
+.slider::-moz-range-track {
+  height: 8px;
+  border-radius: 4px;
+  background: transparent;
+}
+
+/* Hover effects */
+.slider:hover::-webkit-slider-thumb {
+  background: #0d9488;
+  transform: scale(1.1);
+  transition: all 0.2s ease;
+}
+
+.slider:hover::-moz-range-thumb {
+  background: #0d9488;
+  transform: scale(1.1);
+  transition: all 0.2s ease;
+}
+
+/* Focus effects */
+.slider:focus::-webkit-slider-thumb {
+  background: #0d9488;
+  box-shadow: 0 0 0 3px rgba(20, 184, 166, 0.3);
+}
+
+.slider:focus::-moz-range-thumb {
+  background: #0d9488;
+  box-shadow: 0 0 0 3px rgba(20, 184, 166, 0.3);
+}
