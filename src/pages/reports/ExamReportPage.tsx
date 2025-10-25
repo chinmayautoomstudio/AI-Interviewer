@@ -117,6 +117,7 @@ const ExamReportPage: React.FC = () => {
   const [comprehensiveReport, setComprehensiveReport] = useState<ComprehensiveReportData | null>(null);
   const [candidateData, setCandidateData] = useState<any>(null);
   const [jobData, setJobData] = useState<any>(null);
+  const [examResult, setExamResult] = useState<any>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -144,6 +145,9 @@ const ExamReportPage: React.FC = () => {
         console.error('Error fetching exam result:', resultError);
         throw new Error('Failed to fetch exam results');
       }
+
+      // Store the exam result data
+      setExamResult(examResult);
 
       // If comprehensive report exists, parse it
       if (examResult.comprehensive_report) {
@@ -624,24 +628,95 @@ const ComprehensiveReportView: React.FC<{
           </div>
         </div>
         
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
-          <div className="text-center">
-            <div className="text-4xl font-bold text-blue-600">{report.performance_analysis.overall_performance.percentage}%</div>
-            <div className="text-sm text-gray-600">Overall Score</div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+          {/* Database Scores */}
+          <div className="bg-white rounded-lg p-6 border-2 border-blue-200">
+            <h4 className="text-lg font-semibold text-blue-800 mb-4 flex items-center">
+              <CheckCircle className="h-5 w-5 mr-2" />
+              Database Scores (Actual)
+            </h4>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="text-center">
+                <div className="text-3xl font-bold text-blue-600">{examResult?.percentage || 0}%</div>
+                <div className="text-sm text-gray-600">Overall Score</div>
+              </div>
+              <div className="text-center">
+                <div className="text-3xl font-bold text-green-600">{examResult?.total_score || 0}</div>
+                <div className="text-sm text-gray-600">Points Earned</div>
+              </div>
+              <div className="text-center">
+                <div className="text-3xl font-bold text-gray-600">{examResult?.max_score || 0}</div>
+                <div className="text-sm text-gray-600">Max Points</div>
+              </div>
+              <div className="text-center">
+                <div className="text-3xl font-bold text-purple-600">{examResult?.correct_answers || 0}</div>
+                <div className="text-sm text-gray-600">Correct Answers</div>
+              </div>
+            </div>
           </div>
-          <div className="text-center">
-            <div className="text-4xl font-bold text-green-600">{report.performance_analysis.overall_performance.score}</div>
-            <div className="text-sm text-gray-600">Points Earned</div>
-          </div>
-          <div className="text-center">
-            <div className="text-4xl font-bold text-gray-600">{report.performance_analysis.overall_performance.max_score}</div>
-            <div className="text-sm text-gray-600">Max Points</div>
-          </div>
-          <div className="text-center">
-            <div className="text-4xl font-bold text-purple-600">{Math.round(report.report_metadata.ai_confidence * 100)}%</div>
-            <div className="text-sm text-gray-600">AI Confidence</div>
+
+          {/* AI Analysis Scores */}
+          <div className="bg-white rounded-lg p-6 border-2 border-purple-200">
+            <h4 className="text-lg font-semibold text-purple-800 mb-4 flex items-center">
+              <Brain className="h-5 w-5 mr-2" />
+              AI Analysis Scores
+            </h4>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="text-center">
+                <div className="text-3xl font-bold text-purple-600">{report.performance_analysis.overall_performance.percentage}%</div>
+                <div className="text-sm text-gray-600">AI Overall Score</div>
+              </div>
+              <div className="text-center">
+                <div className="text-3xl font-bold text-green-600">{report.performance_analysis.overall_performance.score}</div>
+                <div className="text-sm text-gray-600">AI Points Earned</div>
+              </div>
+              <div className="text-center">
+                <div className="text-3xl font-bold text-gray-600">{report.performance_analysis.overall_performance.max_score}</div>
+                <div className="text-sm text-gray-600">AI Max Points</div>
+              </div>
+              <div className="text-center">
+                <div className="text-3xl font-bold text-purple-600">{Math.round(report.report_metadata.ai_confidence * 100)}%</div>
+                <div className="text-sm text-gray-600">AI Confidence</div>
+              </div>
+            </div>
           </div>
         </div>
+
+        {/* Score Comparison */}
+        {examResult && (
+          <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-6">
+            <h4 className="text-lg font-semibold text-yellow-800 mb-4 flex items-center">
+              <AlertCircle className="h-5 w-5 mr-2" />
+              Score Comparison
+            </h4>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="text-center">
+                <div className="text-2xl font-bold text-blue-600">{examResult.percentage}%</div>
+                <div className="text-sm text-gray-600">Database Score</div>
+              </div>
+              <div className="text-center">
+                <div className="text-2xl font-bold text-purple-600">{report.performance_analysis.overall_performance.percentage}%</div>
+                <div className="text-sm text-gray-600">AI Analysis Score</div>
+              </div>
+              <div className="text-center">
+                <div className={`text-2xl font-bold ${Math.abs(examResult.percentage - report.performance_analysis.overall_performance.percentage) > 5 ? 'text-red-600' : 'text-green-600'}`}>
+                  {Math.abs(examResult.percentage - report.performance_analysis.overall_performance.percentage).toFixed(1)}%
+                </div>
+                <div className="text-sm text-gray-600">Difference</div>
+              </div>
+            </div>
+            {Math.abs(examResult.percentage - report.performance_analysis.overall_performance.percentage) > 5 && (
+              <div className="mt-4 p-3 bg-red-100 border border-red-200 rounded-lg">
+                <p className="text-sm text-red-800">
+                  <strong>Note:</strong> There's a significant difference between the database score and AI analysis score. 
+                  The database score ({examResult.percentage}%) represents the actual calculated performance, 
+                  while the AI analysis score ({report.performance_analysis.overall_performance.percentage}%) 
+                  represents the AI's interpretation of the performance.
+                </p>
+              </div>
+            )}
+          </div>
+        )}
 
         <div className="bg-white rounded-lg p-4 border">
           <h4 className="font-semibold text-gray-900 mb-2">Executive Summary</h4>
