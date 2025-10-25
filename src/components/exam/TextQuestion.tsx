@@ -53,12 +53,6 @@ export const TextQuestion: React.FC<TextQuestionProps> = ({
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center space-x-3">
             <span className="bg-gradient-to-r from-green-100 to-green-200 text-green-800 text-sm font-semibold px-3 py-1.5 rounded-full shadow-sm">
-              TEXT
-            </span>
-            <span className="bg-gradient-to-r from-gray-100 to-gray-200 text-gray-800 text-sm font-semibold px-3 py-1.5 rounded-full shadow-sm">
-              {question.difficulty_level}
-            </span>
-            <span className="bg-gradient-to-r from-green-100 to-green-200 text-green-800 text-sm font-semibold px-3 py-1.5 rounded-full shadow-sm">
               {question.points} point{question.points !== 1 ? 's' : ''}
             </span>
           </div>

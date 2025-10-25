@@ -396,7 +396,7 @@ export const CandidateExamPage: React.FC = () => {
   const currentAnswer = currentQuestion ? answers.get(currentQuestion.id) : '';
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50 fixed inset-0 overflow-auto">
       {/* Header */}
       <div className="bg-white/95 backdrop-blur-sm border-b border-gray-200/50 sticky top-0 z-10 shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -465,10 +465,10 @@ export const CandidateExamPage: React.FC = () => {
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
+      <div className="h-full px-4 sm:px-6 lg:px-8 py-4">
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 h-full">
           {/* Main content */}
-          <div className="lg:col-span-3 space-y-8">
+          <div className="lg:col-span-3 flex flex-col space-y-6">
             {/* Timer */}
             <div className="bg-white/80 backdrop-blur-sm rounded-2xl border border-gray-200/50 shadow-lg p-6">
                 <ExamTimer
@@ -514,7 +514,7 @@ export const CandidateExamPage: React.FC = () => {
                 </div>
               </div>
             ) : currentQuestion ? (
-              <div className="bg-white/80 backdrop-blur-sm rounded-2xl border border-gray-200/50 shadow-lg overflow-hidden">
+              <div className="bg-white/80 backdrop-blur-sm rounded-2xl border border-gray-200/50 shadow-lg overflow-hidden flex-1">
                 {currentQuestion.question_type === 'mcq' ? (
                   <MCQQuestion
                     question={currentQuestion}

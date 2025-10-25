@@ -23,12 +23,6 @@ export const MCQQuestion: React.FC<MCQQuestionProps> = ({
       <div className="mb-8">
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center space-x-3">
-            <span className="bg-gradient-to-r from-blue-100 to-blue-200 text-blue-800 text-sm font-semibold px-3 py-1.5 rounded-full shadow-sm">
-              MCQ
-            </span>
-            <span className="bg-gradient-to-r from-gray-100 to-gray-200 text-gray-800 text-sm font-semibold px-3 py-1.5 rounded-full shadow-sm">
-              {question.difficulty_level}
-            </span>
             <span className="bg-gradient-to-r from-green-100 to-green-200 text-green-800 text-sm font-semibold px-3 py-1.5 rounded-full shadow-sm">
               {question.points} point{question.points !== 1 ? 's' : ''}
             </span>
