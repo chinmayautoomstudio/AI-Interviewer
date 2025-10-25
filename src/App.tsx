@@ -39,6 +39,7 @@ import ExamResultsPage from './pages/exam/ExamResultsPage';
 import ExamAnalyticsPage from './pages/exam/ExamAnalyticsPage';
 import CandidateExamPage from './pages/CandidateExamPage';
 import ExamCompletionPage from './pages/exam/ExamCompletionPage';
+import ExamReportPage from './pages/reports/ExamReportPage';
 import LoadingSpinner from './components/ui/LoadingSpinner';
 
 const AppContent: React.FC = () => {
@@ -102,6 +103,7 @@ const AppContent: React.FC = () => {
             <Route path="/exams/topics" element={<TopicManagementPage />} />
             <Route path="/exams/sessions" element={<ExamSessionsPage />} />
             <Route path="/exams/results" element={<ExamResultsPage />} />
+            <Route path="/exams/report/:sessionId" element={<ExamReportPage />} />
             <Route path="/exams/analytics" element={<ExamAnalyticsPage />} />
             <Route path="/settings" element={<SettingsPage />} />
             <Route path="/settings/two-factor" element={<TwoFactorSettingsPage />} />

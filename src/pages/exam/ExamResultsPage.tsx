@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { 
   Eye, 
   Download, 
@@ -18,10 +19,10 @@ import {
 } from 'lucide-react';
 import { examResultsService, ExamResultWithDetails, ExamResultsFilter, ExamResultsStats } from '../../services/examResultsService';
 import ExamResultDetailsModal from '../../components/exam/ExamResultDetailsModal';
-import { ExamReportModal } from '../../components/reports/ExamReportModal';
 import { ExamReportWorkflowService } from '../../services/examReportWorkflowService';
 
 const ExamResultsPage: React.FC = () => {
+  const navigate = useNavigate();
   const [results, setResults] = useState<ExamResultWithDetails[]>([]);
   const [stats, setStats] = useState<ExamResultsStats | null>(null);
   const [loading, setLoading] = useState(true);
@@ -32,8 +33,6 @@ const ExamResultsPage: React.FC = () => {
   const [selectedResultId, setSelectedResultId] = useState<string | null>(null);
   const [showDetailsModal, setShowDetailsModal] = useState(false);
   const [evaluatingSessions, setEvaluatingSessions] = useState<Set<string>>(new Set());
-  const [showReportModal, setShowReportModal] = useState(false);
-  const [reportSessionId, setReportSessionId] = useState<string | null>(null);
   const [generatingReports, setGeneratingReports] = useState<Set<string>>(new Set());
 
   useEffect(() => {
@@ -109,13 +108,7 @@ const ExamResultsPage: React.FC = () => {
   };
 
   const handleGenerateReport = (sessionId: string) => {
-    setReportSessionId(sessionId);
-    setShowReportModal(true);
-  };
-
-  const handleCloseReportModal = () => {
-    setShowReportModal(false);
-    setReportSessionId(null);
+    navigate(`/exams/report/${sessionId}`);
   };
 
   const handleGenerateComprehensiveReport = async (sessionId: string) => {
@@ -526,14 +519,6 @@ const ExamResultsPage: React.FC = () => {
         resultId={selectedResultId}
       />
 
-      {/* Exam Report Modal */}
-      {showReportModal && reportSessionId && (
-        <ExamReportModal
-          sessionId={reportSessionId}
-          isOpen={showReportModal}
-          onClose={handleCloseReportModal}
-        />
-      )}
     </div>
   );
 };
