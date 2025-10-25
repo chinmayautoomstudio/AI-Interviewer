@@ -281,6 +281,7 @@ const ExamReportPage: React.FC = () => {
                 report={comprehensiveReport} 
                 candidate={candidateData}
                 job={jobData}
+                examResult={examResult}
               />
             ) : (
               <SinglePageReport reportData={reportData!} />
@@ -574,7 +575,8 @@ const ComprehensiveReportView: React.FC<{
   report: ComprehensiveReportData;
   candidate: any;
   job: any;
-}> = ({ report, candidate, job }) => {
+  examResult: any;
+}> = ({ report, candidate, job, examResult }) => {
   const getPerformanceColor = (performance: string) => {
     switch (performance) {
       case 'excellent':
