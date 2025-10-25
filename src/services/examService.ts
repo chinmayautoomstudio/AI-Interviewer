@@ -12,6 +12,8 @@ import {
   ExamPerformanceMetrics
 } from '../types';
 import { topicManagementService } from './topicManagementService';
+import { MCQEvaluationService, MCQEvaluationResult } from './mcqEvaluationService';
+import { TextEvaluationService } from './textEvaluationService';
 
 export class ExamService {
   /**
@@ -223,6 +225,12 @@ export class ExamService {
     console.log('📋 Job description ID:', session.job_description_id);
     console.log('📊 Total questions needed:', session.total_questions);
 
+    // Check if job_description_id is valid
+    if (!session.job_description_id) {
+      console.error('❌ No job description ID found for session:', sessionId);
+      throw new Error('Exam session has no associated job description');
+    }
+
     // Simplified approach: Get questions directly by job description
     const { data: questions, error } = await supabase
       .from('exam_questions')
@@ -327,6 +335,11 @@ export class ExamService {
     });
 
     try {
+      // Validate input parameters
+      if (!exam_session_id || !question_id || !answer_text) {
+        throw new Error('Missing required parameters: exam_session_id, question_id, and answer_text are required');
+      }
+
       // Get the question to validate the answer
       const question = await this.getQuestionById(question_id);
       if (!question) {
@@ -337,41 +350,95 @@ export class ExamService {
       console.log('✅ Question found:', question.question_text?.substring(0, 50) + '...');
 
       // Calculate if answer is correct and points earned
-      const { is_correct, points_earned } = this.evaluateAnswer(question, answer_text);
+      const evaluation = this.evaluateAnswer(question, answer_text);
+      const { is_correct, points_earned, evaluation_details } = evaluation;
       
       console.log('📊 Answer evaluation:', {
         is_correct,
         points_earned,
         question_type: question.question_type,
-        correct_answer: question.correct_answer
+        correct_answer: question.correct_answer,
+        evaluation_details: evaluation_details ? 'Present' : 'None'
       });
 
-      // Upsert the response
-      const { data, error } = await supabase
-        .from('exam_responses')
-        .upsert([{
-          exam_session_id,
-          question_id,
-          answer_text,
-          is_correct,
-          points_earned,
-          time_taken_seconds,
-          answered_at: new Date().toISOString()
-        }], {
-          onConflict: 'exam_session_id,question_id'
-        })
-        .select(`
-          *,
-          question:exam_questions(*)
-        `)
-        .single();
+      // Prepare the response data
+      const responseData = {
+        exam_session_id,
+        question_id,
+        answer_text,
+        is_correct,
+        points_earned,
+        time_taken_seconds,
+        answered_at: new Date().toISOString(),
+        evaluation_details: evaluation_details || null
+      };
 
-      if (error) {
-        console.error('❌ Error submitting answer:', error);
-        throw new Error(`Failed to submit answer: ${error.message}`);
+      console.log('💾 Saving response data:', {
+        exam_session_id,
+        question_id,
+        answer_length: answer_text.length,
+        is_correct,
+        points_earned
+      });
+
+      // Upsert the response with retry mechanism
+      let data: ExamResponse | null = null;
+      let error: any = null;
+      let retryCount = 0;
+      const maxRetries = 3;
+
+      while (retryCount < maxRetries) {
+        const result = await supabase
+          .from('exam_responses')
+          .upsert([responseData], {
+            onConflict: 'exam_session_id,question_id'
+          })
+          .select(`
+            *,
+            question:exam_questions(*)
+          `)
+          .single();
+
+        data = result.data;
+        error = result.error;
+
+        if (!error) {
+          break; // Success, exit retry loop
+        }
+
+        retryCount++;
+        console.warn(`⚠️ Attempt ${retryCount} failed, retrying...`, error);
+
+        if (retryCount < maxRetries) {
+          // Wait before retry (exponential backoff)
+          await new Promise(resolve => setTimeout(resolve, Math.pow(2, retryCount) * 1000));
+        }
+      }
+
+      if (error || !data) {
+        console.error('❌ Error submitting answer after all retries:', error);
+        throw new Error(`Failed to submit answer after ${maxRetries} attempts: ${error?.message || 'No data returned'}`);
       }
 
       console.log('✅ Answer submitted successfully:', data.id);
+
+      // Verify the response was saved correctly
+      const { data: verification, error: verifyError } = await supabase
+        .from('exam_responses')
+        .select('id, answer_text, is_correct, points_earned')
+        .eq('id', data.id)
+        .single();
+
+      if (verifyError || !verification) {
+        console.error('❌ Verification failed - response may not have been saved:', verifyError);
+        throw new Error('Response verification failed - data may not have been saved correctly');
+      }
+
+      console.log('✅ Response verification successful:', {
+        id: verification.id,
+        answer_saved: verification.answer_text === answer_text,
+        points_saved: verification.points_earned === points_earned
+      });
 
       // Check if we should add adaptive questions
       await this.checkAndAddAdaptiveQuestions(exam_session_id);
@@ -386,12 +453,34 @@ export class ExamService {
   /**
    * Evaluate an answer and determine correctness and points
    */
-  private evaluateAnswer(question: ExamQuestion, answer: string): { is_correct: boolean; points_earned: number } {
+  private evaluateAnswer(question: ExamQuestion, answer: string): { is_correct: boolean; points_earned: number; evaluation_details?: any } {
     if (question.question_type === 'mcq') {
-      const is_correct = answer.trim().toUpperCase() === question.correct_answer?.trim().toUpperCase();
+      // Use enhanced MCQ evaluation service
+      const evaluationResult = MCQEvaluationService.evaluateAnswer(question, answer, {
+        caseSensitive: false,
+        allowPartialCredit: false,
+        enableFuzzyMatching: true,
+        fuzzyThreshold: 0.9
+      });
+
+      console.log('🎯 Enhanced MCQ evaluation result:', {
+        questionId: question.id,
+        isCorrect: evaluationResult.isCorrect,
+        pointsEarned: evaluationResult.pointsEarned,
+        confidence: evaluationResult.confidence,
+        method: evaluationResult.evaluationDetails
+      });
+
       return {
-        is_correct,
-        points_earned: is_correct ? question.points : 0
+        is_correct: evaluationResult.isCorrect,
+        points_earned: evaluationResult.pointsEarned,
+        evaluation_details: {
+          confidence: evaluationResult.confidence,
+          explanation: evaluationResult.explanation,
+          selectedOption: evaluationResult.selectedOption,
+          correctOption: evaluationResult.correctOption,
+          evaluationDetails: evaluationResult.evaluationDetails
+        }
       };
     } else {
       // For text answers, we'll do basic evaluation here
@@ -419,6 +508,269 @@ export class ExamService {
     );
     
     return matchedKeywords.length >= Math.ceil(expectedKeywords.length * 0.5);
+  }
+
+  // ===== TEXT EVALUATION =====
+
+  /**
+   * Manually trigger text evaluation for a session
+   */
+  async triggerTextEvaluation(sessionId: string): Promise<{ 
+    success: boolean; 
+    message: string;
+    evaluatedCount?: number;
+    overallScore?: number;
+  }> {
+    try {
+      console.log('📝 Manually triggering text evaluation for session:', sessionId);
+
+      // Check if text evaluation is needed
+      const needsEvaluation = await TextEvaluationService.needsTextEvaluation(sessionId);
+      if (!needsEvaluation) {
+        return {
+          success: true,
+          message: 'No text questions need evaluation or already evaluated'
+        };
+      }
+
+      // Trigger text evaluation
+      const result = await TextEvaluationService.evaluateTextAnswers(sessionId);
+      
+      if (result.success) {
+        // Recalculate exam results after text evaluation
+        await this.recalculateExamResults(sessionId);
+        
+        return {
+          success: true,
+          message: 'Text evaluation completed successfully',
+          evaluatedCount: result.evaluated_count,
+          overallScore: result.overall_score
+        };
+      } else {
+        return {
+          success: false,
+          message: result.error || 'Text evaluation failed'
+        };
+      }
+    } catch (error) {
+      console.error('❌ Error triggering text evaluation:', error);
+      return {
+        success: false,
+        message: error instanceof Error ? error.message : 'Failed to trigger text evaluation'
+      };
+    }
+  }
+
+  /**
+   * Get text evaluation results for a session
+   */
+  async getTextEvaluationResults(sessionId: string): Promise<any[]> {
+    try {
+      return await TextEvaluationService.getTextEvaluationResults(sessionId);
+    } catch (error) {
+      console.error('❌ Error getting text evaluation results:', error);
+      return [];
+    }
+  }
+
+  // ===== MCQ AUTO-EVALUATION =====
+
+  /**
+   * Auto-evaluate all MCQ answers for a completed exam session
+   */
+  async autoEvaluateMCQAnswers(sessionId: string): Promise<{ 
+    success: boolean; 
+    evaluatedCount: number; 
+    totalMCQCount: number;
+    results: MCQEvaluationResult[];
+  }> {
+    try {
+      console.log('🤖 Starting auto-evaluation for session:', sessionId);
+
+      // Get the exam session
+      const session = await this.getSessionById(sessionId);
+      if (!session) {
+        throw new Error('Exam session not found');
+      }
+
+      // Get all responses for this session
+      const responses = await this.getSessionResponses(sessionId);
+      
+      // Filter MCQ responses that haven't been auto-evaluated yet
+      const mcqResponses = responses.filter(response => 
+        response.question?.question_type === 'mcq' && 
+        !response.evaluation_details // Not yet auto-evaluated
+      );
+
+      console.log(`📊 Found ${mcqResponses.length} MCQ responses to evaluate`);
+
+      if (mcqResponses.length === 0) {
+        return {
+          success: true,
+          evaluatedCount: 0,
+          totalMCQCount: responses.filter(r => r.question?.question_type === 'mcq').length,
+          results: []
+        };
+      }
+
+      // Evaluate each MCQ response
+      const evaluationResults: MCQEvaluationResult[] = [];
+      let evaluatedCount = 0;
+
+      for (const response of mcqResponses) {
+        if (response.question && response.answer_text) {
+          try {
+            const evaluationResult = MCQEvaluationService.evaluateAnswer(
+              response.question, 
+              response.answer_text,
+              {
+                caseSensitive: false,
+                allowPartialCredit: false,
+                enableFuzzyMatching: true,
+                fuzzyThreshold: 0.9
+              }
+            );
+
+            // Update the response with evaluation details
+            const { error: updateError } = await supabase
+              .from('exam_responses')
+              .update({
+                is_correct: evaluationResult.isCorrect,
+                points_earned: evaluationResult.pointsEarned,
+                evaluation_details: {
+                  confidence: evaluationResult.confidence,
+                  explanation: evaluationResult.explanation,
+                  selectedOption: evaluationResult.selectedOption,
+                  correctOption: evaluationResult.correctOption,
+                  evaluationDetails: evaluationResult.evaluationDetails,
+                  autoEvaluated: true,
+                  evaluatedAt: new Date().toISOString()
+                }
+              })
+              .eq('id', response.id);
+
+            if (updateError) {
+              console.error(`❌ Error updating response ${response.id}:`, updateError);
+            } else {
+              evaluatedCount++;
+              evaluationResults.push(evaluationResult);
+              console.log(`✅ Auto-evaluated MCQ response ${response.id}:`, {
+                isCorrect: evaluationResult.isCorrect,
+                pointsEarned: evaluationResult.pointsEarned,
+                confidence: evaluationResult.confidence
+              });
+            }
+          } catch (error) {
+            console.error(`❌ Error evaluating response ${response.id}:`, error);
+          }
+        }
+      }
+
+      // Recalculate exam results if any evaluations were updated
+      if (evaluatedCount > 0) {
+        await this.recalculateExamResults(sessionId);
+      }
+
+      console.log(`🎯 Auto-evaluation completed: ${evaluatedCount}/${mcqResponses.length} MCQ responses evaluated`);
+
+      return {
+        success: true,
+        evaluatedCount,
+        totalMCQCount: responses.filter(r => r.question?.question_type === 'mcq').length,
+        results: evaluationResults
+      };
+
+    } catch (error) {
+      console.error('❌ Error in auto-evaluation:', error);
+      return {
+        success: false,
+        evaluatedCount: 0,
+        totalMCQCount: 0,
+        results: []
+      };
+    }
+  }
+
+  /**
+   * Recalculate exam results after auto-evaluation
+   */
+  private async recalculateExamResults(sessionId: string): Promise<void> {
+    try {
+      console.log('🔄 Recalculating exam results for session:', sessionId);
+
+      // Get all responses for this session
+      const responses = await this.getSessionResponses(sessionId);
+      
+      // Calculate totals
+      const totalQuestions = responses.length;
+      const correctAnswers = responses.filter(r => r.is_correct).length;
+      const totalPoints = responses.reduce((sum, r) => sum + (r.points_earned || 0), 0);
+      const maxPoints = responses.reduce((sum, r) => sum + (r.question?.points || 1), 0);
+      const percentage = maxPoints > 0 ? Math.round((totalPoints / maxPoints) * 100) : 0;
+      
+      // Determine evaluation status based on percentage (assuming 60% is passing)
+      const evaluationStatus = percentage >= 60 ? 'passed' : 'failed';
+
+      // Get the session to get candidate_id
+      const session = await this.getSessionById(sessionId);
+      
+      // Check if exam result already exists
+      const { data: existingResult } = await supabase
+        .from('exam_results')
+        .select('id')
+        .eq('exam_session_id', sessionId)
+        .single();
+
+      let error;
+      if (existingResult) {
+        // Update existing result
+        const { error: updateError } = await supabase
+          .from('exam_results')
+          .update({
+            candidate_id: session?.candidate_id,
+            total_score: totalPoints,
+            max_score: maxPoints,
+            percentage: percentage,
+            correct_answers: correctAnswers,
+            wrong_answers: totalQuestions - correctAnswers,
+            skipped_questions: 0,
+            evaluation_status: evaluationStatus
+          })
+          .eq('exam_session_id', sessionId);
+        error = updateError;
+      } else {
+        // Insert new result
+        const { error: insertError } = await supabase
+          .from('exam_results')
+          .insert([{
+            exam_session_id: sessionId,
+            candidate_id: session?.candidate_id,
+            total_score: totalPoints,
+            max_score: maxPoints,
+            percentage: percentage,
+            correct_answers: correctAnswers,
+            wrong_answers: totalQuestions - correctAnswers,
+            skipped_questions: 0,
+            evaluation_status: evaluationStatus
+          }]);
+        error = insertError;
+      }
+
+      if (error) {
+        console.error('❌ Error updating exam results:', error);
+      } else {
+        console.log('✅ Exam results recalculated:', {
+          totalQuestions,
+          correctAnswers,
+          totalPoints,
+          maxPoints,
+          percentage
+        });
+      }
+
+    } catch (error) {
+      console.error('❌ Error recalculating exam results:', error);
+    }
   }
 
   // ===== ADAPTIVE TESTING =====
@@ -587,6 +939,35 @@ export class ExamService {
     // Update session status
     await this.updateSessionStatus(sessionId, 'completed');
 
+    // Trigger auto-evaluation of MCQ answers
+    try {
+      console.log('🤖 Triggering auto-evaluation for completed exam...');
+      const autoEvalResult = await this.autoEvaluateMCQAnswers(sessionId);
+      console.log('✅ Auto-evaluation completed:', {
+        success: autoEvalResult.success,
+        evaluatedCount: autoEvalResult.evaluatedCount,
+        totalMCQCount: autoEvalResult.totalMCQCount
+      });
+    } catch (error) {
+      console.error('❌ Auto-evaluation failed (non-critical):', error);
+      // Don't throw error as this is not critical for exam completion
+    }
+
+    // Trigger text evaluation for text questions
+    try {
+      console.log('📝 Triggering text evaluation for completed exam...');
+      const textEvalResult = await TextEvaluationService.evaluateTextAnswers(sessionId);
+      console.log('✅ Text evaluation completed:', {
+        success: textEvalResult.success,
+        evaluatedCount: textEvalResult.evaluated_count,
+        overallScore: textEvalResult.overall_score,
+        processingTime: textEvalResult.processing_time
+      });
+    } catch (error) {
+      console.error('❌ Text evaluation failed (non-critical):', error);
+      // Don't throw error as this is not critical for exam completion
+    }
+
     return data;
   }
 
@@ -689,7 +1070,7 @@ export class ExamService {
   /**
    * Get session responses
    */
-  private async getSessionResponses(sessionId: string): Promise<ExamResponse[]> {
+  async getSessionResponses(sessionId: string): Promise<ExamResponse[]> {
     const { data, error } = await supabase
       .from('exam_responses')
       .select(`

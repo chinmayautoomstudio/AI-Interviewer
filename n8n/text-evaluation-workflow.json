@@ -1,0 +1,225 @@
+{
+  "name": "Text Answer Evaluation Workflow",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "evaluate-text-answers",
+        "responseMode": "responseNode"
+      },
+      "id": "webhook-trigger",
+      "name": "Webhook Trigger",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [240, 300],
+      "webhookId": "text-evaluation-webhook"
+    },
+    {
+      "parameters": {
+        "functionCode": "// Extract and validate input data from webhook\nconst webhookData = $input.first().json;\nconsole.log('🔍 Raw webhook data:', JSON.stringify(webhookData, null, 2));\n\n// Extract data from webhook body\nconst inputData = webhookData.body || webhookData;\nconsole.log('📋 Extracted input data:', JSON.stringify(inputData, null, 2));\n\n// Validate required fields\nif (!inputData.session_id || !inputData.evaluation_request) {\n  console.error('❌ Missing required fields:', {\n    hasSessionId: !!inputData.session_id,\n    hasEvaluationRequest: !!inputData.evaluation_request,\n    inputDataKeys: Object.keys(inputData)\n  });\n  throw new Error('Missing required fields: session_id and evaluation_request');\n}\n\nconst evalRequest = inputData.evaluation_request;\n\n// Extract text questions for evaluation\nconst textQuestions = evalRequest.text_questions || [];\n\n// Filter out questions with empty question_text (these are likely MCQ questions)\nconst actualTextQuestions = textQuestions.filter(q => q.question_text && q.question_text.trim() !== '');\n\nconsole.log('📝 Text questions analysis:', {\n  totalQuestions: textQuestions.length,\n  actualTextQuestions: actualTextQuestions.length,\n  textQuestionsWithContent: actualTextQuestions.map(q => ({\n    id: q.question_id,\n    hasText: !!q.question_text,\n    textLength: q.question_text?.length || 0\n  }))\n});\n\nif (actualTextQuestions.length === 0) {\n  return [{\n    json: {\n      success: true,\n      message: 'No text questions to evaluate',\n      evaluatedCount: 0,\n      totalTextCount: textQuestions.length,\n      results: []\n    }\n  }];\n}\n\n// Prepare evaluation data\nconst evaluationData = {\n  sessionId: inputData.session_id,\n  candidateId: evalRequest.candidate?.id,\n  jobDescriptionId: evalRequest.job_description?.id,\n  candidate: evalRequest.candidate,\n  jobDescription: evalRequest.job_description,\n  examSession: evalRequest.exam_session,\n  textQuestions: actualTextQuestions,\n  mcqSummary: evalRequest.mcq_summary,\n  evaluationCriteria: evalRequest.evaluation_criteria || {\n    technical_accuracy_weight: 0.4,\n    completeness_weight: 0.3,\n    clarity_weight: 0.2,\n    relevance_weight: 0.1,\n    minimum_score_threshold: 60\n  },\n  timestamp: new Date().toISOString()\n};\n\nconsole.log('📝 Text evaluation data prepared:', {\n  sessionId: evaluationData.sessionId,\n  textQuestionsCount: actualTextQuestions.length,\n  candidateName: evaluationData.candidate?.name,\n  totalQuestions: textQuestions.length\n});\n\nreturn [{\n  json: evaluationData\n}];"
+      },
+      "id": "extract-data",
+      "name": "Extract & Validate Data",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [460, 300]
+    },
+    {
+      "parameters": {
+        "resource": "chat",
+        "model": "gpt-4",
+        "messages": {
+          "values": [
+            {
+              "role": "system",
+              "content": "You are an expert technical assessment evaluator with 10+ years of experience in evaluating candidate responses for software development positions. You provide fair, consistent, and constructive evaluation of technical and aptitude answers.\n\nYour role is to:\n1. Evaluate candidate answers against expected knowledge and skills\n2. Provide detailed feedback for improvement\n3. Assign scores based on accuracy, completeness, clarity, and relevance\n4. Consider the candidate's experience level and the question difficulty\n5. Be constructive and encouraging while maintaining standards\n\nEvaluation Framework:\n- **Accuracy (40%)**: Factual correctness and technical understanding\n- **Completeness (30%)**: Coverage of key points and concepts\n- **Clarity (20%)**: Structure, organization, and communication\n- **Relevance (10%)**: Applicability to the question and job role\n\nScoring Guidelines:\n- 90-100%: Exceptional answer, exceeds expectations\n- 80-89%: Very good answer, meets most expectations\n- 70-79%: Good answer with minor gaps\n- 60-69%: Adequate answer, some areas need improvement\n- 50-59%: Below average, significant gaps\n- 0-49%: Poor answer, major issues or incorrect\n\nAlways provide constructive feedback and specific suggestions for improvement."
+            },
+            {
+              "role": "user",
+              "content": "Evaluate the following text answers for a {{ $json.candidate.experience_years || 0 }}-year experience candidate applying for {{ $json.jobDescription.title }} position.\n\n**CANDIDATE PROFILE:**\n- Name: {{ $json.candidate.name }}\n- Experience: {{ $json.candidate.experience_years || 0 }} years\n- Skills: {{ $json.candidate.skills?.join(', ') || 'Not specified' }}\n- Current Role: {{ $json.candidate.current_role || 'Not specified' }}\n\n**JOB REQUIREMENTS:**\n- Position: {{ $json.jobDescription.title }}\n- Company: {{ $json.jobDescription.company || 'Not specified' }}\n- Required Skills: {{ $json.jobDescription.required_skills?.join(', ') || 'Not specified' }}\n- Experience Required: {{ $json.jobDescription.experience_required || 'Not specified' }}\n\n**EVALUATION CRITERIA:**\n- Technical Accuracy Weight: {{ $json.evaluationCriteria.technical_accuracy_weight * 100 }}%\n- Completeness Weight: {{ $json.evaluationCriteria.completeness_weight * 100 }}%\n- Clarity Weight: {{ $json.evaluationCriteria.clarity_weight * 100 }}%\n- Relevance Weight: {{ $json.evaluationCriteria.relevance_weight * 100 }}%\n- Minimum Passing Score: {{ $json.evaluationCriteria.minimum_score_threshold }}%\n\n**TEXT QUESTIONS TO EVALUATE:**\n\n{{ $json.textQuestions.map((q, index) => `\n**Question ${index + 1}:**\n- ID: ${q.question_id}\n- Text: ${q.question_text}\n- Category: ${q.question_category}\n- Difficulty: ${q.difficulty_level}\n- Max Points: ${q.points}\n- Expected Keywords: ${q.expected_keywords?.join(', ') || 'Not specified'}\n- Time Taken: ${q.time_taken_seconds} seconds\n- Candidate Answer: \"${q.candidate_answer}\"\n`).join('\\n') }}\n\n**MCQ PERFORMANCE CONTEXT:**\n- Total MCQ Questions: {{ $json.mcqSummary.total_mcq_questions }}\n- Correct MCQ Answers: {{ $json.mcqSummary.correct_answers }}\n- MCQ Score: {{ $json.mcqSummary.mcq_score }}/{{ $json.mcqSummary.total_mcq_questions }}\n- MCQ Percentage: {{ $json.mcqSummary.mcq_percentage }}%\n\n**INSTRUCTIONS:**\n1. Evaluate each text question individually\n2. Consider the candidate's experience level when setting expectations\n3. Provide specific, actionable feedback\n4. Be fair but maintain standards\n5. Consider the overall performance context (MCQ results)\n\n**OUTPUT FORMAT (JSON):**\n```json\n{\n  \"evaluations\": [\n    {\n      \"question_id\": \"uuid-question-1\",\n      \"score\": 4.2,\n      \"max_score\": 5,\n      \"percentage\": 84,\n      \"is_passing\": true,\n      \"detailed_scores\": {\n        \"technical_accuracy\": 4.5,\n        \"completeness\": 4.0,\n        \"clarity\": 4.0,\n        \"relevance\": 4.5\n      },\n      \"feedback\": {\n        \"overall\": \"Strong technical understanding with good practical knowledge. Minor gaps in advanced concepts.\",\n        \"strengths\": [\n          \"Correctly identified key concepts\",\n          \"Provided practical examples\",\n          \"Clear and well-structured response\"\n        ],\n        \"weaknesses\": [\n          \"Missing some advanced details\",\n          \"Could benefit from more specific examples\"\n        ],\n        \"suggestions\": [\n          \"Study advanced concepts in the topic\",\n          \"Practice with real-world scenarios\",\n          \"Focus on practical applications\"\n        ]\n      },\n      \"keyword_analysis\": {\n        \"expected_keywords_found\": [\"keyword1\", \"keyword2\"],\n        \"missing_keywords\": [\"keyword3\"],\n        \"keyword_coverage_percentage\": 75\n      },\n      \"ai_confidence\": 0.87,\n      \"evaluation_method\": \"ai_analysis\",\n      \"reasoning\": \"The answer demonstrates solid understanding of core concepts with practical examples. While it covers the main points well, it could benefit from more depth in advanced areas.\"\n    }\n  ],\n  \"overall_text_evaluation\": {\n    \"total_text_score\": 11.0,\n    \"max_text_score\": 13,\n    \"text_percentage\": 84.6,\n    \"average_confidence\": 0.895,\n    \"evaluation_summary\": \"Strong technical understanding with room for improvement in completeness\",\n    \"overall_feedback\": \"The candidate shows good technical knowledge and communication skills. With some focused learning in advanced areas, they would be well-suited for this role.\"\n  },\n  \"recommendations\": {\n    \"hiring_decision\": {\n      \"recommendation\": \"proceed_to_interview\",\n      \"confidence\": 0.85,\n      \"reasoning\": \"Strong technical foundation with good aptitude. Minor skill gaps can be addressed through training.\"\n    },\n    \"interview_focus\": [\n      \"Deep dive into advanced JavaScript concepts\",\n      \"Practical coding challenges\",\n      \"Problem-solving approach assessment\",\n      \"Learning agility evaluation\"\n    ],\n    \"skill_gaps\": {\n      \"critical\": [],\n      \"important\": [\"Advanced JavaScript concepts\", \"Testing methodologies\"],\n      \"nice_to_have\": [\"Performance optimization\", \"Advanced debugging\"]\n    }\n  }\n}\n```\n\nPlease evaluate all text questions and provide comprehensive feedback."
+            }
+          ]
+        },
+        "temperature": 0.3,
+        "maxTokens": 4000
+      },
+      "id": "ai-evaluation",
+      "name": "AI Text Evaluation",
+      "type": "n8n-nodes-base.openAi",
+      "typeVersion": 1,
+      "position": [680, 300]
+    },
+    {
+      "parameters": {
+        "functionCode": "// Process AI evaluation results and prepare for loop processing\nconsole.log('🔍 Processing AI evaluation results...');\n\n// Get the AI response from the previous node\nconst aiResponse = $input.first().json;\nconsole.log('📋 AI Response received:', JSON.stringify(aiResponse, null, 2));\n\n// Get the original input data from the first node\nconst originalInput = $('Extract & Validate Data').first().json;\nconsole.log('📋 Original input data:', JSON.stringify(originalInput, null, 2));\n\nlet evaluationResults;\n\ntry {\n  // Parse AI response - handle different response formats\n  let aiContent;\n  if (aiResponse.choices && aiResponse.choices[0] && aiResponse.choices[0].message) {\n    // OpenAI format\n    aiContent = aiResponse.choices[0].message.content;\n  } else if (aiResponse.content) {\n    // Direct content format\n    aiContent = aiResponse.content;\n  } else if (typeof aiResponse === 'string') {\n    // String format\n    aiContent = aiResponse;\n  } else {\n    // Try to find content in the response\n    aiContent = aiResponse.output || aiResponse.result || JSON.stringify(aiResponse);\n  }\n  \n  console.log('📝 AI Content to parse:', aiContent);\n  \n  // Parse the JSON content\n  evaluationResults = JSON.parse(aiContent);\n  console.log('✅ Successfully parsed evaluation results');\n} catch (error) {\n  console.error('❌ Error parsing AI response:', error);\n  console.error('Raw AI response:', aiResponse);\n  throw new Error(`Failed to parse AI evaluation response: ${error.message}`);\n}\n\n// Validate evaluation results\nif (!evaluationResults.evaluations || !Array.isArray(evaluationResults.evaluations)) {\n  console.error('❌ Invalid evaluation results format:', evaluationResults);\n  throw new Error('Invalid evaluation results format - missing evaluations array');\n}\n\nconsole.log('📊 Processing evaluations:', {\n  totalEvaluations: evaluationResults.evaluations.length,\n  hasOverallEvaluation: !!evaluationResults.overall_text_evaluation,\n  hasRecommendations: !!evaluationResults.recommendations\n});\n\n// Process each evaluation for individual database updates\nconst processedEvaluations = evaluationResults.evaluations.map(eval => {\n  return {\n    question_id: eval.question_id,\n    score: Math.round(eval.score * 100) / 100, // Round to 2 decimal places\n    max_score: eval.max_score,\n    percentage: Math.round(eval.percentage * 100) / 100,\n    is_passing: eval.is_passing,\n    detailed_scores: eval.detailed_scores,\n    feedback: eval.feedback,\n    keyword_analysis: eval.keyword_analysis,\n    ai_confidence: Math.round(eval.ai_confidence * 100) / 100,\n    evaluation_method: eval.evaluation_method,\n    reasoning: eval.reasoning,\n    evaluated_at: new Date().toISOString()\n  };\n});\n\n// Prepare overall evaluation data for exam_results table\nconst overallEvaluation = {\n  action: 'update_exam_results',\n  session_id: originalInput.sessionId,\n  text_evaluation_summary: {\n    total_text_score: Math.round(evaluationResults.overall_text_evaluation.total_text_score * 100) / 100,\n    max_text_score: evaluationResults.overall_text_evaluation.max_text_score,\n    text_percentage: Math.round(evaluationResults.overall_text_evaluation.text_percentage * 100) / 100,\n    average_confidence: Math.round(evaluationResults.overall_text_evaluation.average_confidence * 100) / 100,\n    evaluation_summary: evaluationResults.overall_text_evaluation.evaluation_summary,\n    overall_feedback: evaluationResults.overall_text_evaluation.overall_feedback\n  },\n  hiring_recommendations: evaluationResults.recommendations,\n  processing_metadata: {\n    evaluation_timestamp: new Date().toISOString(),\n    processing_time_seconds: Math.round((Date.now() - new Date(originalInput.timestamp).getTime()) / 1000),\n    ai_model_used: 'gpt-4',\n    evaluation_version: '1.0',\n    questions_evaluated: processedEvaluations.length\n  },\n  text_evaluation_completed: true,\n  text_evaluation_timestamp: new Date().toISOString()\n};\n\n// Prepare individual response updates for loop processing\nconst responseUpdates = processedEvaluations.map(eval => {\n  return {\n    action: 'update_exam_response',\n    session_id: originalInput.sessionId,\n    question_id: eval.question_id,\n    points_earned: eval.score,\n    is_correct: eval.is_passing,\n    evaluation_details: {\n      ai_evaluation: {\n        score: eval.score,\n        max_score: eval.max_score,\n        percentage: eval.percentage,\n        is_passing: eval.is_passing,\n        detailed_scores: eval.detailed_scores,\n        feedback: eval.feedback,\n        keyword_analysis: eval.keyword_analysis,\n        ai_confidence: eval.ai_confidence,\n        evaluation_method: eval.evaluation_method,\n        reasoning: eval.reasoning,\n        evaluated_at: eval.evaluated_at\n      },\n      autoEvaluated: true,\n      evaluation_timestamp: new Date().toISOString()\n    }\n  };\n});\n\n// Combine all updates into a single array for loop processing\nconst allUpdates = [overallEvaluation, ...responseUpdates];\n\nconsole.log('✅ Text evaluation processing completed:', {\n  sessionId: originalInput.sessionId,\n  totalUpdates: allUpdates.length,\n  examResultsUpdate: 1,\n  responseUpdates: responseUpdates.length,\n  overallScore: overallEvaluation.text_evaluation_summary.text_percentage,\n  averageConfidence: overallEvaluation.text_evaluation_summary.average_confidence\n});\n\n// Return array of updates for loop processing\nreturn allUpdates.map(update => ({ json: update }));"
+      },
+      "id": "process-results",
+      "name": "Process Evaluation Results",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [900, 300]
+    },
+    {
+      "parameters": {
+        "functionCode": "// Update exam_responses table with AI evaluation results\nconst evaluationData = $input.first().json;\n\nconsole.log('🔄 Updating exam_responses table...');\nconsole.log('Session ID:', evaluationData.session_id);\nconsole.log('Evaluation results count:', evaluationData.evaluation_results.length);\n\n// Prepare individual update operations for each question\nconst updateOperations = evaluationData.evaluation_results.map(eval => {\n  return {\n    operation: 'update',\n    table: 'exam_responses',\n    updateKey: 'question_id',\n    updateValue: eval.question_id,\n    columns: 'points_earned,is_correct,evaluation_details',\n    values: `${eval.score},${eval.is_passing},${JSON.stringify({\n      ai_evaluation: {\n        score: eval.score,\n        max_score: eval.max_score,\n        percentage: eval.percentage,\n        is_passing: eval.is_passing,\n        detailed_scores: eval.detailed_scores,\n        feedback: eval.feedback,\n        keyword_analysis: eval.keyword_analysis,\n        ai_confidence: eval.ai_confidence,\n        evaluation_method: eval.evaluation_method,\n        reasoning: eval.reasoning,\n        evaluated_at: eval.evaluated_at\n      },\n      autoEvaluated: true,\n      evaluation_timestamp: new Date().toISOString()\n    })}`\n  };\n});\n\nconsole.log('📊 Prepared update operations:', updateOperations.length);\n\n// Return the operations for the next node to process\nreturn updateOperations.map(op => ({ json: op }));"
+      },
+      "id": "prepare-response-updates",
+      "name": "Prepare Response Updates",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [1120, 200]
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "table": "exam_responses",
+        "updateKey": "question_id",
+        "updateValue": "={{ $json.updateValue }}",
+        "columns": "={{ $json.columns }}",
+        "values": "={{ $json.values }}"
+      },
+      "id": "update-responses",
+      "name": "Update Response Scores",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [1320, 200]
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "table": "exam_results",
+        "updateKey": "exam_session_id",
+        "updateValue": "={{ $json.session_id }}",
+        "columns": "text_evaluation_summary,hiring_recommendations,processing_metadata,text_evaluation_completed,text_evaluation_timestamp,updated_at",
+        "values": "={{ JSON.stringify($json.text_evaluation_summary) }},={{ JSON.stringify($json.hiring_recommendations) }},={{ JSON.stringify($json.processing_metadata) }},true,={{ $json.text_evaluation_timestamp }},={{ new Date().toISOString() }}"
+      },
+      "id": "update-results",
+      "name": "Update Exam Results",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [1120, 400]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ {\n  success: true,\n  action: 'text_evaluation_complete',\n  session_id: $json.session_id,\n  status: 'success',\n  evaluated_count: $json.evaluation_results.length,\n  overall_score: $json.overall_text_evaluation.text_percentage,\n  average_confidence: $json.overall_text_evaluation.average_confidence,\n  processing_time: $json.processing_metadata.processing_time_seconds,\n  message: 'Text evaluation completed successfully'\n} }}"
+      },
+      "id": "success-response",
+      "name": "Success Response",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [1340, 300]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ {\n  success: false,\n  action: 'text_evaluation_failed',\n  session_id: $json.session_id || 'unknown',\n  status: 'error',\n  error: $json.error || 'Unknown error occurred',\n  message: 'Text evaluation failed'\n} }}"
+      },
+      "id": "error-response",
+      "name": "Error Response",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [1340, 500]
+    }
+  ],
+  "connections": {
+    "Webhook Trigger": {
+      "main": [
+        [
+          {
+            "node": "Extract & Validate Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract & Validate Data": {
+      "main": [
+        [
+          {
+            "node": "AI Text Evaluation",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Text Evaluation": {
+      "main": [
+        [
+          {
+            "node": "Process Evaluation Results",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Process Evaluation Results": {
+      "main": [
+        [
+          {
+            "node": "Prepare Response Updates",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Update Exam Results",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Response Updates": {
+      "main": [
+        [
+          {
+            "node": "Update Response Scores",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update Response Scores": {
+      "main": [
+        [
+          {
+            "node": "Success Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update Exam Results": {
+      "main": [
+        [
+          {
+            "node": "Success Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": null,
+  "tags": [
+    {
+      "createdAt": "2024-01-15T10:00:00.000Z",
+      "updatedAt": "2024-01-15T10:00:00.000Z",
+      "id": "exam-evaluation",
+      "name": "Exam Evaluation"
+    }
+  ],
+  "triggerCount": 1,
+  "updatedAt": "2024-01-15T10:00:00.000Z",
+  "versionId": "1"
+}

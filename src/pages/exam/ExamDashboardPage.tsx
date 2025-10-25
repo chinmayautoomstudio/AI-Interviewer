@@ -13,7 +13,8 @@ import {
   Edit,
   Copy,
   ExternalLink,
-  CheckCircle
+  CheckCircle,
+  RefreshCw
 } from 'lucide-react';
 import { ExamSession } from '../../types';
 import CreateExamModal from '../../components/exam/CreateExamModal';
@@ -63,13 +64,36 @@ const ExamDashboardPage: React.FC = () => {
   const loadDashboardData = async () => {
     try {
       setLoading(true);
+      console.log('🔄 Loading dashboard data...');
       
       // Load exam statistics
-      const [questionsResult, sessionsResult, topicsResult] = await Promise.all([
+      const [questionsResult, sessionsResult, topicsResult, resultsResult] = await Promise.all([
         supabase.from('exam_questions').select('id', { count: 'exact', head: true }),
-        supabase.from('exam_sessions').select('id, status, score, percentage', { count: 'exact' }),
-        supabase.from('question_topics').select('id', { count: 'exact', head: true })
+        supabase.from('exam_sessions').select('id, status', { count: 'exact' }),
+        supabase.from('question_topics').select('id', { count: 'exact', head: true }),
+        supabase.from('exam_results').select('percentage', { count: 'exact' })
       ]);
+
+      console.log('📊 Database results:', {
+        questions: questionsResult,
+        sessions: sessionsResult,
+        topics: topicsResult,
+        results: resultsResult
+      });
+
+      // Check for errors
+      if (questionsResult.error) {
+        console.error('❌ Error fetching questions:', questionsResult.error);
+      }
+      if (sessionsResult.error) {
+        console.error('❌ Error fetching sessions:', sessionsResult.error);
+      }
+      if (topicsResult.error) {
+        console.error('❌ Error fetching topics:', topicsResult.error);
+      }
+      if (resultsResult.error) {
+        console.error('❌ Error fetching results:', resultsResult.error);
+      }
 
       const totalQuestions = questionsResult.count || 0;
       const totalSessions = sessionsResult.count || 0;
@@ -81,11 +105,20 @@ const ExamDashboardPage: React.FC = () => {
       // Calculate completed sessions
       const completedSessions = sessionsResult.data?.filter(s => s.status === 'completed').length || 0;
       
-      // Calculate average score
-      const completedWithScores = sessionsResult.data?.filter(s => s.status === 'completed' && s.percentage) || [];
+      // Calculate average score from exam_results table
+      const completedWithScores = resultsResult.data?.filter(r => r.percentage) || [];
       const averageScore = completedWithScores.length > 0 
-        ? completedWithScores.reduce((sum, s) => sum + (s.percentage || 0), 0) / completedWithScores.length
+        ? completedWithScores.reduce((sum, r) => sum + (r.percentage || 0), 0) / completedWithScores.length
         : 0;
+
+      console.log('📈 Calculated stats:', {
+        totalQuestions,
+        totalSessions,
+        activeSessions,
+        completedSessions,
+        averageScore,
+        totalTopics
+      });
 
       setStats({
         totalQuestions,
@@ -96,20 +129,21 @@ const ExamDashboardPage: React.FC = () => {
         totalTopics
       });
 
-      // Load recent sessions
+      // Load recent sessions with results
       const { data: recentSessionsData, error: sessionsError } = await supabase
         .from('exam_sessions')
         .select(`
           id,
           status,
-          score,
-          percentage,
           started_at,
           candidate:candidates(name),
-          job_description:job_descriptions(title)
+          job_description:job_descriptions(title),
+          exam_results(percentage)
         `)
         .order('created_at', { ascending: false })
         .limit(5);
+
+      console.log('📋 Recent sessions data:', { recentSessionsData, sessionsError });
 
       if (!sessionsError && recentSessionsData) {
         const recentSessions = recentSessionsData.map((session: any) => ({
@@ -121,15 +155,29 @@ const ExamDashboardPage: React.FC = () => {
             ? session.job_description[0]?.title || 'Unknown'
             : session.job_description?.title || 'Unknown',
           status: session.status,
-          score: session.score,
+          score: session.exam_results?.[0]?.percentage || null,
           startedAt: session.started_at || ''
         }));
         
+        console.log('✅ Processed recent sessions:', recentSessions);
         setRecentSessions(recentSessions);
+      } else {
+        console.log('⚠️ No recent sessions data or error:', sessionsError);
+        setRecentSessions([]);
       }
 
     } catch (error) {
-      console.error('Error loading dashboard data:', error);
+      console.error('❌ Error loading dashboard data:', error);
+      // Set default values on error
+      setStats({
+        totalQuestions: 0,
+        totalSessions: 0,
+        activeSessions: 0,
+        completedSessions: 0,
+        averageScore: 0,
+        totalTopics: 0
+      });
+      setRecentSessions([]);
     } finally {
       setLoading(false);
     }
@@ -253,6 +301,13 @@ const ExamDashboardPage: React.FC = () => {
         </div>
         <div className="flex space-x-3">
           <button 
+            onClick={loadDashboardData}
+            className="bg-gray-600 text-white px-4 py-2 rounded-lg hover:bg-gray-700 transition-colors flex items-center space-x-2"
+          >
+            <RefreshCw className="h-4 w-4" />
+            <span>Refresh</span>
+          </button>
+          <button 
             onClick={() => navigate('/exams/create')}
             className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors flex items-center space-x-2"
           >
@@ -276,6 +331,9 @@ const ExamDashboardPage: React.FC = () => {
             <div>
               <p className="text-sm font-medium text-gray-600">Total Questions</p>
               <p className="text-2xl font-bold text-gray-900">{stats.totalQuestions}</p>
+              {stats.totalQuestions === 0 && (
+                <p className="text-xs text-gray-500 mt-1">No questions yet</p>
+              )}
             </div>
             <div className="p-3 bg-blue-100 rounded-full">
               <Brain className="h-6 w-6 text-blue-600" />
@@ -288,6 +346,9 @@ const ExamDashboardPage: React.FC = () => {
             <div>
               <p className="text-sm font-medium text-gray-600">Total Sessions</p>
               <p className="text-2xl font-bold text-gray-900">{stats.totalSessions}</p>
+              {stats.totalSessions === 0 && (
+                <p className="text-xs text-gray-500 mt-1">No sessions yet</p>
+              )}
             </div>
             <div className="p-3 bg-green-100 rounded-full">
               <Users className="h-6 w-6 text-green-600" />
@@ -300,6 +361,9 @@ const ExamDashboardPage: React.FC = () => {
             <div>
               <p className="text-sm font-medium text-gray-600">Active Sessions</p>
               <p className="text-2xl font-bold text-gray-900">{stats.activeSessions}</p>
+              {stats.activeSessions === 0 && (
+                <p className="text-xs text-gray-500 mt-1">No active sessions</p>
+              )}
             </div>
             <div className="p-3 bg-yellow-100 rounded-full">
               <Clock className="h-6 w-6 text-yellow-600" />
@@ -312,6 +376,9 @@ const ExamDashboardPage: React.FC = () => {
             <div>
               <p className="text-sm font-medium text-gray-600">Average Score</p>
               <p className="text-2xl font-bold text-gray-900">{stats.averageScore}%</p>
+              {stats.averageScore === 0 && (
+                <p className="text-xs text-gray-500 mt-1">No completed exams</p>
+              )}
             </div>
             <div className="p-3 bg-purple-100 rounded-full">
               <TrendingUp className="h-6 w-6 text-purple-600" />
@@ -320,78 +387,132 @@ const ExamDashboardPage: React.FC = () => {
         </div>
       </div>
 
+      {/* Getting Started Message */}
+      {stats.totalQuestions === 0 && stats.totalSessions === 0 && (
+        <div className="mb-8 p-6 bg-blue-50 border border-blue-200 rounded-lg">
+          <div className="flex items-start space-x-3">
+            <div className="p-2 bg-blue-100 rounded-lg">
+              <Brain className="w-5 h-5 text-blue-600" />
+            </div>
+            <div className="flex-1">
+              <h3 className="font-semibold text-blue-900 mb-2">Welcome to the Exam System!</h3>
+              <p className="text-blue-800 text-sm mb-3">
+                Get started by creating questions and setting up your first exam session. Here's what you can do:
+              </p>
+              <div className="space-y-2 text-sm text-blue-700">
+                <div className="flex items-center space-x-2">
+                  <span className="w-2 h-2 bg-blue-400 rounded-full"></span>
+                  <span>Create questions in the Question Bank</span>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <span className="w-2 h-2 bg-blue-400 rounded-full"></span>
+                  <span>Assign questions to job descriptions</span>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <span className="w-2 h-2 bg-blue-400 rounded-full"></span>
+                  <span>Create exam sessions for candidates</span>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <span className="w-2 h-2 bg-blue-400 rounded-full"></span>
+                  <span>Monitor results and analytics</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Recent Sessions */}
       <div className="bg-white rounded-lg shadow-sm border">
         <div className="p-6 border-b border-gray-200">
           <div className="flex justify-between items-center">
             <h2 className="text-lg font-semibold text-gray-900">Recent Exam Sessions</h2>
-            <button className="text-ai-teal hover:text-ai-teal/80 text-sm font-medium">
+            <button 
+              onClick={() => navigate('/exams/sessions')}
+              className="text-ai-teal hover:text-ai-teal/80 text-sm font-medium"
+            >
               View All
             </button>
           </div>
         </div>
         
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead className="bg-gray-50">
-              <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Candidate
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Job Title
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Status
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Score
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Started
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Actions
-                </th>
-              </tr>
-            </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
-              {recentSessions.map((session) => (
-                <tr key={session.id} className="hover:bg-gray-50">
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm font-medium text-gray-900">
-                      {session.candidateName}
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm text-gray-900">{session.jobTitle}</div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(session.status)}`}>
-                      {getStatusText(session.status)}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    {session.score ? `${session.score}%` : '-'}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {new Date(session.startedAt).toLocaleDateString()}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                    <div className="flex space-x-2">
-                      <button className="text-ai-teal hover:text-ai-teal/80">
-                        <Eye className="h-4 w-4" />
-                      </button>
-                      <button className="text-gray-600 hover:text-gray-800">
-                        <Edit className="h-4 w-4" />
-                      </button>
-                    </div>
-                  </td>
+        {recentSessions.length > 0 ? (
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Candidate
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Job Title
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Status
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Score
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Started
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Actions
+                  </th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {recentSessions.map((session) => (
+                  <tr key={session.id} className="hover:bg-gray-50">
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="text-sm font-medium text-gray-900">
+                        {session.candidateName}
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="text-sm text-gray-900">{session.jobTitle}</div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(session.status)}`}>
+                        {getStatusText(session.status)}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      {session.score ? `${session.score}%` : '-'}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      {session.startedAt ? new Date(session.startedAt).toLocaleDateString() : '-'}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                      <div className="flex space-x-2">
+                        <button className="text-ai-teal hover:text-ai-teal/80">
+                          <Eye className="h-4 w-4" />
+                        </button>
+                        <button className="text-gray-600 hover:text-gray-800">
+                          <Edit className="h-4 w-4" />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        ) : (
+          <div className="p-12 text-center">
+            <div className="p-3 bg-gray-100 rounded-full w-16 h-16 mx-auto mb-4 flex items-center justify-center">
+              <Calendar className="w-8 h-8 text-gray-400" />
+            </div>
+            <h3 className="text-lg font-medium text-gray-900 mb-2">No Exam Sessions Yet</h3>
+            <p className="text-gray-600 mb-4">Create your first exam session to get started</p>
+            <button
+              onClick={() => navigate('/exams/create')}
+              className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+            >
+              Create Exam Session
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Quick Actions */}
@@ -404,7 +525,10 @@ const ExamDashboardPage: React.FC = () => {
             <h3 className="text-lg font-semibold text-gray-900">Question Bank</h3>
           </div>
           <p className="text-gray-600 mb-4">Manage your question database and create new questions</p>
-          <button className="text-ai-teal hover:text-ai-teal/80 font-medium">
+          <button 
+            onClick={() => navigate('/exams/questions')}
+            className="text-ai-teal hover:text-ai-teal/80 font-medium"
+          >
             Manage Questions →
           </button>
         </div>
@@ -417,7 +541,10 @@ const ExamDashboardPage: React.FC = () => {
             <h3 className="text-lg font-semibold text-gray-900">Exam Sessions</h3>
           </div>
           <p className="text-gray-600 mb-4">View and manage active and completed exam sessions</p>
-          <button className="text-ai-teal hover:text-ai-teal/80 font-medium">
+          <button 
+            onClick={() => navigate('/exams/sessions')}
+            className="text-ai-teal hover:text-ai-teal/80 font-medium"
+          >
             View Sessions →
           </button>
         </div>
@@ -430,7 +557,10 @@ const ExamDashboardPage: React.FC = () => {
             <h3 className="text-lg font-semibold text-gray-900">Analytics</h3>
           </div>
           <p className="text-gray-600 mb-4">Analyze exam performance and candidate results</p>
-          <button className="text-ai-teal hover:text-ai-teal/80 font-medium">
+          <button 
+            onClick={() => navigate('/exams/results')}
+            className="text-ai-teal hover:text-ai-teal/80 font-medium"
+          >
             View Analytics →
           </button>
         </div>

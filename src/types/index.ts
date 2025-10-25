@@ -600,28 +600,35 @@ export interface ExamResponse {
   points_earned: number;
   time_taken_seconds?: number;
   answered_at: string;
+  evaluation_details?: any; // For storing MCQ evaluation details
   // Joined data
   question?: ExamQuestion;
 }
 
 export interface ExamResult {
   id: string;
-  exam_session_id: string;
-  candidate_id: string;
-  total_score: number;
-  max_score: number;
+  examSessionId: string;
+  candidateId: string;
+  totalScore: number;
+  maxScore: number;
   percentage: number;
-  correct_answers: number;
-  wrong_answers: number;
-  skipped_questions: number;
-  technical_score?: number;
-  aptitude_score?: number;
-  time_taken_minutes?: number;
-  evaluation_status: 'pending' | 'passed' | 'failed';
-  ai_evaluation?: Record<string, any>;
-  created_at: string;
+  correctAnswers: number;
+  wrongAnswers: number;
+  skippedQuestions: number;
+  technicalScore?: number;
+  aptitudeScore?: number;
+  timeTakenMinutes?: number;
+  evaluationStatus: 'pending' | 'passed' | 'failed';
+  aiEvaluation?: Record<string, any>;
+  createdAt: string;
+  // Text evaluation properties
+  textEvaluationSummary?: Record<string, any>;
+  hiringRecommendations?: Record<string, any>;
+  processingMetadata?: Record<string, any>;
+  textEvaluationCompleted?: boolean;
+  textEvaluationTimestamp?: string;
   // Joined data
-  exam_session?: ExamSession;
+  examSession?: ExamSession;
   candidate?: Candidate;
 }
 

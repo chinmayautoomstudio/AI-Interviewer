@@ -1,0 +1,408 @@
+{
+  "name": "Exam Report Generation Workflow",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "generate-exam-report",
+        "responseMode": "responseNode"
+      },
+      "id": "webhook-trigger",
+      "name": "Webhook Trigger",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [240, 300],
+      "webhookId": "exam-report-generation-webhook"
+    },
+    {
+      "parameters": {
+        "functionCode": "// Extract and validate input data from webhook\nconst webhookData = $input.first().json;\nconsole.log('🔍 Raw webhook data:', JSON.stringify(webhookData, null, 2));\n\n// Extract data from webhook body\nconst inputData = webhookData.body || webhookData;\nconsole.log('📋 Extracted input data:', JSON.stringify(inputData, null, 2));\n\n// Validate required fields\nif (!inputData.session_id) {\n  console.error('❌ Missing required field: session_id');\n  throw new Error('Missing required field: session_id');\n}\n\n// Prepare report generation data\nconst reportData = {\n  sessionId: inputData.session_id,\n  candidateId: inputData.candidate_id,\n  jobDescriptionId: inputData.job_description_id,\n  includeDetailedAnalysis: inputData.include_detailed_analysis || true,\n  includeHiringRecommendation: inputData.include_hiring_recommendation || true,\n  includeSkillGaps: inputData.include_skill_gaps || true,\n  reportFormat: inputData.report_format || 'comprehensive',\n  timestamp: new Date().toISOString()\n};\n\nconsole.log('📊 Report generation data prepared:', {\n  sessionId: reportData.sessionId,\n  candidateId: reportData.candidateId,\n  jobDescriptionId: reportData.jobDescriptionId,\n  reportFormat: reportData.reportFormat\n});\n\nreturn [{\n  json: reportData\n}];"
+      },
+      "id": "extract-data",
+      "name": "Extract & Validate Data",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [460, 300]
+    },
+    {
+      "parameters": {
+        "operation": "select",
+        "table": "exam_sessions",
+        "columns": "id, candidate_id, job_description_id, status, total_questions, duration_minutes, started_at, completed_at, performance_metadata",
+        "where": {
+          "conditions": [
+            {
+              "column": "id",
+              "operator": "equals",
+              "value": "={{ $json.sessionId }}"
+            }
+          ]
+        }
+      },
+      "id": "get-exam-session",
+      "name": "Get Exam Session",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [680, 200]
+    },
+    {
+      "parameters": {
+        "operation": "select",
+        "table": "exam_results",
+        "columns": "id, exam_session_id, candidate_id, total_score, max_score, percentage, correct_answers, wrong_answers, skipped_questions, technical_score, aptitude_score, time_taken_minutes, evaluation_status, ai_evaluation, text_evaluation_summary, hiring_recommendations, processing_metadata, text_evaluation_completed, text_evaluation_timestamp",
+        "where": {
+          "conditions": [
+            {
+              "column": "exam_session_id",
+              "operator": "equals",
+              "value": "={{ $json.sessionId }}"
+            }
+          ]
+        }
+      },
+      "id": "get-exam-results",
+      "name": "Get Exam Results",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [680, 300]
+    },
+    {
+      "parameters": {
+        "operation": "select",
+        "table": "exam_responses",
+        "columns": "id, exam_session_id, question_id, answer_text, is_correct, points_earned, time_taken_seconds, answered_at, evaluation_details",
+        "where": {
+          "conditions": [
+            {
+              "column": "exam_session_id",
+              "operator": "equals",
+              "value": "={{ $json.sessionId }}"
+            }
+          ]
+        }
+      },
+      "id": "get-exam-responses",
+      "name": "Get Exam Responses",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [680, 400]
+    },
+    {
+      "parameters": {
+        "operation": "select",
+        "table": "candidates",
+        "columns": "id, name, email, phone, experience_years, skills, education, current_role, location, resume_url",
+        "where": {
+          "conditions": [
+            {
+              "column": "id",
+              "operator": "equals",
+              "value": "={{ $('Get Exam Session').first().json.candidate_id }}"
+            }
+          ]
+        }
+      },
+      "id": "get-candidate",
+      "name": "Get Candidate",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [900, 200]
+    },
+    {
+      "parameters": {
+        "operation": "select",
+        "table": "job_descriptions",
+        "columns": "id, title, company, description, required_skills, preferred_skills, experience_level, employment_type, salary_min, salary_max, location, work_mode",
+        "where": {
+          "conditions": [
+            {
+              "column": "id",
+              "operator": "equals",
+              "value": "={{ $('Get Exam Session').first().json.job_description_id }}"
+            }
+          ]
+        }
+      },
+      "id": "get-job-description",
+      "name": "Get Job Description",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [900, 300]
+    },
+    {
+      "parameters": {
+        "operation": "select",
+        "table": "exam_questions",
+        "columns": "id, question_text, question_type, question_category, difficulty_level, points, answer_explanation, topic_id",
+        "where": {
+          "conditions": [
+            {
+              "column": "id",
+              "operator": "in",
+              "value": "={{ $('Get Exam Responses').all().map(r => r.json.question_id).join(',') }}"
+            }
+          ]
+        }
+      },
+      "id": "get-exam-questions",
+      "name": "Get Exam Questions",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [900, 400]
+    },
+    {
+      "parameters": {
+        "functionCode": "// Consolidate all exam data for report generation\nconst sessionData = $('Get Exam Session').first().json;\nconst resultsData = $('Get Exam Results').first().json;\nconst responsesData = $('Get Exam Responses').all();\nconst candidateData = $('Get Candidate').first().json;\nconst jobData = $('Get Job Description').first().json;\nconst questionsData = $('Get Exam Questions').all();\n\nconsole.log('📊 Consolidating exam data for report generation...');\nconsole.log('Session data:', sessionData);\nconsole.log('Results data:', resultsData);\nconsole.log('Responses count:', responsesData.length);\nconsole.log('Candidate data:', candidateData);\nconsole.log('Job data:', jobData);\nconsole.log('Questions count:', questionsData.length);\n\n// Create question lookup map\nconst questionMap = new Map();\nquestionsData.forEach(q => {\n  questionMap.set(q.json.id, q.json);\n});\n\n// Process responses with question details\nconst processedResponses = responsesData.map(response => {\n  const question = questionMap.get(response.json.question_id);\n  return {\n    ...response.json,\n    question: question\n  };\n});\n\n// Separate MCQ and text responses\nconst mcqResponses = processedResponses.filter(r => r.question?.question_type === 'mcq');\nconst textResponses = processedResponses.filter(r => r.question?.question_type === 'text');\n\n// Calculate MCQ performance\nconst mcqStats = {\n  totalQuestions: mcqResponses.length,\n  correctAnswers: mcqResponses.filter(r => r.is_correct).length,\n  totalScore: mcqResponses.reduce((sum, r) => sum + (r.points_earned || 0), 0),\n  maxScore: mcqResponses.reduce((sum, r) => sum + (r.question?.points || 0), 0),\n  averageTime: mcqResponses.reduce((sum, r) => sum + (r.time_taken_seconds || 0), 0) / mcqResponses.length\n};\n\n// Calculate text performance\nconst textStats = {\n  totalQuestions: textResponses.length,\n  totalScore: textResponses.reduce((sum, r) => sum + (r.points_earned || 0), 0),\n  maxScore: textResponses.reduce((sum, r) => sum + (r.question?.points || 0), 0),\n  averageTime: textResponses.reduce((sum, r) => sum + (r.time_taken_seconds || 0), 0) / textResponses.length\n};\n\n// Calculate overall performance\nconst overallStats = {\n  totalQuestions: processedResponses.length,\n  correctAnswers: processedResponses.filter(r => r.is_correct).length,\n  totalScore: resultsData?.total_score || 0,\n  maxScore: resultsData?.max_score || 0,\n  percentage: resultsData?.percentage || 0,\n  timeTaken: resultsData?.time_taken_minutes || 0,\n  evaluationStatus: resultsData?.evaluation_status || 'pending'\n};\n\n// Prepare consolidated data\nconst consolidatedData = {\n  sessionId: sessionData.id,\n  candidate: candidateData,\n  jobDescription: jobData,\n  examSession: sessionData,\n  examResults: resultsData,\n  responses: processedResponses,\n  mcqResponses: mcqResponses,\n  textResponses: textResponses,\n  mcqStats: mcqStats,\n  textStats: textStats,\n  overallStats: overallStats,\n  reportMetadata: {\n    generatedAt: new Date().toISOString(),\n    reportFormat: $json.reportFormat,\n    includeDetailedAnalysis: $json.includeDetailedAnalysis,\n    includeHiringRecommendation: $json.includeHiringRecommendation,\n    includeSkillGaps: $json.includeSkillGaps\n  }\n};\n\nconsole.log('✅ Consolidated data prepared:', {\n  sessionId: consolidatedData.sessionId,\n  candidateName: consolidatedData.candidate?.name,\n  jobTitle: consolidatedData.jobDescription?.title,\n  totalQuestions: consolidatedData.overallStats.totalQuestions,\n  overallScore: consolidatedData.overallStats.totalScore,\n  percentage: consolidatedData.overallStats.percentage\n});\n\nreturn [{\n  json: consolidatedData\n}];"
+      },
+      "id": "consolidate-data",
+      "name": "Consolidate Exam Data",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [1120, 300]
+    },
+    {
+      "parameters": {
+        "resource": "chat",
+        "model": "gpt-4",
+        "messages": {
+          "values": [
+            {
+              "role": "system",
+              "content": "You are an expert HR analyst and technical assessment specialist with 15+ years of experience in candidate evaluation and hiring decisions. You create comprehensive, professional, and actionable exam reports that help hiring managers make informed decisions.\n\nYour role is to:\n1. Analyze exam performance data comprehensively\n2. Provide detailed insights into candidate strengths and weaknesses\n3. Generate actionable hiring recommendations\n4. Identify skill gaps and development opportunities\n5. Create professional, well-structured reports\n\nReport Structure:\n- Executive Summary\n- Performance Overview\n- Detailed Analysis (MCQ vs Text)\n- Question-by-Question Analysis\n- Skill Gap Analysis\n- Strengths and Weaknesses\n- Hiring Recommendation\n- Development Suggestions\n\nAlways maintain a professional, constructive tone while being honest about performance. Focus on actionable insights and specific recommendations."
+            },
+            {
+              "role": "user",
+              "content": "Generate a comprehensive exam report for the following candidate:\n\n**CANDIDATE INFORMATION:**\n- Name: {{ $json.candidate.name }}\n- Email: {{ $json.candidate.email }}\n- Experience: {{ $json.candidate.experience_years || 0 }} years\n- Current Role: {{ $json.candidate.current_role || 'Not specified' }}\n- Skills: {{ $json.candidate.skills?.join(', ') || 'Not specified' }}\n- Education: {{ $json.candidate.education || 'Not specified' }}\n\n**JOB POSITION:**\n- Title: {{ $json.jobDescription.title }}\n- Company: {{ $json.jobDescription.company || 'Not specified' }}\n- Required Skills: {{ $json.jobDescription.required_skills?.join(', ') || 'Not specified' }}\n- Experience Level: {{ $json.jobDescription.experience_level || 'Not specified' }}\n- Employment Type: {{ $json.jobDescription.employment_type || 'Not specified' }}\n\n**EXAM PERFORMANCE:**\n- Total Questions: {{ $json.overallStats.totalQuestions }}\n- Correct Answers: {{ $json.overallStats.correctAnswers }}\n- Total Score: {{ $json.overallStats.totalScore }}/{{ $json.overallStats.maxScore }}\n- Percentage: {{ $json.overallStats.percentage }}%\n- Time Taken: {{ $json.overallStats.timeTaken }} minutes\n- Evaluation Status: {{ $json.overallStats.evaluationStatus }}\n\n**MCQ PERFORMANCE:**\n- MCQ Questions: {{ $json.mcqStats.totalQuestions }}\n- Correct MCQ Answers: {{ $json.mcqStats.correctAnswers }}\n- MCQ Score: {{ $json.mcqStats.totalScore }}/{{ $json.mcqStats.maxScore }}\n- MCQ Percentage: {{ $json.mcqStats.totalQuestions > 0 ? Math.round(($json.mcqStats.totalScore / $json.mcqStats.maxScore) * 100) : 0 }}%\n- Average Time per MCQ: {{ Math.round($json.mcqStats.averageTime) }} seconds\n\n**TEXT PERFORMANCE:**\n- Text Questions: {{ $json.textStats.totalQuestions }}\n- Text Score: {{ $json.textStats.totalScore }}/{{ $json.textStats.maxScore }}\n- Text Percentage: {{ $json.textStats.totalQuestions > 0 ? Math.round(($json.textStats.totalScore / $json.textStats.maxScore) * 100) : 0 }}%\n- Average Time per Text: {{ Math.round($json.textStats.averageTime) }} seconds\n\n**QUESTION ANALYSIS:**\n{{ $json.responses.map((r, index) => `\n**Question ${index + 1}:**\n- Type: ${r.question?.question_type?.toUpperCase()}\n- Category: ${r.question?.question_category}\n- Difficulty: ${r.question?.difficulty_level}\n- Points: ${r.points_earned}/${r.question?.points}\n- Correct: ${r.is_correct ? 'Yes' : 'No'}\n- Time Taken: ${r.time_taken_seconds} seconds\n- Answer: \"${r.answer_text}\"\n- Question: \"${r.question?.question_text}\"`).join('\\n') }}\n\n**AI EVALUATION DATA:**\n{{ $json.examResults?.text_evaluation_summary ? JSON.stringify($json.examResults.text_evaluation_summary, null, 2) : 'No AI evaluation data available' }}\n\n**HIRING RECOMMENDATIONS:**\n{{ $json.examResults?.hiring_recommendations ? JSON.stringify($json.examResults.hiring_recommendations, null, 2) : 'No hiring recommendations available' }}\n\n**INSTRUCTIONS:**\n1. Create a comprehensive, professional exam report\n2. Analyze both MCQ and text performance\n3. Provide specific insights about strengths and weaknesses\n4. Give actionable hiring recommendations\n5. Include skill gap analysis\n6. Suggest development opportunities\n7. Consider the candidate's experience level\n8. Be constructive and professional\n\n**OUTPUT FORMAT (JSON):**\n```json\n{\n  \"executive_summary\": {\n    \"overall_performance\": \"excellent|good|average|below_average|poor\",\n    \"key_strengths\": [\"strength1\", \"strength2\", \"strength3\"],\n    \"main_concerns\": [\"concern1\", \"concern2\"],\n    \"hiring_recommendation\": \"strong_hire|hire|conditional_hire|no_hire\",\n    \"confidence_level\": 0.85,\n    \"summary_text\": \"Brief 2-3 sentence summary of overall performance\"\n  },\n  \"performance_analysis\": {\n    \"mcq_performance\": {\n      \"score\": {{ $json.mcqStats.totalScore }},\n      \"max_score\": {{ $json.mcqStats.maxScore }},\n      \"percentage\": {{ $json.mcqStats.totalQuestions > 0 ? Math.round(($json.mcqStats.totalScore / $json.mcqStats.maxScore) * 100) : 0 }},\n      \"strengths\": [\"MCQ strength 1\", \"MCQ strength 2\"],\n      \"weaknesses\": [\"MCQ weakness 1\", \"MCQ weakness 2\"],\n      \"analysis\": \"Detailed analysis of MCQ performance\"\n    },\n    \"text_performance\": {\n      \"score\": {{ $json.textStats.totalScore }},\n      \"max_score\": {{ $json.textStats.maxScore }},\n      \"percentage\": {{ $json.textStats.totalQuestions > 0 ? Math.round(($json.textStats.totalScore / $json.textStats.maxScore) * 100) : 0 }},\n      \"strengths\": [\"Text strength 1\", \"Text strength 2\"],\n      \"weaknesses\": [\"Text weakness 1\", \"Text weakness 2\"],\n      \"analysis\": \"Detailed analysis of text performance\"\n    },\n    \"overall_performance\": {\n      \"score\": {{ $json.overallStats.totalScore }},\n      \"max_score\": {{ $json.overallStats.maxScore }},\n      \"percentage\": {{ $json.overallStats.percentage }},\n      \"time_efficiency\": \"excellent|good|average|poor\",\n      \"consistency\": \"high|medium|low\",\n      \"analysis\": \"Overall performance analysis\"\n    }\n  },\n  \"question_analysis\": [\n    {\n      \"question_id\": \"uuid\",\n      \"question_type\": \"mcq|text\",\n      \"category\": \"technical|aptitude\",\n      \"difficulty\": \"easy|medium|hard\",\n      \"points_earned\": 4,\n      \"max_points\": 5,\n      \"is_correct\": true,\n      \"time_taken_seconds\": 45,\n      \"performance_rating\": \"excellent|good|average|poor\",\n      \"feedback\": \"Specific feedback for this question\",\n      \"strengths\": [\"What they did well\"],\n      \"improvements\": [\"What could be improved\"]\n    }\n  ],\n  \"skill_gap_analysis\": {\n    \"critical_gaps\": [\n      {\n        \"skill\": \"JavaScript Advanced Concepts\",\n        \"current_level\": \"beginner\",\n        \"required_level\": \"intermediate\",\n        \"gap_severity\": \"high\",\n        \"recommendations\": [\"Study ES6+ features\", \"Practice with modern frameworks\"]\n      }\n    ],\n    \"important_gaps\": [\n      {\n        \"skill\": \"Testing Frameworks\",\n        \"current_level\": \"beginner\",\n        \"required_level\": \"intermediate\",\n        \"gap_severity\": \"medium\",\n        \"recommendations\": [\"Learn Jest or Mocha\", \"Practice unit testing\"]\n      }\n    ],\n    \"nice_to_have_gaps\": [\n      {\n        \"skill\": \"Performance Optimization\",\n        \"current_level\": \"beginner\",\n        \"required_level\": \"intermediate\",\n        \"gap_severity\": \"low\",\n        \"recommendations\": [\"Study performance best practices\"]\n      }\n    ]\n  },\n  \"strengths\": [\n    \"Strong foundation in core concepts\",\n    \"Good problem-solving approach\",\n    \"Clear communication skills\"\n  ],\n  \"weaknesses\": [\n    \"Limited experience with advanced features\",\n    \"Some gaps in testing knowledge\",\n    \"Could improve time management\"\n  ],\n  \"hiring_recommendation\": {\n    \"recommendation\": \"strong_hire|hire|conditional_hire|no_hire\",\n    \"confidence\": 0.85,\n    \"reasoning\": \"Detailed reasoning for the recommendation\",\n    \"conditions\": [\"Any conditions for hiring\"],\n    \"interview_focus\": [\"Areas to focus on in interview\"],\n    \"salary_recommendation\": {\n      \"range\": \"$X - $Y\",\n      \"reasoning\": \"Reasoning for salary range\"\n    }\n  },\n  \"development_suggestions\": {\n    \"immediate\": [\"Immediate development areas\"],\n    \"short_term\": [\"3-6 month development goals\"],\n    \"long_term\": [\"6-12 month development goals\"],\n    \"resources\": [\"Recommended learning resources\"]\n  },\n  \"interview_guidance\": {\n    \"focus_areas\": [\"Areas to focus on in interview\"],\n    \"questions_to_ask\": [\"Specific questions to ask\"],\n    \"red_flags\": [\"Potential red flags to watch for\"],\n    \"green_flags\": [\"Positive indicators to look for\"]\n  },\n  \"report_metadata\": {\n    \"generated_at\": \"{{ new Date().toISOString() }}\",\n    \"report_version\": \"1.0\",\n    \"ai_confidence\": 0.92,\n    \"data_completeness\": \"complete|partial|limited\"\n  }\n}\n```\n\nPlease generate a comprehensive exam report following this structure."
+            }
+          ]
+        },
+        "temperature": 0.3,
+        "maxTokens": 4000
+      },
+      "id": "generate-report",
+      "name": "Generate AI Report",
+      "type": "n8n-nodes-base.openAi",
+      "typeVersion": 1,
+      "position": [1340, 300]
+    },
+    {
+      "parameters": {
+        "functionCode": "// Process AI-generated report and prepare for storage\nconst aiResponse = $input.first().json;\nconst consolidatedData = $('Consolidate Exam Data').first().json;\n\nconsole.log('📊 Processing AI-generated report...');\nconsole.log('AI Response:', JSON.stringify(aiResponse, null, 2));\n\n// Parse AI response\nlet reportData;\ntry {\n  // Try to parse as JSON first\n  if (typeof aiResponse === 'string') {\n    reportData = JSON.parse(aiResponse);\n  } else if (aiResponse.choices && aiResponse.choices[0] && aiResponse.choices[0].message) {\n    // OpenAI API response format\n    const content = aiResponse.choices[0].message.content;\n    reportData = JSON.parse(content);\n  } else {\n    reportData = aiResponse;\n  }\n} catch (error) {\n  console.error('❌ Error parsing AI response:', error);\n  // Fallback: create basic report structure\n  reportData = {\n    executive_summary: {\n      overall_performance: 'average',\n      key_strengths: ['Basic technical knowledge'],\n      main_concerns: ['Limited experience'],\n      hiring_recommendation: 'conditional_hire',\n      confidence_level: 0.5,\n      summary_text: 'Candidate shows basic competency with room for improvement.'\n    },\n    performance_analysis: {\n      mcq_performance: {\n        score: consolidatedData.mcqStats.totalScore,\n        max_score: consolidatedData.mcqStats.maxScore,\n        percentage: consolidatedData.mcqStats.totalQuestions > 0 ? Math.round((consolidatedData.mcqStats.totalScore / consolidatedData.mcqStats.maxScore) * 100) : 0,\n        strengths: ['Basic knowledge'],\n        weaknesses: ['Limited depth'],\n        analysis: 'Basic performance with room for improvement'\n      },\n      text_performance: {\n        score: consolidatedData.textStats.totalScore,\n        max_score: consolidatedData.textStats.maxScore,\n        percentage: consolidatedData.textStats.totalQuestions > 0 ? Math.round((consolidatedData.textStats.totalScore / consolidatedData.textStats.maxScore) * 100) : 0,\n        strengths: ['Basic understanding'],\n        weaknesses: ['Limited detail'],\n        analysis: 'Basic text performance'\n      },\n      overall_performance: {\n        score: consolidatedData.overallStats.totalScore,\n        max_score: consolidatedData.overallStats.maxScore,\n        percentage: consolidatedData.overallStats.percentage,\n        time_efficiency: 'average',\n        consistency: 'medium',\n        analysis: 'Overall average performance'\n      }\n    },\n    question_analysis: consolidatedData.responses.map((r, index) => ({\n      question_id: r.question_id,\n      question_type: r.question?.question_type || 'unknown',\n      category: r.question?.question_category || 'unknown',\n      difficulty: r.question?.difficulty_level || 'medium',\n      points_earned: r.points_earned || 0,\n      max_points: r.question?.points || 1,\n      is_correct: r.is_correct || false,\n      time_taken_seconds: r.time_taken_seconds || 0,\n      performance_rating: r.is_correct ? 'good' : 'poor',\n      feedback: r.is_correct ? 'Correct answer' : 'Incorrect answer',\n      strengths: r.is_correct ? ['Correct understanding'] : [],\n      improvements: r.is_correct ? [] : ['Review topic']\n    })),\n    skill_gap_analysis: {\n      critical_gaps: [],\n      important_gaps: [],\n      nice_to_have_gaps: []\n    },\n    strengths: ['Basic technical knowledge'],\n    weaknesses: ['Limited experience'],\n    hiring_recommendation: {\n      recommendation: 'conditional_hire',\n      confidence: 0.5,\n      reasoning: 'Basic competency with potential for growth',\n      conditions: ['Additional training required'],\n      interview_focus: ['Technical depth assessment'],\n      salary_recommendation: {\n        range: 'Entry level',\n        reasoning: 'Based on current skill level'\n      }\n    },\n    development_suggestions: {\n      immediate: ['Review exam topics'],\n      short_term: ['Practice technical skills'],\n      long_term: ['Gain more experience'],\n      resources: ['Online courses', 'Practice projects']\n    },\n    interview_guidance: {\n      focus_areas: ['Technical skills'],\n      questions_to_ask: ['Experience with relevant technologies'],\n      red_flags: ['Lack of basic knowledge'],\n      green_flags: ['Willingness to learn']\n    },\n    report_metadata: {\n      generated_at: new Date().toISOString(),\n      report_version: '1.0',\n      ai_confidence: 0.5,\n      data_completeness: 'complete'\n    }\n  };\n}\n\n// Add raw data for reference\nconst finalReport = {\n  ...reportData,\n  raw_data: {\n    session_id: consolidatedData.sessionId,\n    candidate_id: consolidatedData.candidate?.id,\n    job_description_id: consolidatedData.jobDescription?.id,\n    exam_results: consolidatedData.examResults,\n    responses: consolidatedData.responses,\n    mcq_stats: consolidatedData.mcqStats,\n    text_stats: consolidatedData.textStats,\n    overall_stats: consolidatedData.overallStats\n  },\n  processing_metadata: {\n    generated_at: new Date().toISOString(),\n    processing_time_seconds: 0,\n    data_sources: ['exam_sessions', 'exam_results', 'exam_responses', 'candidates', 'job_descriptions', 'exam_questions'],\n    ai_model: 'gpt-4',\n    report_format: consolidatedData.reportMetadata.reportFormat\n  }\n};\n\nconsole.log('✅ Final report prepared:', {\n  sessionId: finalReport.raw_data.session_id,\n  candidateName: consolidatedData.candidate?.name,\n  hiringRecommendation: finalReport.hiring_recommendation.recommendation,\n  confidence: finalReport.hiring_recommendation.confidence\n});\n\nreturn [{\n  json: finalReport\n}];"
+      },
+      "id": "process-report",
+      "name": "Process Report Data",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [1560, 300]
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "table": "exam_results",
+        "columns": "comprehensive_report, report_generated_at, report_version",
+        "where": {
+          "conditions": [
+            {
+              "column": "exam_session_id",
+              "operator": "equals",
+              "value": "={{ $('Consolidate Exam Data').first().json.sessionId }}"
+            }
+          ]
+        },
+        "values": "={{ JSON.stringify($json) }}, '{{ new Date().toISOString() }}', '1.0'"
+      },
+      "id": "save-report",
+      "name": "Save Report to Database",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [1780, 300]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ {\n  success: true,\n  action: 'exam_report_generated',\n  session_id: $('Consolidate Exam Data').first().json.sessionId,\n  candidate_name: $('Consolidate Exam Data').first().json.candidate?.name,\n  job_title: $('Consolidate Exam Data').first().json.jobDescription?.title,\n  report_generated: true,\n  hiring_recommendation: $json.hiring_recommendation?.recommendation || 'unknown',\n  confidence_level: $json.hiring_recommendation?.confidence || 0,\n  overall_performance: $json.executive_summary?.overall_performance || 'unknown',\n  report_metadata: $json.report_metadata,\n  message: 'Exam report generated successfully'\n} }}"
+      },
+      "id": "success-response",
+      "name": "Success Response",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [2000, 300]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ {\n  success: false,\n  action: 'exam_report_failed',\n  session_id: $json.sessionId || 'unknown',\n  error: $json.error || 'Unknown error occurred',\n  message: 'Exam report generation failed'\n} }}"
+      },
+      "id": "error-response",
+      "name": "Error Response",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [2000, 500]
+    }
+  ],
+  "connections": {
+    "Webhook Trigger": {
+      "main": [
+        [
+          {
+            "node": "Extract & Validate Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract & Validate Data": {
+      "main": [
+        [
+          {
+            "node": "Get Exam Session",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Get Exam Results",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Get Exam Responses",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Exam Session": {
+      "main": [
+        [
+          {
+            "node": "Get Candidate",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Get Job Description",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Exam Results": {
+      "main": [
+        [
+          {
+            "node": "Consolidate Exam Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Exam Responses": {
+      "main": [
+        [
+          {
+            "node": "Get Exam Questions",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Candidate": {
+      "main": [
+        [
+          {
+            "node": "Consolidate Exam Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Job Description": {
+      "main": [
+        [
+          {
+            "node": "Consolidate Exam Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Exam Questions": {
+      "main": [
+        [
+          {
+            "node": "Consolidate Exam Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Consolidate Exam Data": {
+      "main": [
+        [
+          {
+            "node": "Generate AI Report",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate AI Report": {
+      "main": [
+        [
+          {
+            "node": "Process Report Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Process Report Data": {
+      "main": [
+        [
+          {
+            "node": "Save Report to Database",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Save Report to Database": {
+      "main": [
+        [
+          {
+            "node": "Success Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": null,
+  "tags": [
+    {
+      "createdAt": "2024-01-01T00:00:00.000Z",
+      "updatedAt": "2024-01-01T00:00:00.000Z",
+      "id": "exam-reports",
+      "name": "Exam Reports"
+    }
+  ],
+  "triggerCount": 0,
+  "updatedAt": "2024-01-01T00:00:00.000Z",
+  "versionId": "1"
+}

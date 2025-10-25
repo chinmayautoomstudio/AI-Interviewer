@@ -32,6 +32,7 @@ import Sidebar from './components/layout/Sidebar';
 import ExamDashboardPage from './pages/exam/ExamDashboardPage';
 import ExamCreationPage from './pages/exam/ExamCreationPage';
 import QuestionBankPage from './pages/exam/QuestionBankPage';
+import QuestionAssignmentPage from './pages/exam/QuestionAssignmentPage';
 import TopicManagementPage from './pages/exam/TopicManagementPage';
 import ExamSessionsPage from './pages/exam/ExamSessionsPage';
 import ExamResultsPage from './pages/exam/ExamResultsPage';
@@ -97,6 +98,7 @@ const AppContent: React.FC = () => {
             <Route path="/exams/dashboard" element={<ExamDashboardPage />} />
             <Route path="/exams/create" element={<ExamCreationPage />} />
             <Route path="/exams/questions" element={<QuestionBankPage />} />
+            <Route path="/exams/assignments" element={<QuestionAssignmentPage />} />
             <Route path="/exams/topics" element={<TopicManagementPage />} />
             <Route path="/exams/sessions" element={<ExamSessionsPage />} />
             <Route path="/exams/results" element={<ExamResultsPage />} />

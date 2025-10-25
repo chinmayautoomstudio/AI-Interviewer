@@ -15,7 +15,8 @@ import {
   Brain,
   TrendingUp,
   ChevronDown,
-  ChevronRight
+  ChevronRight,
+  Link
 } from 'lucide-react';
 import { useLayout } from '../../contexts/LayoutContext';
 
@@ -38,6 +39,7 @@ const Sidebar: React.FC<SidebarProps> = () => {
     { name: 'Exams', href: '/exams', icon: BookOpen, submenu: [
       { name: 'Exam Dashboard', href: '/exams/dashboard', icon: LayoutDashboard },
       { name: 'Question Bank', href: '/exams/questions', icon: Brain },
+      { name: 'Question Assignment', href: '/exams/assignments', icon: Link },
       { name: 'Topic Management', href: '/exams/topics', icon: ClipboardList },
       { name: 'Exam Sessions', href: '/exams/sessions', icon: Calendar },
       { name: 'Exam Results', href: '/exams/results', icon: TrendingUp },

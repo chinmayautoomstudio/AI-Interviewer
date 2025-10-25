@@ -10,129 +10,171 @@ import {
   Users,
   BarChart3,
   Filter,
-  Search
+  Search,
+  RefreshCw,
+  Brain,
+  Loader2,
+  FileText
 } from 'lucide-react';
-
-interface ExamResult {
-  id: string;
-  candidateName: string;
-  candidateEmail: string;
-  jobTitle: string;
-  totalScore: number;
-  maxScore: number;
-  percentage: number;
-  correctAnswers: number;
-  wrongAnswers: number;
-  skippedQuestions: number;
-  technicalScore?: number;
-  aptitudeScore?: number;
-  timeTakenMinutes: number;
-  evaluationStatus: 'pending' | 'passed' | 'failed';
-  completedAt: string;
-  examSessionId: string;
-}
+import { examResultsService, ExamResultWithDetails, ExamResultsFilter, ExamResultsStats } from '../../services/examResultsService';
+import ExamResultDetailsModal from '../../components/exam/ExamResultDetailsModal';
+import { ExamReportModal } from '../../components/reports/ExamReportModal';
+import { ExamReportWorkflowService } from '../../services/examReportWorkflowService';
 
 const ExamResultsPage: React.FC = () => {
-  const [results, setResults] = useState<ExamResult[]>([]);
+  const [results, setResults] = useState<ExamResultWithDetails[]>([]);
+  const [stats, setStats] = useState<ExamResultsStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedStatus, setSelectedStatus] = useState<string>('all');
   const [selectedScoreRange, setSelectedScoreRange] = useState<string>('all');
   const [sortBy, setSortBy] = useState<string>('date');
+  const [selectedResultId, setSelectedResultId] = useState<string | null>(null);
+  const [showDetailsModal, setShowDetailsModal] = useState(false);
+  const [evaluatingSessions, setEvaluatingSessions] = useState<Set<string>>(new Set());
+  const [showReportModal, setShowReportModal] = useState(false);
+  const [reportSessionId, setReportSessionId] = useState<string | null>(null);
+  const [generatingReports, setGeneratingReports] = useState<Set<string>>(new Set());
 
   useEffect(() => {
-    // TODO: Fetch exam results from backend
-    setTimeout(() => {
-      setResults([
-        {
-          id: '1',
-          candidateName: 'John Doe',
-          candidateEmail: 'john.doe@email.com',
-          jobTitle: 'Frontend Developer',
-          totalScore: 12,
-          maxScore: 15,
-          percentage: 80,
-          correctAnswers: 12,
-          wrongAnswers: 2,
-          skippedQuestions: 1,
-          technicalScore: 8,
-          aptitudeScore: 4,
-          timeTakenMinutes: 25,
-          evaluationStatus: 'passed',
-          completedAt: '2024-01-15T10:25:00Z',
-          examSessionId: 'session-1'
-        },
-        {
-          id: '2',
-          candidateName: 'Jane Smith',
-          candidateEmail: 'jane.smith@email.com',
-          jobTitle: 'Backend Developer',
-          totalScore: 9,
-          maxScore: 15,
-          percentage: 60,
-          correctAnswers: 9,
-          wrongAnswers: 5,
-          skippedQuestions: 1,
-          technicalScore: 6,
-          aptitudeScore: 3,
-          timeTakenMinutes: 28,
-          evaluationStatus: 'failed',
-          completedAt: '2024-01-15T11:28:00Z',
-          examSessionId: 'session-2'
-        },
-        {
-          id: '3',
-          candidateName: 'Mike Johnson',
-          candidateEmail: 'mike.johnson@email.com',
-          jobTitle: 'Full Stack Developer',
-          totalScore: 14,
-          maxScore: 15,
-          percentage: 93.3,
-          correctAnswers: 14,
-          wrongAnswers: 1,
-          skippedQuestions: 0,
-          technicalScore: 10,
-          aptitudeScore: 4,
-          timeTakenMinutes: 22,
-          evaluationStatus: 'passed',
-          completedAt: '2024-01-15T09:37:00Z',
-          examSessionId: 'session-3'
-        }
-      ]);
-      setLoading(false);
-    }, 1000);
+    loadData();
   }, []);
 
-  const filteredResults = results.filter(result => {
-    const matchesSearch = 
-      result.candidateName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      result.candidateEmail.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      result.jobTitle.toLowerCase().includes(searchTerm.toLowerCase());
-    
-    const matchesStatus = selectedStatus === 'all' || result.evaluationStatus === selectedStatus;
-    
-    let matchesScoreRange = true;
-    if (selectedScoreRange !== 'all') {
-      const percentage = result.percentage;
-      switch (selectedScoreRange) {
-        case 'excellent': matchesScoreRange = percentage >= 90; break;
-        case 'good': matchesScoreRange = percentage >= 70 && percentage < 90; break;
-        case 'average': matchesScoreRange = percentage >= 50 && percentage < 70; break;
-        case 'poor': matchesScoreRange = percentage < 50; break;
-      }
-    }
-    
-    return matchesSearch && matchesStatus && matchesScoreRange;
-  });
+  useEffect(() => {
+    loadData();
+  }, [searchTerm, selectedStatus, selectedScoreRange, sortBy]);
 
-  const sortedResults = [...filteredResults].sort((a, b) => {
-    switch (sortBy) {
-      case 'score': return b.percentage - a.percentage;
-      case 'name': return a.candidateName.localeCompare(b.candidateName);
-      case 'date': return new Date(b.completedAt).getTime() - new Date(a.completedAt).getTime();
-      default: return 0;
+  const loadData = async () => {
+    try {
+      setLoading(true);
+      
+      const filter: ExamResultsFilter = {
+        search: searchTerm || undefined,
+        status: selectedStatus === 'all' ? undefined : selectedStatus as any,
+        scoreRange: selectedScoreRange === 'all' ? undefined : selectedScoreRange as any,
+        sortBy: sortBy as any,
+        sortOrder: 'desc'
+      };
+
+      // Load results and stats in parallel
+      const [resultsResponse, statsResponse] = await Promise.all([
+        examResultsService.getExamResults(filter),
+        examResultsService.getExamResultsStats(filter)
+      ]);
+
+      if (resultsResponse.success && resultsResponse.data) {
+        setResults(resultsResponse.data);
+      }
+
+      if (statsResponse.success && statsResponse.data) {
+        setStats(statsResponse.data);
+      }
+    } catch (error) {
+      console.error('Error loading exam results:', error);
+    } finally {
+      setLoading(false);
     }
-  });
+  };
+
+  const handleViewDetails = (resultId: string) => {
+    setSelectedResultId(resultId);
+    setShowDetailsModal(true);
+  };
+
+  const handleTriggerTextEvaluation = async (sessionId: string) => {
+    try {
+      setEvaluatingSessions(prev => new Set(prev).add(sessionId));
+      
+      const { ExamService } = await import('../../services/examService');
+      const examService = new ExamService();
+      const result = await examService.triggerTextEvaluation(sessionId);
+      
+      if (result.success) {
+        // Reload data to show updated results
+        await loadData();
+        alert(`Text evaluation completed successfully! ${result.evaluatedCount || 0} questions evaluated.`);
+      } else {
+        alert(`Text evaluation failed: ${result.message}`);
+      }
+    } catch (error) {
+      console.error('Error triggering text evaluation:', error);
+      alert('Failed to trigger text evaluation');
+    } finally {
+      setEvaluatingSessions(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(sessionId);
+        return newSet;
+      });
+    }
+  };
+
+  const handleGenerateReport = (sessionId: string) => {
+    setReportSessionId(sessionId);
+    setShowReportModal(true);
+  };
+
+  const handleCloseReportModal = () => {
+    setShowReportModal(false);
+    setReportSessionId(null);
+  };
+
+  const handleGenerateComprehensiveReport = async (sessionId: string) => {
+    try {
+      setGeneratingReports(prev => new Set(prev).add(sessionId));
+      
+      console.log('🚀 Generating comprehensive report for session:', sessionId);
+      
+      const result = await ExamReportWorkflowService.generateExamReport({
+        session_id: sessionId,
+        include_detailed_analysis: true,
+        include_hiring_recommendation: true,
+        include_skill_gaps: true,
+        report_format: 'comprehensive'
+      });
+      
+      if (result.success) {
+        // Reload data to show updated results
+        await loadData();
+        alert(`Comprehensive report generated successfully! Hiring recommendation: ${result.hiring_recommendation} (${Math.round((result.confidence_level || 0) * 100)}% confidence)`);
+      } else {
+        alert(`Report generation failed: ${result.message || result.error}`);
+      }
+    } catch (error) {
+      console.error('Error generating comprehensive report:', error);
+      alert('Failed to generate comprehensive report');
+    } finally {
+      setGeneratingReports(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(sessionId);
+        return newSet;
+      });
+    }
+  };
+
+  const handleExportResults = async () => {
+    try {
+      const filter: ExamResultsFilter = {
+        search: searchTerm || undefined,
+        status: selectedStatus === 'all' ? undefined : selectedStatus as any,
+        scoreRange: selectedScoreRange === 'all' ? undefined : selectedScoreRange as any,
+        sortBy: sortBy as any,
+        sortOrder: 'desc'
+      };
+
+      const response = await examResultsService.exportExamResults(filter);
+      if (response.success && response.data) {
+        const blob = new Blob([response.data], { type: 'text/csv' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `exam-results-${new Date().toISOString().split('T')[0]}.csv`;
+        link.click();
+        URL.revokeObjectURL(url);
+      }
+    } catch (error) {
+      console.error('Error exporting results:', error);
+    }
+  };
 
   const getStatusIcon = (status: string) => {
     switch (status) {
@@ -172,11 +214,11 @@ const ExamResultsPage: React.FC = () => {
     return new Date(dateString).toLocaleString();
   };
 
-  // Calculate statistics
-  const totalResults = results.length;
-  const passedResults = results.filter(r => r.evaluationStatus === 'passed').length;
-  const failedResults = results.filter(r => r.evaluationStatus === 'failed').length;
-  const averageScore = results.length > 0 ? results.reduce((sum, r) => sum + r.percentage, 0) / results.length : 0;
+  // Use real statistics from the service
+  const totalResults = stats?.totalResults || 0;
+  const passedResults = stats?.passedResults || 0;
+  const failedResults = stats?.failedResults || 0;
+  const averageScore = stats?.averageScore || 0;
 
   if (loading) {
     return (
@@ -204,10 +246,22 @@ const ExamResultsPage: React.FC = () => {
           <h1 className="text-2xl font-bold text-gray-900">Exam Results</h1>
           <p className="text-gray-600 mt-1">View and analyze candidate exam performance</p>
         </div>
-        <button className="bg-ai-teal text-white px-4 py-2 rounded-lg hover:bg-ai-teal/90 transition-colors flex items-center space-x-2">
-          <Download className="h-4 w-4" />
-          <span>Export Results</span>
-        </button>
+        <div className="flex items-center space-x-3">
+          <button
+            onClick={loadData}
+            className="flex items-center space-x-2 px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors"
+          >
+            <RefreshCw className="h-4 w-4" />
+            <span>Refresh</span>
+          </button>
+          <button
+            onClick={handleExportResults}
+            className="bg-ai-teal text-white px-4 py-2 rounded-lg hover:bg-ai-teal/90 transition-colors flex items-center space-x-2"
+          >
+            <Download className="h-4 w-4" />
+            <span>Export Results</span>
+          </button>
+        </div>
       </div>
 
       {/* Stats Cards */}
@@ -359,20 +413,20 @@ const ExamResultsPage: React.FC = () => {
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
-              {sortedResults.map((result) => (
+              {results.map((result) => (
                 <tr key={result.id} className="hover:bg-gray-50">
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div>
                       <div className="text-sm font-medium text-gray-900">
-                        {result.candidateName}
+                        {result.candidate?.name || 'N/A'}
                       </div>
                       <div className="text-sm text-gray-500">
-                        {result.candidateEmail}
+                        {result.candidate?.email || 'N/A'}
                       </div>
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm text-gray-900">{result.jobTitle}</div>
+                    <div className="text-sm text-gray-900">{result.jobDescription?.title || 'N/A'}</div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="text-sm">
@@ -392,7 +446,7 @@ const ExamResultsPage: React.FC = () => {
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    {result.timeTakenMinutes} min
+                    {result.timeTakenMinutes || 0} min
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="flex items-center space-x-2">
@@ -403,12 +457,49 @@ const ExamResultsPage: React.FC = () => {
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {formatDate(result.completedAt)}
+                    {formatDate(result.createdAt)}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                    <button className="text-ai-teal hover:text-ai-teal/80">
-                      <Eye className="h-4 w-4" />
-                    </button>
+                    <div className="flex items-center space-x-2">
+                      <button 
+                        onClick={() => handleViewDetails(result.id)}
+                        className="text-ai-teal hover:text-ai-teal/80"
+                        title="View Details"
+                      >
+                        <Eye className="h-4 w-4" />
+                      </button>
+                      <button 
+                        onClick={() => handleGenerateReport(result.examSessionId)}
+                        className="text-green-600 hover:text-green-800"
+                        title="Generate Report"
+                      >
+                        <FileText className="h-4 w-4" />
+                      </button>
+                      <button 
+                        onClick={() => handleGenerateComprehensiveReport(result.examSessionId)}
+                        className="text-purple-600 hover:text-purple-800"
+                        title="Generate Comprehensive Report"
+                        disabled={generatingReports.has(result.examSessionId)}
+                      >
+                        {generatingReports.has(result.examSessionId) ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                          <Brain className="h-4 w-4" />
+                        )}
+                      </button>
+                      <button 
+                        onClick={() => handleTriggerTextEvaluation(result.examSessionId)}
+                        disabled={evaluatingSessions.has(result.examSessionId)}
+                        className="text-blue-600 hover:text-blue-800 disabled:text-gray-400 disabled:cursor-not-allowed"
+                        title="Trigger Text Evaluation"
+                      >
+                        {evaluatingSessions.has(result.examSessionId) ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                          <Brain className="h-4 w-4" />
+                        )}
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))}
@@ -417,12 +508,31 @@ const ExamResultsPage: React.FC = () => {
         </div>
       </div>
 
-      {sortedResults.length === 0 && (
+      {results.length === 0 && !loading && (
         <div className="text-center py-12">
           <BarChart3 className="h-12 w-12 text-gray-400 mx-auto mb-4" />
           <h3 className="text-lg font-medium text-gray-900 mb-2">No exam results found</h3>
           <p className="text-gray-600">Try adjusting your filters or wait for exam sessions to complete</p>
         </div>
+      )}
+
+      {/* Exam Result Details Modal */}
+      <ExamResultDetailsModal
+        isOpen={showDetailsModal}
+        onClose={() => {
+          setShowDetailsModal(false);
+          setSelectedResultId(null);
+        }}
+        resultId={selectedResultId}
+      />
+
+      {/* Exam Report Modal */}
+      {showReportModal && reportSessionId && (
+        <ExamReportModal
+          sessionId={reportSessionId}
+          isOpen={showReportModal}
+          onClose={handleCloseReportModal}
+        />
       )}
     </div>
   );

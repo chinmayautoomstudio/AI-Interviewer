@@ -378,6 +378,155 @@ export class QuestionService {
     }
   }
 
+  // ===== QUESTION ASSIGNMENT MANAGEMENT =====
+
+  /**
+   * Assign a question to a job description
+   */
+  async assignQuestionToJob(questionId: string, jobDescriptionId: string): Promise<QuestionServiceResponse<boolean>> {
+    try {
+      const { error } = await supabase
+        .from('exam_questions')
+        .update({ 
+          job_description_id: jobDescriptionId,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', questionId);
+
+      if (error) {
+        console.error('Error assigning question to job:', error);
+        return { success: false, error: error.message };
+      }
+
+      return { success: true, data: true };
+    } catch (error) {
+      console.error('Error in assignQuestionToJob:', error);
+      return { 
+        success: false, 
+        error: error instanceof Error ? error.message : 'Failed to assign question to job' 
+      };
+    }
+  }
+
+  /**
+   * Remove a question from a job description (set job_description_id to null)
+   */
+  async removeQuestionFromJob(questionId: string, jobDescriptionId: string): Promise<QuestionServiceResponse<boolean>> {
+    try {
+      // First verify the question belongs to this job description
+      const { data: question, error: fetchError } = await supabase
+        .from('exam_questions')
+        .select('job_description_id')
+        .eq('id', questionId)
+        .single();
+
+      if (fetchError) {
+        console.error('Error fetching question:', fetchError);
+        return { success: false, error: fetchError.message };
+      }
+
+      if (question.job_description_id !== jobDescriptionId) {
+        return { success: false, error: 'Question is not assigned to this job description' };
+      }
+
+      const { error } = await supabase
+        .from('exam_questions')
+        .update({ 
+          job_description_id: undefined,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', questionId);
+
+      if (error) {
+        console.error('Error removing question from job:', error);
+        return { success: false, error: error.message };
+      }
+
+      return { success: true, data: true };
+    } catch (error) {
+      console.error('Error in removeQuestionFromJob:', error);
+      return { 
+        success: false, 
+        error: error instanceof Error ? error.message : 'Failed to remove question from job' 
+      };
+    }
+  }
+
+  /**
+   * Bulk assign questions to a job description
+   */
+  async bulkAssignQuestionsToJob(questionIds: string[], jobDescriptionId: string): Promise<QuestionServiceResponse<boolean>> {
+    try {
+      const { error } = await supabase
+        .from('exam_questions')
+        .update({ 
+          job_description_id: jobDescriptionId,
+          updated_at: new Date().toISOString()
+        })
+        .in('id', questionIds);
+
+      if (error) {
+        console.error('Error bulk assigning questions to job:', error);
+        return { success: false, error: error.message };
+      }
+
+      return { success: true, data: true };
+    } catch (error) {
+      console.error('Error in bulkAssignQuestionsToJob:', error);
+      return { 
+        success: false, 
+        error: error instanceof Error ? error.message : 'Failed to bulk assign questions to job' 
+      };
+    }
+  }
+
+  /**
+   * Bulk remove questions from a job description
+   */
+  async bulkRemoveQuestionsFromJob(questionIds: string[], jobDescriptionId: string): Promise<QuestionServiceResponse<boolean>> {
+    try {
+      // First verify all questions belong to this job description
+      const { data: questions, error: fetchError } = await supabase
+        .from('exam_questions')
+        .select('id, job_description_id')
+        .in('id', questionIds);
+
+      if (fetchError) {
+        console.error('Error fetching questions:', fetchError);
+        return { success: false, error: fetchError.message };
+      }
+
+      const invalidQuestions = questions?.filter(q => q.job_description_id !== jobDescriptionId);
+      if (invalidQuestions && invalidQuestions.length > 0) {
+        return { 
+          success: false, 
+          error: `Some questions are not assigned to this job description: ${invalidQuestions.map(q => q.id).join(', ')}` 
+        };
+      }
+
+      const { error } = await supabase
+        .from('exam_questions')
+        .update({ 
+          job_description_id: undefined,
+          updated_at: new Date().toISOString()
+        })
+        .in('id', questionIds);
+
+      if (error) {
+        console.error('Error bulk removing questions from job:', error);
+        return { success: false, error: error.message };
+      }
+
+      return { success: true, data: true };
+    } catch (error) {
+      console.error('Error in bulkRemoveQuestionsFromJob:', error);
+      return { 
+        success: false, 
+        error: error instanceof Error ? error.message : 'Failed to bulk remove questions from job' 
+      };
+    }
+  }
+
   // ===== STATISTICS =====
 
   /**

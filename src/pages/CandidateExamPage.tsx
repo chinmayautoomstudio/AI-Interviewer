@@ -64,6 +64,19 @@ export const CandidateExamPage: React.FC = () => {
           return;
         }
 
+        // Debug logging
+        console.log('🔍 Exam Session Debug Info:', {
+          id: examSession.id,
+          exam_token: examSession.exam_token,
+          status: examSession.status,
+          started_at: examSession.started_at,
+          completed_at: examSession.completed_at,
+          duration_minutes: examSession.duration_minutes,
+          total_questions: examSession.total_questions,
+          candidate_id: examSession.candidate_id,
+          job_description_id: examSession.job_description_id
+        });
+
         if (examSession.status === 'expired') {
           setError('This exam has expired');
           setIsLoading(false);
@@ -241,20 +254,40 @@ export const CandidateExamPage: React.FC = () => {
     if (session && session.status === 'in_progress') {
       try {
         console.log('🚀 Immediately submitting answer to database...');
-        await examService.submitAnswer({
+        setAutoSaveStatus('saving');
+        
+        const response = await examService.submitAnswer({
           exam_session_id: session.id,
           question_id: questionId,
           answer_text: answer
         });
-        console.log('✅ Answer immediately saved to database');
+        
+        console.log('✅ Answer immediately saved to database:', response.id);
+        setAutoSaveStatus('saved');
+        
+        // Show success feedback briefly
+        setTimeout(() => {
+          setAutoSaveStatus('saved');
+        }, 2000);
+        
       } catch (error) {
         console.error('❌ Error immediately saving answer:', error);
+        setAutoSaveStatus('error');
+        
+        // Show error feedback
+        alert(`Failed to save answer: ${error instanceof Error ? error.message : 'Unknown error'}. Please try again.`);
+        
+        // Reset status after showing error
+        setTimeout(() => {
+          setAutoSaveStatus('saved');
+        }, 3000);
       }
     } else {
       console.log('⚠️ Cannot save answer immediately - session not in progress:', {
         hasSession: !!session,
         sessionStatus: session?.status
       });
+      setAutoSaveStatus('error');
     }
   };
 
@@ -453,6 +486,21 @@ export const CandidateExamPage: React.FC = () => {
                   isActive={session?.status === 'in_progress'}
                 />
             </div>
+
+            {/* Debug Panel - Remove this in production */}
+            {process.env.NODE_ENV === 'development' && (
+              <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-4 mb-6">
+                <h3 className="font-semibold text-yellow-800 mb-2">🔍 Debug Info</h3>
+                <div className="text-sm text-yellow-700 space-y-1">
+                  <div>Session Status: <span className="font-mono bg-yellow-100 px-2 py-1 rounded">{session?.status || 'null'}</span></div>
+                  <div>Session ID: <span className="font-mono bg-yellow-100 px-2 py-1 rounded">{session?.id || 'null'}</span></div>
+                  <div>Questions Count: <span className="font-mono bg-yellow-100 px-2 py-1 rounded">{questions.length}</span></div>
+                  <div>Current Question Index: <span className="font-mono bg-yellow-100 px-2 py-1 rounded">{currentQuestionIndex}</span></div>
+                  <div>Interface Disabled: <span className="font-mono bg-yellow-100 px-2 py-1 rounded">{session?.status !== 'in_progress' ? 'YES' : 'NO'}</span></div>
+                  <div>Auto-save Status: <span className="font-mono bg-yellow-100 px-2 py-1 rounded">{autoSaveStatus}</span></div>
+                </div>
+              </div>
+            )}
 
             {/* Current question */}
             {questions.length === 0 ? (
