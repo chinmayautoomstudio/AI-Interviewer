@@ -5,7 +5,8 @@
  * Helps update the AI Agent webhook URL in the database
  */
 
-require('dotenv').config();
+const { loadEnvQuiet } = require('./scripts/load-env-quiet');
+loadEnvQuiet();
 const { createClient } = require('@supabase/supabase-js');
 
 const supabaseUrl = process.env.REACT_APP_SUPABASE_URL;
