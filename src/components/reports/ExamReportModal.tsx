@@ -1,11 +1,117 @@
 import React, { useState, useEffect } from 'react';
-import { X, Download, FileText, TrendingUp, TrendingDown, Clock, Target, Brain, CheckCircle, XCircle, AlertCircle } from 'lucide-react';
+import { X, Download, FileText, TrendingUp, TrendingDown, Clock, Target, Brain, CheckCircle, XCircle, AlertCircle, User, Briefcase, Calendar, DollarSign, BookOpen, Lightbulb, MessageSquare } from 'lucide-react';
 import { ReportData, reportGenerationService } from '../../services/reportGenerationService';
+import { supabase } from '../../services/supabase';
 
 interface ExamReportModalProps {
   isOpen: boolean;
   onClose: () => void;
   sessionId: string;
+}
+
+interface ComprehensiveReportData {
+  executive_summary: {
+    overall_performance: string;
+    key_strengths: string[];
+    main_concerns: string[];
+    hiring_recommendation: string;
+    confidence_level: number;
+    summary_text: string;
+  };
+  performance_analysis: {
+    mcq_performance: {
+      score: number;
+      max_score: number;
+      percentage: number;
+      strengths: string[];
+      weaknesses: string[];
+      analysis: string;
+    };
+    text_performance: {
+      score: number;
+      max_score: number;
+      percentage: number;
+      strengths: string[];
+      weaknesses: string[];
+      analysis: string;
+    };
+    overall_performance: {
+      score: number;
+      max_score: number;
+      percentage: number;
+      time_efficiency: string;
+      consistency: string;
+      analysis: string;
+    };
+  };
+  question_analysis: Array<{
+    question_id: string;
+    question_type: string;
+    category: string;
+    difficulty: string;
+    points_earned: number;
+    max_points: number;
+    is_correct: boolean;
+    time_taken_seconds: number | null;
+    performance_rating: string;
+    feedback: string;
+    strengths: string[];
+    improvements: string[];
+  }>;
+  skill_gap_analysis: {
+    critical_gaps: Array<{
+      skill: string;
+      current_level: string;
+      required_level: string;
+      gap_severity: string;
+      recommendations: string[];
+    }>;
+    important_gaps: Array<{
+      skill: string;
+      current_level: string;
+      required_level: string;
+      gap_severity: string;
+      recommendations: string[];
+    }>;
+    nice_to_have_gaps: Array<{
+      skill: string;
+      current_level: string;
+      required_level: string;
+      gap_severity: string;
+      recommendations: string[];
+    }>;
+  };
+  strengths: string[];
+  weaknesses: string[];
+  hiring_recommendation: {
+    recommendation: string;
+    confidence: number;
+    reasoning: string;
+    conditions?: string[];
+    interview_focus?: string[];
+    salary_recommendation?: {
+      range: string;
+      reasoning: string;
+    };
+  };
+  development_suggestions: {
+    immediate: string[];
+    short_term: string[];
+    long_term: string[];
+    resources: string[];
+  };
+  interview_guidance: {
+    focus_areas: string[];
+    questions_to_ask: string[];
+    red_flags: string[];
+    green_flags: string[];
+  };
+  report_metadata: {
+    generated_at: string;
+    report_version: string;
+    ai_confidence: number;
+    data_completeness: string;
+  };
 }
 
 export const ExamReportModal: React.FC<ExamReportModalProps> = ({
@@ -14,6 +120,9 @@ export const ExamReportModal: React.FC<ExamReportModalProps> = ({
   sessionId
 }) => {
   const [reportData, setReportData] = useState<ReportData | null>(null);
+  const [comprehensiveReport, setComprehensiveReport] = useState<ComprehensiveReportData | null>(null);
+  const [candidateData, setCandidateData] = useState<any>(null);
+  const [jobData, setJobData] = useState<any>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -28,10 +137,58 @@ export const ExamReportModal: React.FC<ExamReportModalProps> = ({
     setError(null);
     
     try {
-      const report = await reportGenerationService.generateReport(sessionId);
-      setReportData(report);
+      // First try to get comprehensive report from database
+      const { data: examResult, error: resultError } = await supabase
+        .from('exam_results')
+        .select('*')
+        .eq('exam_session_id', sessionId)
+        .single();
+
+      if (resultError) {
+        console.error('Error fetching exam result:', resultError);
+        throw new Error('Failed to fetch exam results');
+      }
+
+      // If comprehensive report exists, parse it
+      if (examResult.comprehensive_report) {
+        try {
+          const parsedReport = JSON.parse(examResult.comprehensive_report);
+          setComprehensiveReport(parsedReport);
+          
+          // Fetch candidate and job data
+          const [candidateResponse, jobResponse] = await Promise.all([
+            supabase.from('candidates').select('*').eq('id', examResult.candidate_id).single(),
+            supabase.from('exam_sessions').select('job_description_id').eq('id', sessionId).single()
+          ]);
+
+          if (candidateResponse.data) {
+            setCandidateData(candidateResponse.data);
+          }
+
+          if (jobResponse.data?.job_description_id) {
+            const jobDescResponse = await supabase
+              .from('job_descriptions')
+              .select('*')
+              .eq('id', jobResponse.data.job_description_id)
+              .single();
+            
+            if (jobDescResponse.data) {
+              setJobData(jobDescResponse.data);
+            }
+          }
+        } catch (parseError) {
+          console.error('Error parsing comprehensive report:', parseError);
+          // Fallback to regular report generation
+          const report = await reportGenerationService.generateReport(sessionId);
+          setReportData(report);
+        }
+      } else {
+        // Fallback to regular report generation
+        const report = await reportGenerationService.generateReport(sessionId);
+        setReportData(report);
+      }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to generate report');
+      setError(err instanceof Error ? err.message : 'Failed to load report');
     } finally {
       setLoading(false);
     }
@@ -133,11 +290,19 @@ export const ExamReportModal: React.FC<ExamReportModalProps> = ({
         )}
 
         {/* Report Content */}
-        {reportData && (
+        {(reportData || comprehensiveReport) && (
           <div className="flex flex-col h-full">
             {/* Single Page Report Content */}
             <div className="flex-1 overflow-y-auto p-6 min-h-0">
-              <SinglePageReport reportData={reportData} />
+              {comprehensiveReport ? (
+                <ComprehensiveReportView 
+                  report={comprehensiveReport} 
+                  candidate={candidateData}
+                  job={jobData}
+                />
+              ) : (
+                <SinglePageReport reportData={reportData!} />
+              )}
             </div>
           </div>
         )}
@@ -464,4 +629,504 @@ const getSkillGapColor = (level: string) => {
     default:
       return 'text-gray-600 bg-gray-50 border-gray-200';
   }
+};
+
+// Comprehensive Report View Component
+const ComprehensiveReportView: React.FC<{
+  report: ComprehensiveReportData;
+  candidate: any;
+  job: any;
+}> = ({ report, candidate, job }) => {
+  const getPerformanceColor = (performance: string) => {
+    switch (performance) {
+      case 'excellent':
+        return 'text-green-600 bg-green-50 border-green-200';
+      case 'good':
+        return 'text-blue-600 bg-blue-50 border-blue-200';
+      case 'average':
+        return 'text-yellow-600 bg-yellow-50 border-yellow-200';
+      case 'below_average':
+        return 'text-orange-600 bg-orange-50 border-orange-200';
+      case 'poor':
+        return 'text-red-600 bg-red-50 border-red-200';
+      default:
+        return 'text-gray-600 bg-gray-50 border-gray-200';
+    }
+  };
+
+  const getRecommendationColor = (recommendation: string) => {
+    switch (recommendation) {
+      case 'strong_hire':
+      case 'hire':
+        return 'text-green-600 bg-green-50 border-green-200';
+      case 'conditional_hire':
+        return 'text-blue-600 bg-blue-50 border-blue-200';
+      case 'no_hire':
+      case 'reject':
+        return 'text-red-600 bg-red-50 border-red-200';
+      default:
+        return 'text-gray-600 bg-gray-50 border-gray-200';
+    }
+  };
+
+  return (
+    <div className="space-y-6 pb-4">
+      {/* Executive Summary */}
+      <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg p-6">
+        <div className="flex items-center justify-between mb-4">
+          <div>
+            <h3 className="text-2xl font-bold text-gray-900">AI-Generated Exam Report</h3>
+            <p className="text-gray-600 mt-1">
+              {candidate?.name || 'Candidate'} • {job?.title || 'Position'}
+            </p>
+            <p className="text-sm text-gray-500 mt-1">
+              Generated on {new Date(report.report_metadata.generated_at).toLocaleDateString()}
+            </p>
+          </div>
+          <div className="flex items-center space-x-2">
+            <div className={`inline-flex items-center px-4 py-2 rounded-full border text-sm font-medium ${getPerformanceColor(report.executive_summary.overall_performance)}`}>
+              <span className="capitalize">{report.executive_summary.overall_performance.replace('_', ' ')}</span>
+            </div>
+          </div>
+        </div>
+        
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
+          <div className="text-center">
+            <div className="text-4xl font-bold text-blue-600">{report.performance_analysis.overall_performance.percentage}%</div>
+            <div className="text-sm text-gray-600">Overall Score</div>
+          </div>
+          <div className="text-center">
+            <div className="text-4xl font-bold text-green-600">{report.performance_analysis.overall_performance.score}</div>
+            <div className="text-sm text-gray-600">Points Earned</div>
+          </div>
+          <div className="text-center">
+            <div className="text-4xl font-bold text-gray-600">{report.performance_analysis.overall_performance.max_score}</div>
+            <div className="text-sm text-gray-600">Max Points</div>
+          </div>
+          <div className="text-center">
+            <div className="text-4xl font-bold text-purple-600">{Math.round(report.report_metadata.ai_confidence * 100)}%</div>
+            <div className="text-sm text-gray-600">AI Confidence</div>
+          </div>
+        </div>
+
+        <div className="bg-white rounded-lg p-4 border">
+          <h4 className="font-semibold text-gray-900 mb-2">Executive Summary</h4>
+          <p className="text-gray-700">{report.executive_summary.summary_text}</p>
+        </div>
+      </div>
+
+      {/* Performance Analysis */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* MCQ Performance */}
+        <div className="bg-white border rounded-lg p-6">
+          <div className="flex items-center space-x-2 mb-4">
+            <CheckCircle className="h-6 w-6 text-green-500" />
+            <h4 className="text-xl font-semibold">MCQ Performance</h4>
+          </div>
+          <div className="space-y-4">
+            <div className="flex justify-between items-center">
+              <span className="text-gray-600">Score:</span>
+              <span className="font-bold text-lg">{report.performance_analysis.mcq_performance.score}/{report.performance_analysis.mcq_performance.max_score}</span>
+            </div>
+            <div className="flex justify-between items-center">
+              <span className="text-gray-600">Percentage:</span>
+              <span className="font-bold text-lg text-green-600">{report.performance_analysis.mcq_performance.percentage}%</span>
+            </div>
+            <div className="mt-4">
+              <p className="text-sm text-gray-700">{report.performance_analysis.mcq_performance.analysis}</p>
+            </div>
+            {report.performance_analysis.mcq_performance.strengths.length > 0 && (
+              <div>
+                <p className="text-sm font-medium text-gray-600 mb-2">Strengths:</p>
+                <ul className="text-sm text-gray-600 list-disc list-inside space-y-1">
+                  {report.performance_analysis.mcq_performance.strengths.map((strength, i) => (
+                    <li key={i}>{strength}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Text Performance */}
+        <div className="bg-white border rounded-lg p-6">
+          <div className="flex items-center space-x-2 mb-4">
+            <Brain className="h-6 w-6 text-purple-500" />
+            <h4 className="text-xl font-semibold">Text Performance</h4>
+          </div>
+          <div className="space-y-4">
+            <div className="flex justify-between items-center">
+              <span className="text-gray-600">Score:</span>
+              <span className="font-bold text-lg">{report.performance_analysis.text_performance.score}/{report.performance_analysis.text_performance.max_score}</span>
+            </div>
+            <div className="flex justify-between items-center">
+              <span className="text-gray-600">Percentage:</span>
+              <span className="font-bold text-lg text-purple-600">{report.performance_analysis.text_performance.percentage}%</span>
+            </div>
+            <div className="mt-4">
+              <p className="text-sm text-gray-700">{report.performance_analysis.text_performance.analysis}</p>
+            </div>
+            {report.performance_analysis.text_performance.weaknesses.length > 0 && (
+              <div>
+                <p className="text-sm font-medium text-gray-600 mb-2">Areas for Improvement:</p>
+                <ul className="text-sm text-gray-600 list-disc list-inside space-y-1">
+                  {report.performance_analysis.text_performance.weaknesses.slice(0, 3).map((weakness, i) => (
+                    <li key={i}>{weakness}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Hiring Recommendation */}
+      <div className="bg-white border rounded-lg p-6">
+        <h4 className="text-xl font-semibold mb-4 flex items-center">
+          <Target className="h-6 w-6 mr-2 text-blue-600" />
+          Hiring Recommendation
+        </h4>
+        <div className="flex items-center space-x-4 mb-4">
+          <div className={`inline-flex items-center px-6 py-3 rounded-full border text-lg font-medium ${getRecommendationColor(report.hiring_recommendation.recommendation)}`}>
+            <span className="capitalize">{report.hiring_recommendation.recommendation.replace('_', ' ')}</span>
+            <span className="ml-3 text-sm">({Math.round(report.hiring_recommendation.confidence * 100)}% confidence)</span>
+          </div>
+        </div>
+        <p className="text-gray-700 text-lg mb-4">{report.hiring_recommendation.reasoning}</p>
+        
+        {report.hiring_recommendation.salary_recommendation && (
+          <div className="bg-gray-50 rounded-lg p-4">
+            <div className="flex items-center space-x-2 mb-2">
+              <DollarSign className="h-5 w-5 text-green-600" />
+              <span className="font-semibold text-gray-900">Salary Recommendation</span>
+            </div>
+            <p className="text-lg font-bold text-green-600">{report.hiring_recommendation.salary_recommendation.range}</p>
+            <p className="text-sm text-gray-600 mt-1">{report.hiring_recommendation.salary_recommendation.reasoning}</p>
+          </div>
+        )}
+      </div>
+
+      {/* Key Strengths and Concerns */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Key Strengths */}
+        <div className="bg-green-50 border border-green-200 rounded-lg p-6">
+          <h4 className="text-xl font-semibold text-green-800 mb-4 flex items-center">
+            <TrendingUp className="h-6 w-6 mr-2" />
+            Key Strengths
+          </h4>
+          <ul className="space-y-2">
+            {report.executive_summary.key_strengths.map((strength, index) => (
+              <li key={index} className="flex items-start">
+                <CheckCircle className="h-5 w-5 text-green-600 mt-0.5 mr-3 flex-shrink-0" />
+                <span className="text-green-700">{strength}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+
+        {/* Main Concerns */}
+        <div className="bg-red-50 border border-red-200 rounded-lg p-6">
+          <h4 className="text-xl font-semibold text-red-800 mb-4 flex items-center">
+            <AlertCircle className="h-6 w-6 mr-2" />
+            Main Concerns
+          </h4>
+          <ul className="space-y-2">
+            {report.executive_summary.main_concerns.map((concern, index) => (
+              <li key={index} className="flex items-start">
+                <AlertCircle className="h-5 w-5 text-red-600 mt-0.5 mr-3 flex-shrink-0" />
+                <span className="text-red-700">{concern}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      </div>
+
+      {/* Skill Gap Analysis */}
+      <div className="bg-white border rounded-lg p-6">
+        <h4 className="text-xl font-semibold mb-6 flex items-center">
+          <Target className="h-6 w-6 mr-2 text-orange-600" />
+          Skill Gap Analysis
+        </h4>
+        
+        {/* Critical Gaps */}
+        {report.skill_gap_analysis.critical_gaps.length > 0 && (
+          <div className="mb-6">
+            <h5 className="text-lg font-semibold text-red-800 mb-3">Critical Gaps</h5>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {report.skill_gap_analysis.critical_gaps.map((gap, index) => (
+                <div key={index} className="border border-red-200 rounded-lg p-4 bg-red-50">
+                  <div className="flex items-center justify-between mb-3">
+                    <span className="font-semibold text-lg text-red-800">{gap.skill}</span>
+                    <span className="px-3 py-1 text-sm rounded-full bg-red-100 text-red-800 font-medium">
+                      {gap.gap_severity}
+                    </span>
+                  </div>
+                  <div className="mb-3">
+                    <div className="flex justify-between text-sm text-gray-600 mb-2">
+                      <span>Current: {gap.current_level}</span>
+                      <span>Required: {gap.required_level}</span>
+                    </div>
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-gray-600 mb-2">Recommendations:</p>
+                    <ul className="text-sm text-gray-600 list-disc list-inside space-y-1">
+                      {gap.recommendations.slice(0, 2).map((rec, i) => (
+                        <li key={i}>{rec}</li>
+                      ))}
+                    </ul>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Important Gaps */}
+        {report.skill_gap_analysis.important_gaps.length > 0 && (
+          <div className="mb-6">
+            <h5 className="text-lg font-semibold text-yellow-800 mb-3">Important Gaps</h5>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {report.skill_gap_analysis.important_gaps.map((gap, index) => (
+                <div key={index} className="border border-yellow-200 rounded-lg p-4 bg-yellow-50">
+                  <div className="flex items-center justify-between mb-3">
+                    <span className="font-semibold text-lg text-yellow-800">{gap.skill}</span>
+                    <span className="px-3 py-1 text-sm rounded-full bg-yellow-100 text-yellow-800 font-medium">
+                      {gap.gap_severity}
+                    </span>
+                  </div>
+                  <div className="mb-3">
+                    <div className="flex justify-between text-sm text-gray-600 mb-2">
+                      <span>Current: {gap.current_level}</span>
+                      <span>Required: {gap.required_level}</span>
+                    </div>
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-gray-600 mb-2">Recommendations:</p>
+                    <ul className="text-sm text-gray-600 list-disc list-inside space-y-1">
+                      {gap.recommendations.slice(0, 2).map((rec, i) => (
+                        <li key={i}>{rec}</li>
+                      ))}
+                    </ul>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Development Suggestions */}
+      <div className="bg-white border rounded-lg p-6">
+        <h4 className="text-xl font-semibold mb-6 flex items-center">
+          <BookOpen className="h-6 w-6 mr-2 text-blue-600" />
+          Development Suggestions
+        </h4>
+        
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          {/* Immediate */}
+          <div>
+            <h5 className="font-semibold text-gray-900 mb-3 flex items-center">
+              <Clock className="h-5 w-5 mr-2 text-red-600" />
+              Immediate (0-1 months)
+            </h5>
+            <ul className="space-y-2">
+              {report.development_suggestions.immediate.map((suggestion, index) => (
+                <li key={index} className="flex items-start">
+                  <div className="w-2 h-2 bg-red-500 rounded-full mt-2 mr-3 flex-shrink-0"></div>
+                  <span className="text-sm text-gray-700">{suggestion}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          {/* Short Term */}
+          <div>
+            <h5 className="font-semibold text-gray-900 mb-3 flex items-center">
+              <Calendar className="h-5 w-5 mr-2 text-yellow-600" />
+              Short Term (1-6 months)
+            </h5>
+            <ul className="space-y-2">
+              {report.development_suggestions.short_term.map((suggestion, index) => (
+                <li key={index} className="flex items-start">
+                  <div className="w-2 h-2 bg-yellow-500 rounded-full mt-2 mr-3 flex-shrink-0"></div>
+                  <span className="text-sm text-gray-700">{suggestion}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          {/* Long Term */}
+          <div>
+            <h5 className="font-semibold text-gray-900 mb-3 flex items-center">
+              <Target className="h-5 w-5 mr-2 text-green-600" />
+              Long Term (6+ months)
+            </h5>
+            <ul className="space-y-2">
+              {report.development_suggestions.long_term.map((suggestion, index) => (
+                <li key={index} className="flex items-start">
+                  <div className="w-2 h-2 bg-green-500 rounded-full mt-2 mr-3 flex-shrink-0"></div>
+                  <span className="text-sm text-gray-700">{suggestion}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        </div>
+
+        {/* Resources */}
+        {report.development_suggestions.resources.length > 0 && (
+          <div className="mt-6">
+            <h5 className="font-semibold text-gray-900 mb-3 flex items-center">
+              <Lightbulb className="h-5 w-5 mr-2 text-blue-600" />
+              Recommended Resources
+            </h5>
+            <ul className="grid grid-cols-1 md:grid-cols-2 gap-2">
+              {report.development_suggestions.resources.map((resource, index) => (
+                <li key={index} className="flex items-start">
+                  <div className="w-2 h-2 bg-blue-500 rounded-full mt-2 mr-3 flex-shrink-0"></div>
+                  <span className="text-sm text-gray-700">{resource}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+      </div>
+
+      {/* Interview Guidance */}
+      <div className="bg-white border rounded-lg p-6">
+        <h4 className="text-xl font-semibold mb-6 flex items-center">
+          <MessageSquare className="h-6 w-6 mr-2 text-purple-600" />
+          Interview Guidance
+        </h4>
+        
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* Focus Areas */}
+          <div>
+            <h5 className="font-semibold text-gray-900 mb-3">Focus Areas</h5>
+            <ul className="space-y-2">
+              {report.interview_guidance.focus_areas.map((area, index) => (
+                <li key={index} className="flex items-start">
+                  <Target className="h-4 w-4 text-blue-600 mt-1 mr-2 flex-shrink-0" />
+                  <span className="text-sm text-gray-700">{area}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          {/* Questions to Ask */}
+          <div>
+            <h5 className="font-semibold text-gray-900 mb-3">Questions to Ask</h5>
+            <ul className="space-y-2">
+              {report.interview_guidance.questions_to_ask.map((question, index) => (
+                <li key={index} className="flex items-start">
+                  <MessageSquare className="h-4 w-4 text-green-600 mt-1 mr-2 flex-shrink-0" />
+                  <span className="text-sm text-gray-700">{question}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
+          {/* Red Flags */}
+          <div>
+            <h5 className="font-semibold text-red-800 mb-3">Red Flags to Watch</h5>
+            <ul className="space-y-2">
+              {report.interview_guidance.red_flags.map((flag, index) => (
+                <li key={index} className="flex items-start">
+                  <XCircle className="h-4 w-4 text-red-600 mt-1 mr-2 flex-shrink-0" />
+                  <span className="text-sm text-red-700">{flag}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          {/* Green Flags */}
+          <div>
+            <h5 className="font-semibold text-green-800 mb-3">Positive Indicators</h5>
+            <ul className="space-y-2">
+              {report.interview_guidance.green_flags.map((flag, index) => (
+                <li key={index} className="flex items-start">
+                  <CheckCircle className="h-4 w-4 text-green-600 mt-1 mr-2 flex-shrink-0" />
+                  <span className="text-sm text-green-700">{flag}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      {/* Question Analysis */}
+      <div className="bg-white border rounded-lg p-6">
+        <h4 className="text-xl font-semibold mb-6 flex items-center">
+          <Brain className="h-6 w-6 mr-2 text-indigo-600" />
+          Question Analysis
+        </h4>
+        <div className="space-y-4">
+          {report.question_analysis.map((question, index) => (
+            <div key={question.question_id} className="border rounded-lg p-4 hover:shadow-md transition-shadow">
+              <div className="flex items-start justify-between mb-3">
+                <div className="flex-1">
+                  <div className="flex items-center space-x-3 mb-2">
+                    <span className="text-sm font-bold text-gray-700 bg-gray-100 px-2 py-1 rounded">Q{index + 1}</span>
+                    <span className={`px-3 py-1 text-xs rounded-full font-medium ${
+                      question.question_type === 'mcq' 
+                        ? 'bg-blue-100 text-blue-800' 
+                        : 'bg-purple-100 text-purple-800'
+                    }`}>
+                      {question.question_type.toUpperCase()}
+                    </span>
+                    <span className="text-xs text-gray-500 bg-gray-50 px-2 py-1 rounded">{question.category}</span>
+                    <span className="text-xs text-gray-500 bg-gray-50 px-2 py-1 rounded">{question.difficulty}</span>
+                    <span className={`px-2 py-1 text-xs rounded-full font-medium ${
+                      question.performance_rating === 'excellent' ? 'bg-green-100 text-green-800' :
+                      question.performance_rating === 'good' ? 'bg-blue-100 text-blue-800' :
+                      question.performance_rating === 'average' ? 'bg-yellow-100 text-yellow-800' :
+                      'bg-red-100 text-red-800'
+                    }`}>
+                      {question.performance_rating}
+                    </span>
+                  </div>
+                </div>
+                <div className="flex items-center space-x-3 ml-4">
+                  {question.is_correct ? (
+                    <CheckCircle className="h-6 w-6 text-green-500" />
+                  ) : (
+                    <XCircle className="h-6 w-6 text-red-500" />
+                  )}
+                  <div className="text-right">
+                    <div className="text-lg font-bold">{question.points_earned}/{question.max_points}</div>
+                    <div className="text-xs text-gray-500">points</div>
+                  </div>
+                </div>
+              </div>
+              
+              <div className="mt-3 p-3 bg-gray-50 rounded-lg">
+                <p className="text-sm text-gray-700 mb-2 font-medium">{question.feedback}</p>
+                {question.strengths.length > 0 && (
+                  <div className="mb-2">
+                    <p className="text-xs font-medium text-green-600 mb-1">Strengths:</p>
+                    <ul className="text-xs text-green-700 list-disc list-inside space-y-1">
+                      {question.strengths.map((strength, i) => (
+                        <li key={i}>{strength}</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+                {question.improvements.length > 0 && (
+                  <div>
+                    <p className="text-xs font-medium text-red-600 mb-1">Improvements:</p>
+                    <ul className="text-xs text-red-700 list-disc list-inside space-y-1">
+                      {question.improvements.slice(0, 2).map((improvement, i) => (
+                        <li key={i}>{improvement}</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
 };
