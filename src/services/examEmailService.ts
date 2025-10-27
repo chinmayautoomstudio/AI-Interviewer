@@ -27,7 +27,7 @@ export class ExamEmailService {
    * Generate exam invitation email HTML template
    */
   private static generateExamInvitationEmail(data: ExamEmailData): string {
-    const companyName = data.companyName || 'AI Interviewer';
+    const companyName = data.companyName || 'AI HR Saathi';
     const examUrl = data.examLink;
     const expiresDate = new Date(data.expiresAt).toLocaleDateString('en-IN', {
       timeZone: 'Asia/Kolkata',
@@ -44,7 +44,7 @@ export class ExamEmailService {
       <head>
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Online Exam Invitation - ${companyName}</title>
+        <title>Online Exam Invitation - AI HR Saathi</title>
         <style>
           body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; margin: 0; padding: 0; }
           .container { max-width: 600px; margin: 0 auto; padding: 20px; }
@@ -135,14 +135,14 @@ export class ExamEmailService {
             <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #eee;">
               <p style="color: #666; font-size: 14px;">
                 If you have any questions or need technical support, please contact us at 
-                <a href="mailto:support@ai-interviewer.com" style="color: #14B8A6;">support@ai-interviewer.com</a>
+                <a href="mailto:support@aihrsaathi.com" style="color: #14B8A6;">support@aihrsaathi.com</a>
               </p>
             </div>
           </div>
           
           <!-- Footer -->
           <div class="footer">
-            <p>© 2025 ${companyName}. All rights reserved.</p>
+            <p>© 2025 AI HR Saathi. All rights reserved.</p>
             <p>This is an automated message. Please do not reply to this email.</p>
           </div>
         </div>
@@ -201,7 +201,7 @@ HR Team
         },
         body: JSON.stringify({
           to: data.candidateEmail,
-          subject: `Online Exam Invitation - ${data.jobTitle}`,
+          subject: `Online Exam Invitation - ${data.jobTitle} - AI HR Saathi`,
           html: htmlContent,
           text: textContent
         })

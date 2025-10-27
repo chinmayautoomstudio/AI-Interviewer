@@ -161,7 +161,7 @@ const ExamCreationPage: React.FC = () => {
               expiresAt: examSession.expires_at,
               examLink: `${window.location.origin}/candidate/exam/${examSession.exam_token}`,
               customMessage: config.customEmailMessage || '',
-              companyName: 'AI Interviewer'
+              companyName: 'AI HR Saathi'
             };
 
             console.log('📧 Sending exam invitation email...');
