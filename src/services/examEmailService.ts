@@ -2,7 +2,7 @@
 // Service for sending exam invitations and managing exam-related email communications
 
 import { supabase } from './supabase';
-import { ExamSession } from '../types';
+// import { ExamSession } from '../types'; // Removed unused import
 
 export interface ExamEmailData {
   candidateName: string;

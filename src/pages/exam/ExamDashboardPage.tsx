@@ -17,6 +17,7 @@ import {
 import { ExamSession } from '../../types';
 import CreateExamModal from '../../components/exam/CreateExamModal';
 import EmailInvitationModal from '../../components/exam/EmailInvitationModal';
+import IPDetectionTest from '../../components/test/IPDetectionTest';
 import { supabase } from '../../services/supabase';
 
 interface ExamStats {
@@ -52,6 +53,7 @@ const ExamDashboardPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [isCreateExamModalOpen, setIsCreateExamModalOpen] = useState(false);
   const [isEmailInvitationModalOpen, setIsEmailInvitationModalOpen] = useState(false);
+  const [isIPTestModalOpen, setIsIPTestModalOpen] = useState(false);
   const [createdExamToken, setCreatedExamToken] = useState<string | null>(null);
   const [selectedExamSessions, setSelectedExamSessions] = useState<ExamSession[]>([]);
 
@@ -316,6 +318,14 @@ const ExamDashboardPage: React.FC = () => {
             <Calendar className="h-3 w-3 sm:h-4 sm:w-4" />
             <span className="hidden sm:inline">Quick Create</span>
             <span className="sm:hidden">Quick</span>
+          </button>
+          <button 
+            onClick={() => setIsIPTestModalOpen(true)}
+            className="bg-green-600 text-white px-3 sm:px-4 py-2 rounded-lg hover:bg-green-700 transition-colors flex items-center justify-center space-x-1 sm:space-x-2 text-sm"
+          >
+            <CheckCircle className="h-3 w-3 sm:h-4 sm:w-4" />
+            <span className="hidden sm:inline">Test IP</span>
+            <span className="sm:hidden">IP</span>
           </button>
         </div>
       </div>
@@ -586,6 +596,26 @@ const ExamDashboardPage: React.FC = () => {
         examSessions={selectedExamSessions}
         onSuccess={handleEmailInvitationSuccess}
       />
+
+      {/* IP Detection Test Modal */}
+      {isIPTestModalOpen && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="p-4 border-b border-gray-200 flex justify-between items-center">
+              <h2 className="text-xl font-semibold text-gray-900">IP Detection Test</h2>
+              <button
+                onClick={() => setIsIPTestModalOpen(false)}
+                className="text-gray-400 hover:text-gray-600 text-2xl"
+              >
+                ×
+              </button>
+            </div>
+            <div className="p-6">
+              <IPDetectionTest />
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

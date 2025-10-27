@@ -68,7 +68,7 @@ const QuestionAssignmentPage: React.FC = () => {
       });
       
       if (questionsResult.success && questionsResult.data) {
-        setQuestions(questionsResult.data);
+        setQuestions(questionsResult.data.questions);
       }
 
       // Load job descriptions

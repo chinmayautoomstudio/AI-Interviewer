@@ -51,20 +51,20 @@ const QuestionBankPage: React.FC = () => {
   const [selectedQuestions, setSelectedQuestions] = useState<Set<string>>(new Set());
   const [showBulkActions, setShowBulkActions] = useState(false);
 
-  // Filters
+  // Filters and pagination
   const [filters, setFilters] = useState<QuestionFilter>({
     search: '',
     category: '',
     difficulty: '',
     status: '',
     job_description_id: '',
-    limit: 50,
+    limit: 20, // Reduced page size for better performance
     offset: 0
   });
 
-  // Pagination
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
+  const [totalCount, setTotalCount] = useState(0);
 
   // Modals
   const [showCreateModal, setShowCreateModal] = useState(false);
@@ -80,13 +80,14 @@ const QuestionBankPage: React.FC = () => {
       // Load questions with filters
       const questionFilter = {
         ...filters,
-        offset: (currentPage - 1) * (filters.limit || 50)
+        offset: (currentPage - 1) * (filters.limit || 20)
       };
       
       const questionsResult = await questionService.getQuestions(questionFilter);
       if (questionsResult.success && questionsResult.data) {
-        setQuestions(questionsResult.data);
-        setTotalPages(Math.ceil(questionsResult.data.length / (filters.limit || 50)));
+        setQuestions(questionsResult.data.questions);
+        setTotalCount(questionsResult.data.totalCount);
+        setTotalPages(Math.ceil(questionsResult.data.totalCount / (filters.limit || 20)));
       }
 
       // Load job descriptions
@@ -524,14 +525,82 @@ const QuestionBankPage: React.FC = () => {
             </table>
           </div>
 
-          {/* Pagination */}
+          {/* Empty State */}
+          {questions.length === 0 && !loading && (
+            <div className="text-center py-12">
+              <div className="text-gray-400 mb-4">
+                <svg className="mx-auto h-12 w-12" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+              </div>
+              <h3 className="text-lg font-medium text-gray-900 mb-2">No questions found</h3>
+              <p className="text-gray-500 mb-6">
+                {Object.values(filters).some(v => v && v !== '') 
+                  ? 'Try adjusting your filters or search terms.'
+                  : 'Get started by creating your first question.'
+                }
+              </p>
+              <div className="flex flex-col sm:flex-row gap-3 justify-center">
+                <button
+                  onClick={() => setShowCreateModal(true)}
+                  className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                >
+                  <Plus className="h-4 w-4 mr-2" />
+                  Create Question
+                </button>
+                <button
+                  onClick={() => setShowGenerateModal(true)}
+                  className="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                >
+                  <Zap className="h-4 w-4 mr-2" />
+                  Generate with AI
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Enhanced Pagination */}
           {totalPages > 1 && (
             <div className="bg-white px-3 sm:px-4 py-3 border-t border-gray-200 sm:px-6">
-              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-2 sm:space-y-0">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-3 sm:space-y-0">
+                {/* Results Info */}
                 <div className="text-xs sm:text-sm text-gray-700">
-                  Showing page {currentPage} of {totalPages}
+                  Showing {((currentPage - 1) * (filters.limit || 20)) + 1} to {Math.min(currentPage * (filters.limit || 20), totalCount)} of {totalCount} questions
                 </div>
+                
+                {/* Page Size Selector */}
+                <div className="flex items-center space-x-2">
+                  <label className="text-xs sm:text-sm text-gray-700">Show:</label>
+                  <select
+                    value={filters.limit || 20}
+                    onChange={(e) => {
+                      const newLimit = parseInt(e.target.value);
+                      setFilters(prev => ({ ...prev, limit: newLimit }));
+                      setCurrentPage(1);
+                    }}
+                    className="text-xs sm:text-sm border border-gray-300 rounded px-2 py-1"
+                  >
+                    <option value={10}>10</option>
+                    <option value={20}>20</option>
+                    <option value={50}>50</option>
+                    <option value={100}>100</option>
+                  </select>
+                  <span className="text-xs sm:text-sm text-gray-700">per page</span>
+                </div>
+
+                {/* Pagination Controls */}
                 <div className="flex items-center space-x-1 sm:space-x-2">
+                  {/* First Page */}
+                  <button
+                    onClick={() => setCurrentPage(1)}
+                    disabled={currentPage === 1}
+                    className="px-2 py-1 text-xs sm:text-sm border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                    title="First page"
+                  >
+                    ««
+                  </button>
+                  
+                  {/* Previous Page */}
                   <button
                     onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
                     disabled={currentPage === 1}
@@ -539,12 +608,54 @@ const QuestionBankPage: React.FC = () => {
                   >
                     Previous
                   </button>
+
+                  {/* Page Numbers */}
+                  <div className="flex items-center space-x-1">
+                    {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                      let pageNum: number;
+                      if (totalPages <= 5) {
+                        pageNum = i + 1;
+                      } else if (currentPage <= 3) {
+                        pageNum = i + 1;
+                      } else if (currentPage >= totalPages - 2) {
+                        pageNum = totalPages - 4 + i;
+                      } else {
+                        pageNum = currentPage - 2 + i;
+                      }
+                      
+                      return (
+                        <button
+                          key={pageNum}
+                          onClick={() => setCurrentPage(pageNum)}
+                          className={`px-2 py-1 text-xs sm:text-sm border rounded-md ${
+                            currentPage === pageNum
+                              ? 'bg-blue-600 text-white border-blue-600'
+                              : 'border-gray-300 hover:bg-gray-50'
+                          }`}
+                        >
+                          {pageNum}
+                        </button>
+                      );
+                    })}
+                  </div>
+
+                  {/* Next Page */}
                   <button
                     onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
                     disabled={currentPage === totalPages}
                     className="px-2 sm:px-3 py-1 text-xs sm:text-sm border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     Next
+                  </button>
+                  
+                  {/* Last Page */}
+                  <button
+                    onClick={() => setCurrentPage(totalPages)}
+                    disabled={currentPage === totalPages}
+                    className="px-2 py-1 text-xs sm:text-sm border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                    title="Last page"
+                  >
+                    »»
                   </button>
                 </div>
               </div>

@@ -23,7 +23,7 @@ export class QuestionService {
   /**
    * Get all questions with filtering and pagination
    */
-  async getQuestions(filter: QuestionFilter = {}): Promise<QuestionServiceResponse<ExamQuestion[]>> {
+  async getQuestions(filter: QuestionFilter = {}): Promise<QuestionServiceResponse<{ questions: ExamQuestion[]; totalCount: number }>> {
     try {
       let query = supabase
         .from('exam_questions')
@@ -61,14 +61,48 @@ export class QuestionService {
         query = query.range(filter.offset, filter.offset + (filter.limit || 50) - 1);
       }
 
-      const { data, error } = await query;
+      // Get total count for pagination
+      const countQuery = supabase
+        .from('exam_questions')
+        .select('*', { count: 'exact', head: true });
+
+      // Apply same filters to count query
+      if (filter.category) {
+        countQuery.eq('question_category', filter.category);
+      }
+      if (filter.difficulty) {
+        countQuery.eq('difficulty_level', filter.difficulty);
+      }
+      if (filter.status) {
+        countQuery.eq('status', filter.status);
+      }
+      if (filter.job_description_id) {
+        countQuery.eq('job_description_id', filter.job_description_id);
+      }
+      if (filter.search) {
+        countQuery.ilike('question_text', `%${filter.search}%`);
+      }
+      if (filter.topic_id) {
+        countQuery.eq('topic_id', filter.topic_id);
+      }
+
+      const [{ data, error }, { count }] = await Promise.all([
+        query,
+        countQuery
+      ]);
 
       if (error) {
         console.error('Error fetching questions:', error);
         return { success: false, error: error.message };
       }
 
-      return { success: true, data: data || [] };
+      return { 
+        success: true, 
+        data: { 
+          questions: data || [], 
+          totalCount: count || 0 
+        } 
+      };
     } catch (error) {
       console.error('Error in getQuestions:', error);
       return { 

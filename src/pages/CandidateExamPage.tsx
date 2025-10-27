@@ -16,6 +16,7 @@ import {
   ExamQuestion
 } from '../types';
 import { examService } from '../services/examService';
+import { getClientInfo } from '../utils/ipDetection';
 import { 
   ArrowLeft, 
   ArrowRight, 
@@ -91,11 +92,24 @@ export const CandidateExamPage: React.FC = () => {
         // Start exam if not already started
         if (examSession.status === 'pending') {
           try {
+            console.log('🔄 Starting exam session with IP detection...');
+            
+            // Get client information including IP address
+            const clientInfo = await getClientInfo();
+            console.log('📊 Client info:', {
+              ip: clientInfo.ip,
+              userAgent: clientInfo.userAgent.substring(0, 50) + '...',
+              detectionMethod: clientInfo.detectionMethod,
+              timestamp: clientInfo.timestamp
+            });
+
             const startedSession = await examService.startExamSession(
               examSession.id,
-              undefined, // IP address
-              navigator.userAgent
+              clientInfo.ip || undefined, // Convert null to undefined
+              clientInfo.userAgent
             );
+            
+            console.log('✅ Exam session started successfully with IP tracking');
             setSession(startedSession);
           } catch (startError) {
             console.warn('Failed to start exam session, continuing with existing session:', startError);
