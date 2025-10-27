@@ -19,6 +19,7 @@ import {
 import { examService } from '../services/examService';
 import { getClientInfo } from '../utils/ipDetection';
 import { SecurityViolation } from '../services/examSecurityService';
+import { examSecurityService } from '../services/examSecurityService';
 import { 
   ArrowLeft, 
   ArrowRight, 
@@ -69,6 +70,21 @@ export const CandidateExamPage: React.FC = () => {
   const handleExamEnd = useCallback(() => {
     setExamStarted(false);
     console.log('🏁 Exam ended');
+  }, []);
+
+  // Handle exam submission and stop security
+  const handleExamSubmission = useCallback(async () => {
+    try {
+      // Stop security monitoring when exam is submitted
+      if (examSecurityService.isSecurityActive()) {
+        examSecurityService.stopSecurityForExamCompletion();
+      }
+      
+      // Continue with normal exam submission logic
+      console.log('📝 Exam submitted - security monitoring stopped');
+    } catch (error) {
+      console.error('Error stopping security on exam submission:', error);
+    }
   }, []);
 
   // Load exam session and questions
@@ -249,13 +265,17 @@ export const CandidateExamPage: React.FC = () => {
     
     try {
       setIsSubmitting(true);
+      
+      // Stop security monitoring when time is up
+      await handleExamSubmission();
+      
       await examService.completeExam(session.id);
       navigate(`/exam/mcq-results/${session.id}`);
     } catch (err) {
       console.error('Error completing exam:', err);
       setError('Failed to submit exam. Please contact support.');
     }
-  }, [session, navigate]);
+  }, [session, navigate, handleExamSubmission]);
 
   // Timer countdown
   useEffect(() => {
@@ -367,6 +387,10 @@ export const CandidateExamPage: React.FC = () => {
 
     try {
       setIsSubmitting(true);
+      
+      // Stop security monitoring before submitting exam
+      await handleExamSubmission();
+      
       await examService.completeExam(session.id);
       navigate(`/exam/mcq-results/${session.id}`);
     } catch (err) {
@@ -452,6 +476,7 @@ export const CandidateExamPage: React.FC = () => {
       onExamEnd={handleExamEnd}
       showWarning={!examStarted}
       warningMessage="This exam is monitored for security purposes. Fullscreen mode and security monitoring are required. Please ensure you follow all exam rules and do not attempt to use restricted keys or switch tabs."
+      examDurationMinutes={session?.duration_minutes}
     >
       <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50 fixed inset-0 overflow-auto">
       {/* Header */}

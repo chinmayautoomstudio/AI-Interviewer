@@ -23,6 +23,8 @@ export class ExamSecurityService {
   private config: SecurityConfig;
   private eventListeners: Array<{ event: string; handler: EventListener }> = [];
   private violationCallback?: (violation: SecurityViolation) => void;
+  private autoStopTimer?: NodeJS.Timeout;
+  private examDuration?: number; // in minutes
 
   constructor(config: Partial<SecurityConfig> = {}) {
     this.config = {
@@ -45,9 +47,9 @@ export class ExamSecurityService {
   }
 
   /**
-   * Start monitoring for security violations
+   * Start monitoring for security violations with optional auto-stop
    */
-  startMonitoring(callback?: (violation: SecurityViolation) => void): void {
+  startMonitoring(callback?: (violation: SecurityViolation) => void, examDurationMinutes?: number): void {
     if (this.isMonitoring) {
       console.warn('Security monitoring is already active');
       return;
@@ -56,8 +58,14 @@ export class ExamSecurityService {
     this.violationCallback = callback;
     this.isMonitoring = true;
     this.violations = [];
+    this.examDuration = examDurationMinutes;
 
     console.log('🔒 Starting exam security monitoring...');
+    
+    // Set up auto-stop timer if exam duration is provided
+    if (examDurationMinutes && examDurationMinutes > 0) {
+      this.setupAutoStopTimer(examDurationMinutes);
+    }
 
     // Disable keyboard shortcuts
     this.disableKeyboardShortcuts();
@@ -99,6 +107,12 @@ export class ExamSecurityService {
 
     console.log('🔒 Stopping exam security monitoring...');
 
+    // Clear auto-stop timer
+    if (this.autoStopTimer) {
+      clearTimeout(this.autoStopTimer);
+      this.autoStopTimer = undefined;
+    }
+
     // Remove all event listeners
     this.eventListeners.forEach(({ event, handler }) => {
       document.removeEventListener(event, handler);
@@ -111,6 +125,7 @@ export class ExamSecurityService {
 
     this.isMonitoring = false;
     this.violationCallback = undefined;
+    this.examDuration = undefined;
 
     console.log('✅ Security monitoring stopped successfully');
   }
@@ -204,6 +219,72 @@ export class ExamSecurityService {
    */
   clearViolations(): void {
     this.violations = [];
+  }
+
+  /**
+   * Set up auto-stop timer for exam duration
+   */
+  private setupAutoStopTimer(durationMinutes: number): void {
+    const durationMs = durationMinutes * 60 * 1000; // Convert to milliseconds
+    
+    this.autoStopTimer = setTimeout(() => {
+      console.log('⏰ Exam duration completed - stopping security monitoring automatically');
+      this.stopMonitoring();
+      
+      // Log exam completion violation
+      this.logViolation({
+        type: 'tab_switch',
+        timestamp: new Date().toISOString(),
+        details: 'Exam duration completed - security monitoring stopped automatically',
+        severity: 'low'
+      });
+    }, durationMs);
+    
+    console.log(`⏰ Auto-stop timer set for ${durationMinutes} minutes`);
+  }
+
+  /**
+   * Manually stop security monitoring (for exam completion)
+   */
+  stopSecurityForExamCompletion(): void {
+    console.log('🏁 Exam completed - stopping security monitoring');
+    
+    // Clear auto-stop timer
+    if (this.autoStopTimer) {
+      clearTimeout(this.autoStopTimer);
+      this.autoStopTimer = undefined;
+    }
+    
+    // Log exam completion
+    this.logViolation({
+      type: 'tab_switch',
+      timestamp: new Date().toISOString(),
+      details: 'Exam completed by candidate - security monitoring stopped',
+      severity: 'low'
+    });
+    
+    // Stop monitoring
+    this.stopMonitoring();
+  }
+
+  /**
+   * Check if security monitoring is active
+   */
+  isSecurityActive(): boolean {
+    return this.isMonitoring;
+  }
+
+  /**
+   * Get remaining exam time (if auto-stop is configured)
+   */
+  getRemainingTime(): number | null {
+    if (!this.examDuration || !this.autoStopTimer) {
+      return null;
+    }
+    
+    // This is a simplified implementation
+    // In a real scenario, you'd track the start time more precisely
+    return this.examDuration;
   }
 
   /**

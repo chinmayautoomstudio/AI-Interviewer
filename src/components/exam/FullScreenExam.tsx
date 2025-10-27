@@ -8,6 +8,7 @@ interface FullScreenExamProps {
   onExamEnd?: () => void;
   showWarning?: boolean;
   warningMessage?: string;
+  examDurationMinutes?: number; // Duration in minutes for auto-stop
 }
 
 const FullScreenExam: React.FC<FullScreenExamProps> = ({
@@ -16,13 +17,24 @@ const FullScreenExam: React.FC<FullScreenExamProps> = ({
   onExamStart,
   onExamEnd,
   showWarning = true,
-  warningMessage = "This exam is monitored for security purposes. Please ensure you follow all exam rules."
+  warningMessage = "This exam is monitored for security purposes. Please ensure you follow all exam rules.",
+  examDurationMinutes
 }) => {
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [isSecurityActive, setIsSecurityActive] = useState(false);
   const [showConsentModal, setShowConsentModal] = useState(true);
   const [violationCount, setViolationCount] = useState(0);
   const examContainerRef = useRef<HTMLDivElement>(null);
+
+  // Cleanup effect - stop security monitoring when component unmounts
+  useEffect(() => {
+    return () => {
+      if (examSecurityService.isSecurityActive()) {
+        console.log('🧹 Component unmounting - stopping security monitoring');
+        examSecurityService.stopMonitoring();
+      }
+    };
+  }, []);
 
   useEffect(() => {
     // Check if already in fullscreen
@@ -63,8 +75,8 @@ const FullScreenExam: React.FC<FullScreenExamProps> = ({
         return;
       }
 
-      // Start security monitoring
-      examSecurityService.startMonitoring(handleViolation);
+      // Start security monitoring with exam duration
+      examSecurityService.startMonitoring(handleViolation, examDurationMinutes);
       setIsSecurityActive(true);
       setShowConsentModal(false);
 
@@ -81,8 +93,8 @@ const FullScreenExam: React.FC<FullScreenExamProps> = ({
 
   const endExam = async () => {
     try {
-      // Stop security monitoring
-      examSecurityService.stopMonitoring();
+      // Stop security monitoring for exam completion
+      examSecurityService.stopSecurityForExamCompletion();
       setIsSecurityActive(false);
 
       // Exit fullscreen
