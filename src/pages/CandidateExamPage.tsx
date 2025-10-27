@@ -307,11 +307,21 @@ export const CandidateExamPage: React.FC = () => {
   const handleSubmitExam = async () => {
     if (!session) return;
 
-    const confirmed = window.confirm(
-      'Are you sure you want to submit your exam? This action cannot be undone.'
-    );
-
-    if (!confirmed) return;
+    // Check if all questions are answered
+    const unansweredQuestions = questions.length - answers.size;
+    if (unansweredQuestions > 0) {
+      const confirmed = window.confirm(
+        `You have ${unansweredQuestions} unanswered question${unansweredQuestions > 1 ? 's' : ''}. Are you sure you want to submit your exam without answering all questions?`
+      );
+      
+      if (!confirmed) return;
+    } else {
+      const confirmed = window.confirm(
+        'Are you sure you want to submit your exam? This action cannot be undone.'
+      );
+      
+      if (!confirmed) return;
+    }
 
     try {
       setIsSubmitting(true);
@@ -470,8 +480,12 @@ export const CandidateExamPage: React.FC = () => {
                 ) : (
                   <>
                     <Save className="w-3 h-3 sm:w-4 sm:h-4" />
-                    <span className="hidden sm:inline">Submit Exam</span>
-                    <span className="sm:hidden">Submit</span>
+                    <span className="hidden sm:inline">
+                      Submit Exam {answers.size < questions.length ? `(${questions.length - answers.size} unanswered)` : ''}
+                    </span>
+                    <span className="sm:hidden">
+                      Submit {answers.size < questions.length ? `(${questions.length - answers.size})` : ''}
+                    </span>
                   </>
                 )}
               </button>
@@ -501,6 +515,24 @@ export const CandidateExamPage: React.FC = () => {
                   isActive={session?.status === 'in_progress'}
                 />
             </div>
+
+            {/* Unanswered Questions Warning */}
+            {answers.size < questions.length && (
+              <div className="bg-yellow-50 border border-yellow-200 rounded-xl sm:rounded-2xl p-4 sm:p-6 shadow-lg">
+                <div className="flex items-center space-x-3">
+                  <AlertTriangle className="w-5 h-5 sm:w-6 sm:h-6 text-yellow-600" />
+                  <div>
+                    <h3 className="text-sm sm:text-base font-semibold text-yellow-800">
+                      {questions.length - answers.size} Question{questions.length - answers.size > 1 ? 's' : ''} Remaining
+                    </h3>
+                    <p className="text-xs sm:text-sm text-yellow-700 mt-1">
+                      You have {questions.length - answers.size} unanswered question{questions.length - answers.size > 1 ? 's' : ''}. 
+                      Make sure to answer all questions before submitting your exam.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
 
             {/* Debug Panel - Remove this in production */}
             {process.env.NODE_ENV === 'development' && (

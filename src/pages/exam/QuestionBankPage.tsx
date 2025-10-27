@@ -9,7 +9,9 @@ import {
   CheckCircle, 
   XCircle, 
   Zap,
-  RefreshCw
+  RefreshCw,
+  Eye,
+  X
 } from 'lucide-react';
 import { ExamQuestion, QuestionFilter } from '../../types';
 import { questionService } from '../../services/questionService';
@@ -67,6 +69,8 @@ const QuestionBankPage: React.FC = () => {
   // Modals
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showGenerateModal, setShowGenerateModal] = useState(false);
+  const [showQuestionDetailsModal, setShowQuestionDetailsModal] = useState(false);
+  const [selectedQuestionDetails, setSelectedQuestionDetails] = useState<ExamQuestion | null>(null);
 
   // Load data
   const loadData = useCallback(async () => {
@@ -173,6 +177,11 @@ const QuestionBankPage: React.FC = () => {
         await loadData();
       }
     }
+  };
+
+  const handleViewQuestionDetails = (question: ExamQuestion) => {
+    setSelectedQuestionDetails(question);
+    setShowQuestionDetailsModal(true);
   };
 
   const getStatusColor = (status: string) => {
@@ -453,12 +462,17 @@ const QuestionBankPage: React.FC = () => {
                     </td>
                     <td className="px-3 sm:px-6 py-3 sm:py-4">
                       <div className="max-w-xs">
-                        <div className="text-xs sm:text-sm font-medium text-gray-900 truncate">
-                          {question.question_text}
-                        </div>
-                        <div className="text-xs text-gray-500">
-                          {question.question_type.toUpperCase()} • {question.time_limit_seconds}s
-                        </div>
+                        <button
+                          onClick={() => handleViewQuestionDetails(question)}
+                          className="text-left w-full hover:bg-gray-50 rounded p-1 -m-1"
+                        >
+                          <div className="text-xs sm:text-sm font-medium text-gray-900 truncate">
+                            {question.question_text}
+                          </div>
+                          <div className="text-xs text-gray-500">
+                            {question.question_type.toUpperCase()} • {question.time_limit_seconds}s
+                          </div>
+                        </button>
                       </div>
                     </td>
                     <td className="px-3 sm:px-6 py-3 sm:py-4">
@@ -488,6 +502,13 @@ const QuestionBankPage: React.FC = () => {
                     </td>
                     <td className="px-3 sm:px-6 py-3 sm:py-4">
                       <div className="flex items-center space-x-1 sm:space-x-2">
+                        <button
+                          onClick={() => handleViewQuestionDetails(question)}
+                          className="text-blue-600 hover:text-blue-900 p-1"
+                          title="View Details"
+                        >
+                          <Eye className="w-3 h-3 sm:w-4 sm:h-4" />
+                        </button>
                         <button
                           onClick={() => handleDeleteQuestion(question.id)}
                           className="text-red-600 hover:text-red-900 p-1"
@@ -552,6 +573,162 @@ const QuestionBankPage: React.FC = () => {
         jobDescriptions={jobDescriptions}
         loading={loading}
       />
+
+      {/* Question Details Modal */}
+      {showQuestionDetailsModal && selectedQuestionDetails && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between p-4 sm:p-6 border-b border-gray-200">
+              <h3 className="text-lg sm:text-xl font-semibold text-gray-900">Question Details</h3>
+              <button
+                onClick={() => setShowQuestionDetailsModal(false)}
+                className="text-gray-400 hover:text-gray-600 p-1"
+              >
+                <X className="w-5 h-5 sm:w-6 sm:h-6" />
+              </button>
+            </div>
+            
+            <div className="p-4 sm:p-6 space-y-4 sm:space-y-6">
+              {/* Question Header */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+                <div className="bg-gray-50 rounded-lg p-3">
+                  <div className="text-xs text-gray-600 mb-1">Type</div>
+                  <div className="text-sm font-medium text-gray-900">
+                    {selectedQuestionDetails.question_type.toUpperCase()}
+                  </div>
+                </div>
+                <div className="bg-gray-50 rounded-lg p-3">
+                  <div className="text-xs text-gray-600 mb-1">Category</div>
+                  <div className="text-sm font-medium text-gray-900">
+                    {selectedQuestionDetails.question_category}
+                  </div>
+                </div>
+                <div className="bg-gray-50 rounded-lg p-3">
+                  <div className="text-xs text-gray-600 mb-1">Difficulty</div>
+                  <div className="text-sm font-medium text-gray-900">
+                    {selectedQuestionDetails.difficulty_level}
+                  </div>
+                </div>
+                <div className="bg-gray-50 rounded-lg p-3">
+                  <div className="text-xs text-gray-600 mb-1">Points</div>
+                  <div className="text-sm font-medium text-gray-900">
+                    {selectedQuestionDetails.points}
+                  </div>
+                </div>
+              </div>
+
+              {/* Question Text */}
+              <div>
+                <h4 className="text-sm font-semibold text-gray-900 mb-2">Question</h4>
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 sm:p-4">
+                  <p className="text-sm sm:text-base text-gray-900">
+                    {selectedQuestionDetails.question_text}
+                  </p>
+                </div>
+              </div>
+
+              {/* MCQ Options */}
+              {selectedQuestionDetails.question_type === 'mcq' && selectedQuestionDetails.mcq_options && (
+                <div>
+                  <h4 className="text-sm font-semibold text-gray-900 mb-2">Options</h4>
+                  <div className="space-y-2">
+                    {selectedQuestionDetails.mcq_options.map((option, index) => (
+                      <div
+                        key={index}
+                        className={`p-3 rounded-lg border ${
+                          option.option === selectedQuestionDetails.correct_answer
+                            ? 'bg-green-50 border-green-200'
+                            : 'bg-gray-50 border-gray-200'
+                        }`}
+                      >
+                        <div className="flex items-center space-x-3">
+                          <span className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${
+                            option.option === selectedQuestionDetails.correct_answer
+                              ? 'bg-green-600 text-white'
+                              : 'bg-gray-300 text-gray-700'
+                          }`}>
+                            {option.option}
+                          </span>
+                          <span className="text-sm text-gray-900">{option.text}</span>
+                          {option.option === selectedQuestionDetails.correct_answer && (
+                            <CheckCircle className="w-4 h-4 text-green-600 ml-auto" />
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Correct Answer */}
+              {selectedQuestionDetails.question_type === 'mcq' && (
+                <div>
+                  <h4 className="text-sm font-semibold text-gray-900 mb-2">Correct Answer</h4>
+                  <div className="bg-green-50 border border-green-200 rounded-lg p-3 sm:p-4">
+                    <div className="flex items-center space-x-2">
+                      <span className="w-6 h-6 bg-green-600 text-white rounded-full flex items-center justify-center text-xs font-bold">
+                        {selectedQuestionDetails.correct_answer}
+                      </span>
+                      <span className="text-sm font-medium text-gray-900">
+                        {selectedQuestionDetails.mcq_options?.find(opt => opt.option === selectedQuestionDetails.correct_answer)?.text}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Answer Explanation */}
+              {selectedQuestionDetails.answer_explanation && (
+                <div>
+                  <h4 className="text-sm font-semibold text-gray-900 mb-2">Explanation</h4>
+                  <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3 sm:p-4">
+                    <p className="text-sm text-gray-900">
+                      {selectedQuestionDetails.answer_explanation}
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              {/* Additional Details */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+                <div className="bg-gray-50 rounded-lg p-3">
+                  <div className="text-xs text-gray-600 mb-1">Status</div>
+                  <div className="text-sm font-medium text-gray-900">
+                    {selectedQuestionDetails.status}
+                  </div>
+                </div>
+                <div className="bg-gray-50 rounded-lg p-3">
+                  <div className="text-xs text-gray-600 mb-1">Created By</div>
+                  <div className="text-sm font-medium text-gray-900">
+                    {selectedQuestionDetails.created_by === 'ai' ? 'AI' : 'HR'}
+                  </div>
+                </div>
+                <div className="bg-gray-50 rounded-lg p-3">
+                  <div className="text-xs text-gray-600 mb-1">Time Limit</div>
+                  <div className="text-sm font-medium text-gray-900">
+                    {selectedQuestionDetails.time_limit_seconds}s
+                  </div>
+                </div>
+                <div className="bg-gray-50 rounded-lg p-3">
+                  <div className="text-xs text-gray-600 mb-1">Created</div>
+                  <div className="text-sm font-medium text-gray-900">
+                    {new Date(selectedQuestionDetails.created_at).toLocaleDateString()}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex items-center justify-end p-4 sm:p-6 border-t border-gray-200">
+              <button
+                onClick={() => setShowQuestionDetailsModal(false)}
+                className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors text-sm"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

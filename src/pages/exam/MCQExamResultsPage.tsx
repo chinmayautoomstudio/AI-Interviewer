@@ -44,6 +44,17 @@ const MCQExamResultsPage: React.FC<MCQExamResultsPageProps> = () => {
         examService.getSessionResponses(sessionId!)
       ]);
 
+      console.log('🔍 Exam Result Debug:', {
+        result,
+        responsesData,
+        examSession: result?.examSession,
+        totalQuestions: result?.examSession?.total_questions,
+        responsesLength: responsesData?.length,
+        startedAt: result?.examSession?.started_at,
+        completedAt: result?.examSession?.completed_at,
+        timeTakenMinutes: result?.timeTakenMinutes
+      });
+
       setExamResult(result);
       setResponses(responsesData);
     } catch (err) {
@@ -144,8 +155,37 @@ const MCQExamResultsPage: React.FC<MCQExamResultsPageProps> = () => {
     );
   }
 
+  // Additional safety check for empty responses
+  if (responses.length === 0) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-yellow-50 via-white to-orange-50 flex items-center justify-center p-4">
+        <div className="max-w-md w-full bg-white rounded-2xl shadow-xl p-8 text-center">
+          <BookOpen className="h-16 w-16 text-yellow-500 mx-auto mb-4" />
+          <h1 className="text-2xl font-bold text-gray-900 mb-4">No Responses Found</h1>
+          <p className="text-gray-600 mb-6">No exam responses were found for this session. The exam may not have been completed properly.</p>
+          <button
+            onClick={() => navigate('/')}
+            className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+          >
+            Go Home
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   const currentResponse = responses[currentQuestionIndex];
   const percentage = Math.round(examResult.percentage);
+  
+  // Debug logging for troubleshooting
+  console.log('🔍 Current Exam Data:', {
+    examResult,
+    responses: responses.length,
+    examSession: examResult.examSession,
+    totalQuestions: examResult.examSession?.total_questions,
+    startedAt: examResult.examSession?.started_at,
+    completedAt: examResult.examSession?.completed_at
+  });
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-green-50">
@@ -211,7 +251,7 @@ const MCQExamResultsPage: React.FC<MCQExamResultsPageProps> = () => {
                       <BookOpen className="h-5 w-5 text-blue-600" />
                       <span className="text-blue-800 font-medium">Total Questions</span>
                     </div>
-                    <span className="text-blue-900 font-bold">{examResult.examSession?.total_questions || 0}</span>
+                    <span className="text-blue-900 font-bold">{responses.length || examResult.examSession?.total_questions || 0}</span>
                   </div>
                   
                   <div className="flex items-center justify-between p-3 bg-purple-50 rounded-lg">
@@ -219,7 +259,19 @@ const MCQExamResultsPage: React.FC<MCQExamResultsPageProps> = () => {
                       <Clock className="h-5 w-5 text-purple-600" />
                       <span className="text-purple-800 font-medium">Time Taken</span>
                     </div>
-                    <span className="text-purple-900 font-bold">{formatTime(examResult.timeTakenMinutes || 0)}</span>
+                    <span className="text-purple-900 font-bold">
+                      {(() => {
+                        // Calculate time taken from session data
+                        if (examResult.examSession?.started_at && examResult.examSession?.completed_at) {
+                          const startTime = new Date(examResult.examSession.started_at);
+                          const endTime = new Date(examResult.examSession.completed_at);
+                          const timeDiffMs = endTime.getTime() - startTime.getTime();
+                          const timeDiffMinutes = Math.round(timeDiffMs / (1000 * 60));
+                          return formatTime(timeDiffMinutes);
+                        }
+                        return formatTime(examResult.timeTakenMinutes || 0);
+                      })()}
+                    </span>
                   </div>
                 </div>
 
@@ -229,7 +281,9 @@ const MCQExamResultsPage: React.FC<MCQExamResultsPageProps> = () => {
                       <TrendingUp className="h-5 w-5 text-green-600" />
                       <span className="text-green-800 font-medium">Technical Score</span>
                     </div>
-                    <span className="text-green-900 font-bold">{examResult.technicalScore || 0}</span>
+                    <span className="text-green-900 font-bold">
+                      {examResult.technicalScore || examResult.correctAnswers || 0}
+                    </span>
                   </div>
                   
                   <div className="flex items-center justify-between p-3 bg-orange-50 rounded-lg">
@@ -237,7 +291,9 @@ const MCQExamResultsPage: React.FC<MCQExamResultsPageProps> = () => {
                       <Brain className="h-5 w-5 text-orange-600" />
                       <span className="text-orange-800 font-medium">Aptitude Score</span>
                     </div>
-                    <span className="text-orange-900 font-bold">{examResult.aptitudeScore || 0}</span>
+                    <span className="text-orange-900 font-bold">
+                      {examResult.aptitudeScore || Math.round((examResult.correctAnswers / (examResult.correctAnswers + examResult.wrongAnswers)) * 100) || 0}
+                    </span>
                   </div>
                 </div>
               </div>
@@ -254,11 +310,48 @@ const MCQExamResultsPage: React.FC<MCQExamResultsPageProps> = () => {
               </button>
               
               <button
-                onClick={() => window.close()}
+                onClick={() => {
+                  // Show confirmation before closing
+                  const confirmed = window.confirm('Are you sure you want to close the exam? This will close the current tab.');
+                  
+                  if (confirmed) {
+                    // Try multiple methods to close the tab/window
+                    try {
+                      // Method 1: Standard window.close()
+                      window.close();
+                      
+                      // Method 2: If window.close() doesn't work, try to navigate away
+                      setTimeout(() => {
+                        // Check if window is still open
+                        if (!window.closed) {
+                          // Try to navigate to a blank page or parent
+                          if (window.opener) {
+                            window.opener.focus();
+                            window.close();
+                          } else {
+                            // Navigate to about:blank as fallback
+                            window.location.href = 'about:blank';
+                          }
+                        }
+                      }, 100);
+                    } catch (error) {
+                      console.log('Could not close window:', error);
+                      // Fallback: Navigate to home page
+                      navigate('/');
+                    }
+                  }
+                }}
                 className="flex items-center justify-center space-x-2 px-8 py-4 bg-gray-600 text-white rounded-xl hover:bg-gray-700 transition-colors font-semibold shadow-lg hover:shadow-xl"
               >
                 <span>Close Exam</span>
               </button>
+            </div>
+            
+            {/* Info message about closing */}
+            <div className="text-center mt-4">
+              <p className="text-sm text-gray-500">
+                Clicking "Close Exam" will close this tab. You can review your answers before closing.
+              </p>
             </div>
           </div>
         </div>
@@ -283,7 +376,33 @@ const MCQExamResultsPage: React.FC<MCQExamResultsPageProps> = () => {
                 </p>
               </div>
               
-              <div className="w-24"></div> {/* Spacer for centering */}
+              <button
+                onClick={() => {
+                  const confirmed = window.confirm('Are you sure you want to close the exam? This will close the current tab.');
+                  
+                  if (confirmed) {
+                    try {
+                      window.close();
+                      setTimeout(() => {
+                        if (!window.closed) {
+                          if (window.opener) {
+                            window.opener.focus();
+                            window.close();
+                          } else {
+                            window.location.href = 'about:blank';
+                          }
+                        }
+                      }, 100);
+                    } catch (error) {
+                      console.log('Could not close window:', error);
+                      navigate('/');
+                    }
+                  }
+                }}
+                className="flex items-center space-x-2 px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors text-sm"
+              >
+                <span>Close Exam</span>
+              </button>
             </div>
 
             {/* Question Card */}
@@ -356,41 +475,150 @@ const MCQExamResultsPage: React.FC<MCQExamResultsPageProps> = () => {
             )}
 
             {/* Navigation */}
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col lg:flex-row items-center justify-between space-y-4 lg:space-y-0">
               <button
                 onClick={() => handleQuestionNavigation('prev')}
                 disabled={currentQuestionIndex === 0}
-                className="flex items-center space-x-2 px-6 py-3 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                className="flex items-center space-x-2 px-4 lg:px-6 py-2 lg:py-3 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-sm lg:text-base"
               >
-                <ChevronLeft className="h-5 w-5" />
+                <ChevronLeft className="h-4 w-4 lg:h-5 lg:w-5" />
                 <span>Previous</span>
               </button>
               
-              <div className="flex space-x-2">
-                {responses.map((_, index) => (
-                  <button
-                    key={index}
-                    onClick={() => setCurrentQuestionIndex(index)}
-                    className={`w-10 h-10 rounded-lg font-medium transition-colors ${
-                      index === currentQuestionIndex
-                        ? 'bg-blue-600 text-white'
-                        : responses[index].is_correct
-                        ? 'bg-green-100 text-green-600 hover:bg-green-200'
-                        : 'bg-red-100 text-red-600 hover:bg-red-200'
-                    }`}
-                  >
-                    {index + 1}
-                  </button>
-                ))}
+              {/* Quick navigation input for large question sets */}
+              {responses.length > 10 && (
+                <div className="flex items-center space-x-2">
+                  <span className="text-xs lg:text-sm text-gray-600">Go to:</span>
+                  <input
+                    type="number"
+                    min="1"
+                    max={responses.length}
+                    value={currentQuestionIndex + 1}
+                    onChange={(e) => {
+                      const value = parseInt(e.target.value);
+                      if (value >= 1 && value <= responses.length) {
+                        setCurrentQuestionIndex(value - 1);
+                      }
+                    }}
+                    className="w-12 lg:w-16 px-2 py-1 text-center border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+                  />
+                  <span className="text-xs lg:text-sm text-gray-600">of {responses.length}</span>
+                </div>
+              )}
+              
+              <div className="flex items-center space-x-1">
+                {/* Optimized pagination with ellipsis */}
+                {(() => {
+                  const totalQuestions = responses.length;
+                  const currentPage = currentQuestionIndex + 1;
+                  const maxVisiblePages = 7; // Show max 7 page numbers
+                  
+                  if (totalQuestions <= maxVisiblePages) {
+                    // Show all pages if total is small
+                    return responses.map((_, index) => (
+                      <button
+                        key={index}
+                        onClick={() => setCurrentQuestionIndex(index)}
+                        className={`w-8 h-8 lg:w-10 lg:h-10 rounded-lg font-medium transition-colors text-xs lg:text-sm ${
+                          index === currentQuestionIndex
+                            ? 'bg-blue-600 text-white'
+                            : responses[index].is_correct
+                            ? 'bg-green-100 text-green-600 hover:bg-green-200'
+                            : 'bg-red-100 text-red-600 hover:bg-red-200'
+                        }`}
+                      >
+                        {index + 1}
+                      </button>
+                    ));
+                  }
+                  
+                  // Smart pagination for large numbers
+                  const pages = [];
+                  const showEllipsis = totalQuestions > maxVisiblePages;
+                  
+                  // Always show first page
+                  pages.push(
+                    <button
+                      key={0}
+                      onClick={() => setCurrentQuestionIndex(0)}
+                      className={`w-8 h-8 lg:w-10 lg:h-10 rounded-lg font-medium transition-colors text-xs lg:text-sm ${
+                        0 === currentQuestionIndex
+                          ? 'bg-blue-600 text-white'
+                          : responses[0].is_correct
+                          ? 'bg-green-100 text-green-600 hover:bg-green-200'
+                          : 'bg-red-100 text-red-600 hover:bg-red-200'
+                      }`}
+                    >
+                      1
+                    </button>
+                  );
+                  
+                  if (showEllipsis && currentPage > 4) {
+                    pages.push(
+                      <span key="ellipsis1" className="px-2 text-gray-500">...</span>
+                    );
+                  }
+                  
+                  // Show pages around current page
+                  const startPage = Math.max(1, currentPage - 2);
+                  const endPage = Math.min(totalQuestions - 1, currentPage + 2);
+                  
+                  for (let i = startPage; i <= endPage; i++) {
+                    if (i !== 0 && i !== totalQuestions - 1) {
+                      pages.push(
+                        <button
+                          key={i}
+                          onClick={() => setCurrentQuestionIndex(i)}
+                          className={`w-8 h-8 lg:w-10 lg:h-10 rounded-lg font-medium transition-colors text-xs lg:text-sm ${
+                            i === currentQuestionIndex
+                              ? 'bg-blue-600 text-white'
+                              : responses[i].is_correct
+                              ? 'bg-green-100 text-green-600 hover:bg-green-200'
+                              : 'bg-red-100 text-red-600 hover:bg-red-200'
+                          }`}
+                        >
+                          {i + 1}
+                        </button>
+                      );
+                    }
+                  }
+                  
+                  if (showEllipsis && currentPage < totalQuestions - 3) {
+                    pages.push(
+                      <span key="ellipsis2" className="px-2 text-gray-500">...</span>
+                    );
+                  }
+                  
+                  // Always show last page
+                  if (totalQuestions > 1) {
+                    pages.push(
+                      <button
+                        key={totalQuestions - 1}
+                        onClick={() => setCurrentQuestionIndex(totalQuestions - 1)}
+                        className={`w-8 h-8 lg:w-10 lg:h-10 rounded-lg font-medium transition-colors text-xs lg:text-sm ${
+                          totalQuestions - 1 === currentQuestionIndex
+                            ? 'bg-blue-600 text-white'
+                            : responses[totalQuestions - 1].is_correct
+                            ? 'bg-green-100 text-green-600 hover:bg-green-200'
+                            : 'bg-red-100 text-red-600 hover:bg-red-200'
+                        }`}
+                      >
+                        {totalQuestions}
+                      </button>
+                    );
+                  }
+                  
+                  return pages;
+                })()}
               </div>
               
               <button
                 onClick={() => handleQuestionNavigation('next')}
                 disabled={currentQuestionIndex === responses.length - 1}
-                className="flex items-center space-x-2 px-6 py-3 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                className="flex items-center space-x-2 px-4 lg:px-6 py-2 lg:py-3 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-sm lg:text-base"
               >
                 <span>Next</span>
-                <ChevronRight className="h-5 w-5" />
+                <ChevronRight className="h-4 w-4 lg:h-5 lg:w-5" />
               </button>
             </div>
           </div>

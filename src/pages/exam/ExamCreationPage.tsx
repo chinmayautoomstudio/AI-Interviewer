@@ -15,12 +15,14 @@ import {
   Copy,
   ExternalLink,
   CheckCircle,
-  AlertCircle
+  AlertCircle,
+  Mail
 } from 'lucide-react';
 import { Candidate, JobDescription } from '../../types';
 import { getCandidates } from '../../services/candidates';
 import { JobDescriptionsService } from '../../services/jobDescriptions';
 import { examService } from '../../services/examService';
+import { ExamEmailService, ExamEmailData } from '../../services/examEmailService';
 
 interface ExamConfig {
   candidateId: string;
@@ -30,6 +32,8 @@ interface ExamConfig {
   expiresInHours: number;
   examTitle?: string;
   instructions?: string;
+  sendEmailNotification?: boolean;
+  customEmailMessage?: string;
 }
 
 const ExamCreationPage: React.FC = () => {
@@ -49,7 +53,9 @@ const ExamCreationPage: React.FC = () => {
     totalQuestions: 15,
     expiresInHours: 48,
     examTitle: '',
-    instructions: ''
+    instructions: '',
+    sendEmailNotification: true,
+    customEmailMessage: ''
   });
   const [availableQuestionsCount, setAvailableQuestionsCount] = useState<number>(0);
 
@@ -139,8 +145,48 @@ const ExamCreationPage: React.FC = () => {
 
       console.log('Exam session created:', examSession);
 
+      // Send email notification if enabled
+      if (config.sendEmailNotification) {
+        try {
+          const selectedCandidate = candidates.find(c => c.id === config.candidateId);
+          const selectedJob = jobDescriptions.find(j => j.id === config.jobDescriptionId);
+          
+          if (selectedCandidate && selectedJob) {
+            const emailData: ExamEmailData = {
+              candidateName: selectedCandidate.name,
+              candidateEmail: selectedCandidate.email,
+              jobTitle: selectedJob.title,
+              examDuration: config.durationMinutes,
+              examToken: examSession.exam_token,
+              expiresAt: examSession.expires_at,
+              examLink: `${window.location.origin}/candidate/exam/${examSession.exam_token}`,
+              customMessage: config.customEmailMessage || '',
+              companyName: 'AI Interviewer'
+            };
+
+            console.log('📧 Sending exam invitation email...');
+            const emailResult = await ExamEmailService.sendExamInvitation(emailData);
+            
+            if (emailResult.success) {
+              console.log('✅ Exam invitation email sent successfully');
+              setSuccess('Exam created successfully and invitation email sent to candidate!');
+            } else {
+              console.warn('⚠️ Exam created but email sending failed:', emailResult.error);
+              setSuccess('Exam created successfully, but failed to send email notification.');
+            }
+          } else {
+            console.warn('⚠️ Could not find candidate or job description for email');
+            setSuccess('Exam created successfully, but could not send email notification.');
+          }
+        } catch (emailError) {
+          console.error('❌ Error sending exam invitation email:', emailError);
+          setSuccess('Exam created successfully, but failed to send email notification.');
+        }
+      } else {
+        setSuccess('Exam created successfully!');
+      }
+
       setCreatedExamToken(examSession.exam_token);
-      setSuccess('Exam created successfully!');
       
     } catch (err) {
       console.error('Error creating exam:', err);
@@ -173,7 +219,9 @@ const ExamCreationPage: React.FC = () => {
       totalQuestions: 15,
       expiresInHours: 48,
       examTitle: '',
-      instructions: ''
+      instructions: '',
+      sendEmailNotification: true,
+      customEmailMessage: ''
     });
     setError(null);
     setSuccess(null);
@@ -440,6 +488,55 @@ const ExamCreationPage: React.FC = () => {
                   <option value={72}>72 hours</option>
                   <option value={168}>1 week</option>
                 </select>
+              </div>
+            </div>
+
+            {/* Email Notification */}
+            <div className="space-y-4 sm:space-y-6">
+              <div className="flex items-center space-x-2 sm:space-x-3">
+                <div className="p-1.5 sm:p-2 bg-green-100 rounded-lg">
+                  <Mail className="w-4 h-4 sm:w-5 sm:h-5 text-green-600" />
+                </div>
+                <h2 className="text-base sm:text-lg font-semibold text-gray-900">Email Notification</h2>
+              </div>
+
+              <div className="space-y-4 sm:space-y-6">
+                {/* Send Email Toggle */}
+                <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                  <div className="flex items-center space-x-3">
+                    <div className="p-2 bg-green-100 rounded-lg">
+                      <Mail className="w-4 h-4 text-green-600" />
+                    </div>
+                    <div>
+                      <h3 className="text-sm font-medium text-gray-900">Send Email Invitation</h3>
+                      <p className="text-xs text-gray-600">Automatically send exam invitation to candidate</p>
+                    </div>
+                  </div>
+                  <label className="relative inline-flex items-center cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={config.sendEmailNotification}
+                      onChange={(e) => setConfig(prev => ({ ...prev, sendEmailNotification: e.target.checked }))}
+                      className="sr-only peer"
+                    />
+                    <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                  </label>
+                </div>
+
+                {/* Custom Email Message */}
+                {config.sendEmailNotification && (
+                  <div className="space-y-1 sm:space-y-2">
+                    <label className="text-xs sm:text-sm font-medium text-gray-700">Custom Message (Optional)</label>
+                    <textarea
+                      value={config.customEmailMessage}
+                      onChange={(e) => setConfig(prev => ({ ...prev, customEmailMessage: e.target.value }))}
+                      placeholder="Add a custom message to include in the email invitation..."
+                      rows={3}
+                      className="w-full p-3 sm:p-4 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm sm:text-base resize-none"
+                    />
+                    <p className="text-xs text-gray-500">This message will be included in the email invitation sent to the candidate.</p>
+                  </div>
+                )}
               </div>
             </div>
 
