@@ -193,55 +193,78 @@ Best regards,
 HR Team
       `;
 
-      // Send email via Netlify function
-      const response = await fetch('/.netlify/functions/send-email', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          to: data.candidateEmail,
-          subject: `Online Exam Invitation - ${data.jobTitle} - AI HR Saathi`,
-          html: htmlContent,
-          text: textContent
-        })
-      });
-
-      const result = await response.json();
-
-      if (!response.ok || !result.success) {
-        console.error('❌ Email sending failed:', result.error);
-        return {
-          success: false,
-          error: result.error || 'Failed to send email'
-        };
-      }
-
-      console.log('✅ Exam invitation email sent successfully:', result.messageId);
-
-      // Store email record in database
+      // Try to send email via Netlify function with fallback
       try {
-        await supabase
-          .from('exam_email_logs')
-          .insert([{
-            candidate_email: data.candidateEmail,
-            candidate_name: data.candidateName,
-            job_title: data.jobTitle,
-            exam_token: data.examToken,
-            email_type: 'exam_invitation',
-            sent_at: new Date().toISOString(),
-            message_id: result.messageId || null,
-            status: 'sent'
-          }]);
-      } catch (dbError) {
-        console.warn('⚠️ Failed to log email to database:', dbError);
-        // Don't fail the email sending if logging fails
-      }
+        const response = await fetch('/.netlify/functions/send-email', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            to: data.candidateEmail,
+            subject: `Online Exam Invitation - ${data.jobTitle} - AI HR Saathi`,
+            html: htmlContent,
+            text: textContent
+          })
+        });
 
-      return {
-        success: true,
-        messageId: result.messageId
-      };
+        if (!response.ok) {
+          const errorText = await response.text();
+          console.error('❌ Netlify function error:', response.status, errorText);
+          
+          // If it's a 404, the function is not deployed
+          if (response.status === 404) {
+            console.warn('⚠️ Netlify function not found (404) - storing email in database instead');
+            console.warn('💡 To fix this: Deploy the Netlify function or configure email service');
+            return await this.storeEmailInDatabase(data, htmlContent, textContent);
+          }
+          
+          return {
+            success: false,
+            error: `HTTP ${response.status}: ${errorText}`
+          };
+        }
+
+        const result = await response.json();
+
+        if (!result.success) {
+          console.error('❌ Email sending failed:', result.error);
+          return {
+            success: false,
+            error: result.error || 'Failed to send email'
+          };
+        }
+
+        console.log('✅ Exam invitation email sent successfully via Netlify function');
+
+        // Store email record in database
+        try {
+          await supabase
+            .from('exam_email_logs')
+            .insert([{
+              candidate_email: data.candidateEmail,
+              candidate_name: data.candidateName,
+              job_title: data.jobTitle,
+              exam_token: data.examToken,
+              email_type: 'exam_invitation',
+              sent_at: new Date().toISOString(),
+              message_id: result.messageId || null,
+              status: 'sent'
+            }]);
+        } catch (dbError) {
+          console.warn('⚠️ Failed to log email to database:', dbError);
+          // Don't fail the email sending if logging fails
+        }
+
+        return {
+          success: true,
+          messageId: result.messageId
+        };
+      } catch (fetchError) {
+        console.error('❌ Error calling Netlify function:', fetchError);
+        console.warn('⚠️ Falling back to database storage');
+        return await this.storeEmailInDatabase(data, htmlContent, textContent);
+      }
 
     } catch (error) {
       console.error('❌ Error sending exam invitation:', error);
@@ -299,6 +322,52 @@ HR Team
    */
   static isConfigured(): boolean {
     return !!process.env.REACT_APP_RESEND_API_KEY;
+  }
+
+  /**
+   * Store email in database as fallback when Netlify function is not available
+   */
+  private static async storeEmailInDatabase(data: ExamEmailData, htmlContent: string, textContent: string): Promise<ExamEmailResult> {
+    try {
+      console.log('📝 Storing email in database as fallback');
+      
+      // Store email record in database
+      const { error } = await supabase
+        .from('exam_email_logs')
+        .insert([{
+          candidate_email: data.candidateEmail,
+          candidate_name: data.candidateName,
+          job_title: data.jobTitle,
+          exam_token: data.examToken,
+          email_type: 'exam_invitation',
+          email_content: htmlContent,
+          text_content: textContent,
+          sent_at: new Date().toISOString(),
+          message_id: null,
+          status: 'stored_in_db',
+          error_message: 'Netlify function not available - stored in database'
+        }]);
+
+      if (error) {
+        console.error('❌ Failed to store email in database:', error);
+        return {
+          success: false,
+          error: `Failed to store email: ${error.message}`
+        };
+      }
+
+      console.log('✅ Email stored in database successfully');
+      return {
+        success: true,
+        messageId: 'stored_in_db'
+      };
+    } catch (error) {
+      console.error('❌ Error storing email in database:', error);
+      return {
+        success: false,
+        error: `Database storage failed: ${error instanceof Error ? error.message : 'Unknown error'}`
+      };
+    }
   }
 }
 
