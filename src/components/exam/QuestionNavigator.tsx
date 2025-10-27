@@ -113,22 +113,20 @@ export const QuestionNavigator: React.FC<QuestionNavigatorProps> = ({
               <span className="text-xs font-bold">{index + 1}</span>
             </div>
 
-            {/* Question type */}
-            <div className="mb-1">
+            {/* Question type and difficulty - combined to save space */}
+            <div className="mb-1 flex flex-col items-center space-y-0.5">
               {question.question_type === 'mcq' ? (
                 <span className="bg-blue-100 text-blue-800 text-xs font-medium px-1 py-0.5 rounded text-center">
-                  MC
+                  MCQ
                 </span>
               ) : (
                 <span className="bg-green-100 text-green-800 text-xs font-medium px-1 py-0.5 rounded text-center">
-                  TX
+                  TEXT
                 </span>
               )}
-            </div>
-
-            {/* Difficulty indicator */}
-            <div className={`text-xs font-bold ${getDifficultyColor(question.difficulty_level)}`}>
-              {question.difficulty_level.charAt(0).toUpperCase()}
+              <div className={`text-xs font-bold ${getDifficultyColor(question.difficulty_level)}`}>
+                {question.difficulty_level.charAt(0).toUpperCase()}
+              </div>
             </div>
 
             {/* Points indicator */}

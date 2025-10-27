@@ -529,7 +529,7 @@ export const CandidateExamPage: React.FC = () => {
                 </div>
               </div>
             ) : currentQuestion ? (
-              <div className="bg-white/80 backdrop-blur-sm rounded-xl sm:rounded-2xl border border-gray-200/50 shadow-lg overflow-hidden flex-1">
+              <div className="bg-white/80 backdrop-blur-sm rounded-xl sm:rounded-2xl border border-gray-200/50 shadow-lg overflow-hidden">
                 {currentQuestion.question_type === 'mcq' ? (
                   <MCQQuestion
                     question={currentQuestion}

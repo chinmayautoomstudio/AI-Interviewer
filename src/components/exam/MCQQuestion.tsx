@@ -20,8 +20,8 @@ export const MCQQuestion: React.FC<MCQQuestionProps> = ({
   return (
     <div className="bg-white rounded-xl sm:rounded-2xl border border-gray-200/50 p-4 sm:p-6 lg:p-8 shadow-lg">
       {/* Question Header */}
-      <div className="mb-6 sm:mb-8">
-        <div className="flex items-center justify-between mb-4 sm:mb-6">
+      <div className="mb-4 sm:mb-6">
+        <div className="flex items-center justify-between mb-3 sm:mb-4">
           <div className="flex items-center space-x-2 sm:space-x-3">
             <span className="bg-gradient-to-r from-green-100 to-green-200 text-green-800 text-xs sm:text-sm font-semibold px-2 sm:px-3 py-1 sm:py-1.5 rounded-full shadow-sm">
               {question.points} point{question.points !== 1 ? 's' : ''}
@@ -38,7 +38,7 @@ export const MCQQuestion: React.FC<MCQQuestionProps> = ({
       </div>
 
       {/* Options */}
-      <div className="space-y-3 sm:space-y-4">
+      <div className="space-y-3 sm:space-y-4 mb-4 sm:mb-6">
         {question.mcq_options?.map((option, index) => {
           const isSelected = selectedAnswer === option.option;
           const isCorrect = question.correct_answer === option.option;
@@ -90,7 +90,7 @@ export const MCQQuestion: React.FC<MCQQuestionProps> = ({
 
       {/* Answer explanation (show when disabled and answer is selected) */}
       {disabled && selectedAnswer && question.answer_explanation && (
-        <div className="mt-6 sm:mt-8 p-4 sm:p-6 bg-gradient-to-r from-gray-50 to-blue-50 rounded-lg sm:rounded-xl border border-gray-200 shadow-sm">
+        <div className="mb-4 sm:mb-6 p-4 sm:p-6 bg-gradient-to-r from-gray-50 to-blue-50 rounded-lg sm:rounded-xl border border-gray-200 shadow-sm">
           <h4 className="font-semibold text-gray-900 mb-2 sm:mb-3 text-base sm:text-lg">Explanation:</h4>
           <p className="text-gray-700 leading-relaxed text-sm sm:text-base lg:text-lg">
             {question.answer_explanation}
@@ -100,7 +100,7 @@ export const MCQQuestion: React.FC<MCQQuestionProps> = ({
 
       {/* Topic and tags */}
       {(question.topic || question.tags.length > 0) && (
-        <div className="mt-4 sm:mt-6 flex flex-wrap gap-2 sm:gap-3">
+        <div className="flex flex-wrap gap-2 sm:gap-3">
           {question.topic && (
             <span className="bg-gradient-to-r from-purple-100 to-purple-200 text-purple-800 text-xs sm:text-sm font-semibold px-2 sm:px-3 py-1 sm:py-1.5 rounded-full shadow-sm">
               {question.topic.name}
