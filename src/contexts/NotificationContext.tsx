@@ -1,10 +1,14 @@
+// Notification Context
+// Real-time notification system for admin dashboard
+
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
-import { notificationService, InterviewNotification, NotificationSubscription } from '../services/notificationService';
+import { notificationService } from '../services/notificationService';
+import { Notification } from '../types/notifications';
 
 interface NotificationContextType {
-  notifications: InterviewNotification[];
+  notifications: Notification[];
   unreadCount: number;
-  addNotification: (notification: InterviewNotification) => void;
+  addNotification: (notification: Notification) => void;
   markAsRead: (notificationId: string) => void;
   markAllAsRead: () => void;
   clearNotifications: () => void;
@@ -18,15 +22,15 @@ interface NotificationProviderProps {
 }
 
 export const NotificationProvider: React.FC<NotificationProviderProps> = ({ children }) => {
-  const [notifications, setNotifications] = useState<InterviewNotification[]>([]);
+  const [notifications, setNotifications] = useState<Notification[]>([]);
   const [isConnected, setIsConnected] = useState(false);
-  const [subscription, setSubscription] = useState<NotificationSubscription | null>(null);
+  const [subscriptionId, setSubscriptionId] = useState<string | null>(null);
 
   // Calculate unread count
-  const unreadCount = notifications.filter(n => !n.read).length;
+  const unreadCount = notifications.filter(n => !n.isRead).length;
 
   // Add notification to the list
-  const addNotification = useCallback((notification: InterviewNotification) => {
+  const addNotification = useCallback((notification: Notification) => {
     setNotifications(prev => {
       // Check if notification already exists (prevent duplicates)
       const exists = prev.some(n => n.id === notification.id);
@@ -43,19 +47,22 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
   const markAsRead = useCallback(async (notificationId: string) => {
     setNotifications(prev => 
       prev.map(n => 
-        n.id === notificationId ? { ...n, read: true } : n
+        n.id === notificationId ? { ...n, isRead: true } : n
       )
     );
     
-    // Update in database (if notifications table exists)
-    await notificationService.markNotificationAsRead(notificationId);
+    // Update in database
+    await notificationService.markAsRead(notificationId, 'admin');
   }, []);
 
   // Mark all notifications as read
-  const markAllAsRead = useCallback(() => {
+  const markAllAsRead = useCallback(async () => {
     setNotifications(prev => 
-      prev.map(n => ({ ...n, read: true }))
+      prev.map(n => ({ ...n, isRead: true }))
     );
+    
+    // Update in database
+    await notificationService.markAllAsRead('admin');
   }, []);
 
   // Clear all notifications
@@ -67,43 +74,44 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
   useEffect(() => {
     console.log('🔔 Setting up notification subscription...');
     
-    const subscription = notificationService.subscribeToInterviewNotifications(
-      (notification) => {
-        console.log('🔔 Received notification:', notification);
+    try {
+      const subId = notificationService.subscribeToNotifications('admin', (notification) => {
+        console.log('📨 Received notification:', notification);
         addNotification(notification);
-      }
-    );
-
-    setSubscription(subscription);
-    setIsConnected(true);
-
-    // Load recent notifications
-    const loadRecentNotifications = async () => {
-      try {
-        const recent = await notificationService.getRecentNotifications(10);
-        setNotifications(recent);
-      } catch (error) {
-        console.error('Error loading recent notifications:', error);
-      }
-    };
-
-    loadRecentNotifications();
-
-    return () => {
-      console.log('🔔 Cleaning up notification subscription...');
-      subscription.unsubscribe();
+      });
+      
+      setSubscriptionId(subId);
+      setIsConnected(true);
+      console.log('✅ Notification subscription established');
+    } catch (error) {
+      console.error('❌ Failed to setup notification subscription:', error);
       setIsConnected(false);
-    };
-  }, [addNotification]);
+    }
 
-  // Cleanup on unmount
-  useEffect(() => {
+    // Cleanup subscription on unmount
     return () => {
-      if (subscription) {
-        subscription.unsubscribe();
+      if (subscriptionId) {
+        notificationService.unsubscribeFromNotifications(subscriptionId);
+        console.log('🔔 Notification subscription cleaned up');
       }
     };
-  }, [subscription]);
+  }, [addNotification, subscriptionId]);
+
+  // Load initial notifications
+  useEffect(() => {
+    const loadInitialNotifications = async () => {
+      try {
+        const result = await notificationService.getNotifications('admin', { limit: 20 });
+        if (result.success && result.data) {
+          setNotifications(result.data);
+        }
+      } catch (error) {
+        console.error('Failed to load initial notifications:', error);
+      }
+    };
+
+    loadInitialNotifications();
+  }, []);
 
   const value: NotificationContextType = {
     notifications,

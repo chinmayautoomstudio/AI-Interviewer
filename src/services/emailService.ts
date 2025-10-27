@@ -2,7 +2,7 @@
 // Service for sending exam invitations and managing email templates
 
 import { supabase } from './supabase';
-import { Candidate, JobDescription, ExamSession } from '../types';
+import { ExamSession } from '../types';
 
 export interface EmailInvitationRequest {
   exam_session_id: string;
@@ -202,18 +202,30 @@ HR Team
             });
             
             if (result.success) {
-              sent++;
+              return { success: true, error: null };
             } else {
-              failed++;
-              errors.push(`${invitation.candidate_email}: ${result.error}`);
+              return { success: false, error: `${invitation.candidate_email}: ${result.error}` };
             }
           } catch (error) {
-            failed++;
-            errors.push(`${invitation.candidate_email}: ${error instanceof Error ? error.message : 'Unknown error'}`);
+            return { success: false, error: `${invitation.candidate_email}: ${error instanceof Error ? error.message : 'Unknown error'}` };
           }
         });
 
-        await Promise.all(promises);
+        const results = await Promise.all(promises);
+        
+        // Count results
+        const successCount = results.filter(result => result.success).length;
+        const failureCount = results.filter(result => !result.success).length;
+        
+        sent += successCount;
+        failed += failureCount;
+        
+        // Add errors
+        results.forEach(result => {
+          if (!result.success && result.error) {
+            errors.push(result.error);
+          }
+        });
 
         // Rate limiting delay
         if (i + batchSize < request.exam_sessions.length) {

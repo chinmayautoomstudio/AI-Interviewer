@@ -1,10 +1,9 @@
 // Question Assignment Management Page
 // Interface for managing which questions are assigned to which job descriptions
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { 
   Search, 
-  Filter, 
   Plus, 
   Minus,
   CheckCircle, 
@@ -13,19 +12,12 @@ import {
   RefreshCw,
   Users,
   FileText,
-  Settings,
-  ArrowRight,
-  ArrowLeft
+  Settings
 } from 'lucide-react';
 import { ExamQuestion, JobDescription } from '../../types';
 import { questionService } from '../../services/questionService';
 import { JobDescriptionsService } from '../../services/jobDescriptions';
 
-interface QuestionAssignment {
-  questionId: string;
-  jobDescriptionId: string;
-  assigned: boolean;
-}
 
 interface JobQuestionStats {
   totalQuestions: number;
@@ -60,13 +52,6 @@ const QuestionAssignmentPage: React.FC = () => {
     loadData();
   }, []);
 
-  useEffect(() => {
-    if (selectedJobDescription) {
-      loadJobStats();
-      loadAllAssignments();
-    }
-  }, [selectedJobDescription, questions]);
-
   const loadData = async () => {
     try {
       setLoading(true);
@@ -99,7 +84,7 @@ const QuestionAssignmentPage: React.FC = () => {
     }
   };
 
-  const loadJobStats = async () => {
+  const loadJobStats = useCallback(async () => {
     if (!selectedJobDescription) return;
 
     try {
@@ -126,10 +111,9 @@ const QuestionAssignmentPage: React.FC = () => {
     } catch (error) {
       console.error('Error loading job stats:', error);
     }
-  };
+  }, [selectedJobDescription, questions]);
 
-
-  const loadAllAssignments = async () => {
+  const loadAllAssignments = useCallback(async () => {
     try {
       const assignmentMap = new Map<string, boolean>();
       
@@ -143,7 +127,14 @@ const QuestionAssignmentPage: React.FC = () => {
     } catch (error) {
       console.error('Error loading all assignments:', error);
     }
-  };
+  }, [selectedJobDescription, questions]);
+
+  useEffect(() => {
+    if (selectedJobDescription) {
+      loadJobStats();
+      loadAllAssignments();
+    }
+  }, [selectedJobDescription, questions, loadJobStats, loadAllAssignments]);
 
   const handleAssignmentToggle = async (questionId: string, assigned: boolean) => {
     if (!selectedJobDescription) return;

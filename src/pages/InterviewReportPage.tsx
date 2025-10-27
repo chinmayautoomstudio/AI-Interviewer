@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import Card from '../components/ui/Card';
 import Button from '../components/ui/Button';
@@ -61,13 +61,7 @@ const InterviewReportPage: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [report, setReport] = useState<InterviewReportData | null>(null);
 
-  useEffect(() => {
-    if (reportId) {
-      loadReport();
-    }
-  }, [reportId]);
-
-  const loadReport = async () => {
+  const loadReport = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
@@ -85,7 +79,13 @@ const InterviewReportPage: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [reportId]);
+
+  useEffect(() => {
+    if (reportId) {
+      loadReport();
+    }
+  }, [reportId, loadReport]);
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('en-US', {

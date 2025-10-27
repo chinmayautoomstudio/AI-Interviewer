@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { X, Clock, User, Briefcase, CheckCircle, XCircle, AlertCircle, Calendar, BarChart3, ExternalLink, Copy } from 'lucide-react';
 import { supabase } from '../../services/supabase';
 import { ExamSession, ExamResponse } from '../../types';
@@ -25,13 +25,7 @@ const ExamSessionDetailsModal: React.FC<ExamSessionDetailsModalProps> = ({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    if (isOpen && sessionId) {
-      loadSessionDetails();
-    }
-  }, [isOpen, sessionId]);
-
-  const loadSessionDetails = async () => {
+  const loadSessionDetails = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
@@ -106,7 +100,13 @@ const ExamSessionDetailsModal: React.FC<ExamSessionDetailsModalProps> = ({
     } finally {
       setLoading(false);
     }
-  };
+  }, [sessionId]);
+
+  useEffect(() => {
+    if (isOpen && sessionId) {
+      loadSessionDetails();
+    }
+  }, [isOpen, sessionId, loadSessionDetails]);
 
   const getStatusIcon = (status: string) => {
     switch (status) {

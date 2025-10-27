@@ -1,7 +1,7 @@
 // Exam Result Details Modal
 // Modal for viewing detailed exam results and candidate performance
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { X, Download, Clock, CheckCircle, XCircle, AlertCircle, User, Briefcase, BarChart3 } from 'lucide-react';
 import { ExamResultWithDetails } from '../../services/examResultsService';
 import MCQEvaluationDetails from './MCQEvaluationDetails';
@@ -24,14 +24,7 @@ const ExamResultDetailsModal: React.FC<ExamResultDetailsModalProps> = ({
   const [responses, setResponses] = useState<any[]>([]);
   const [loadingResponses, setLoadingResponses] = useState(false);
 
-  useEffect(() => {
-    if (isOpen && resultId) {
-      loadResultDetails();
-      loadResponses();
-    }
-  }, [isOpen, resultId]);
-
-  const loadResultDetails = async () => {
+  const loadResultDetails = useCallback(async () => {
     if (!resultId) return;
 
     try {
@@ -53,9 +46,9 @@ const ExamResultDetailsModal: React.FC<ExamResultDetailsModalProps> = ({
     } finally {
       setLoading(false);
     }
-  };
+  }, [resultId]);
 
-  const loadResponses = async () => {
+  const loadResponses = useCallback(async () => {
     if (!resultId) return;
 
     try {
@@ -71,7 +64,14 @@ const ExamResultDetailsModal: React.FC<ExamResultDetailsModalProps> = ({
     } finally {
       setLoadingResponses(false);
     }
-  };
+  }, [resultId]);
+
+  useEffect(() => {
+    if (isOpen && resultId) {
+      loadResultDetails();
+      loadResponses();
+    }
+  }, [isOpen, resultId, loadResultDetails, loadResponses]);
 
   const handleClose = () => {
     setResult(null);

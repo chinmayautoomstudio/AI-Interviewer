@@ -13,9 +13,7 @@ import {
 } from '../components/exam';
 import { 
   ExamSession, 
-  ExamQuestion, 
-  ExamResponse,
-  SubmitAnswerRequest 
+  ExamQuestion
 } from '../types';
 import { examService } from '../services/examService';
 import { 
@@ -203,6 +201,20 @@ export const CandidateExamPage: React.FC = () => {
     };
   }, [session, autoSave]);
 
+  // Handle time up
+  const handleTimeUp = useCallback(async () => {
+    if (!session) return;
+    
+    try {
+      setIsSubmitting(true);
+      await examService.completeExam(session.id);
+      navigate(`/exam/mcq-results/${session.id}`);
+    } catch (err) {
+      console.error('Error completing exam:', err);
+      setError('Failed to submit exam. Please contact support.');
+    }
+  }, [session, navigate]);
+
   // Timer countdown
   useEffect(() => {
     if (!session || session.status !== 'in_progress' || timeRemaining <= 0) return;
@@ -219,7 +231,7 @@ export const CandidateExamPage: React.FC = () => {
     }, 1000);
 
     return () => clearInterval(interval);
-  }, [session]);
+  }, [session, timeRemaining, handleTimeUp]);
 
   // Handle answer selection
   const handleAnswerSelect = async (questionId: string, answer: string) => {
@@ -291,20 +303,6 @@ export const CandidateExamPage: React.FC = () => {
     }
   };
 
-  // Handle time up
-  const handleTimeUp = async () => {
-    if (!session) return;
-    
-    try {
-      setIsSubmitting(true);
-      await examService.completeExam(session.id);
-      navigate(`/exam/completion/${session.id}`);
-    } catch (err) {
-      console.error('Error completing exam:', err);
-      setError('Failed to submit exam. Please contact support.');
-    }
-  };
-
   // Handle manual submit
   const handleSubmitExam = async () => {
     if (!session) return;
@@ -318,7 +316,7 @@ export const CandidateExamPage: React.FC = () => {
     try {
       setIsSubmitting(true);
       await examService.completeExam(session.id);
-      navigate(`/exam/completion/${session.id}`);
+      navigate(`/exam/mcq-results/${session.id}`);
     } catch (err) {
       console.error('Error submitting exam:', err);
       setError('Failed to submit exam. Please try again.');
@@ -399,29 +397,31 @@ export const CandidateExamPage: React.FC = () => {
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50 fixed inset-0 overflow-auto">
       {/* Header */}
       <div className="bg-white/95 backdrop-blur-sm border-b border-gray-200/50 sticky top-0 z-10 shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16">
-            <div className="flex items-center space-x-4">
-              <div className="flex items-center space-x-3">
-                <div className="w-8 h-8 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-lg flex items-center justify-center">
-                  <span className="text-white font-bold text-sm">E</span>
+        <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-8">
+          <div className="flex items-center justify-between h-14 sm:h-16">
+            {/* Mobile Header */}
+            <div className="flex items-center space-x-2 sm:space-x-4 flex-1 min-w-0">
+              <div className="flex items-center space-x-2 sm:space-x-3">
+                <div className="w-6 h-6 sm:w-8 sm:h-8 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-lg flex items-center justify-center flex-shrink-0">
+                  <span className="text-white font-bold text-xs sm:text-sm">E</span>
                 </div>
-                <div>
-                  <h1 className="text-lg font-semibold text-gray-900">
+                <div className="min-w-0 flex-1">
+                  <h1 className="text-sm sm:text-lg font-semibold text-gray-900 truncate">
                     {session?.job_description?.title || 'Online Exam'}
                   </h1>
-                  <div className="flex items-center space-x-2 text-sm text-gray-600">
-                    <span>Question {currentQuestionIndex + 1} of {questions.length}</span>
-                    <span>•</span>
-                    <span>{answeredQuestions.size} answered</span>
+                  <div className="flex items-center space-x-1 sm:space-x-2 text-xs sm:text-sm text-gray-600">
+                    <span>Q{currentQuestionIndex + 1}/{questions.length}</span>
+                    <span className="hidden sm:inline">•</span>
+                    <span className="hidden sm:inline">{answeredQuestions.size} answered</span>
                   </div>
                 </div>
               </div>
             </div>
             
-            <div className="flex items-center space-x-4">
-              {/* Auto-save status */}
-              <div className="flex items-center space-x-2 text-sm">
+            {/* Mobile Controls */}
+            <div className="flex items-center space-x-2 sm:space-x-4 flex-shrink-0">
+              {/* Auto-save status - Mobile */}
+              <div className="hidden sm:flex items-center space-x-2 text-sm">
                 {autoSaveStatus === 'saving' && (
                   <>
                     <Loader2 className="w-4 h-4 animate-spin text-blue-600" />
@@ -442,21 +442,36 @@ export const CandidateExamPage: React.FC = () => {
                 )}
               </div>
               
+              {/* Auto-save status - Mobile Icon Only */}
+              <div className="sm:hidden">
+                {autoSaveStatus === 'saving' && (
+                  <Loader2 className="w-4 h-4 animate-spin text-blue-600" />
+                )}
+                {autoSaveStatus === 'saved' && (
+                  <CheckCircle className="w-4 h-4 text-green-600" />
+                )}
+                {autoSaveStatus === 'error' && (
+                  <AlertTriangle className="w-4 h-4 text-red-600" />
+                )}
+              </div>
+              
               {/* Submit button */}
               <button
                 onClick={handleSubmitExam}
                 disabled={isSubmitting}
-                className="px-6 py-2.5 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-xl hover:from-green-700 hover:to-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2 shadow-lg hover:shadow-xl transition-all duration-200"
+                className="px-3 sm:px-6 py-2 sm:py-2.5 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-lg sm:rounded-xl hover:from-green-700 hover:to-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-1 sm:space-x-2 shadow-lg hover:shadow-xl transition-all duration-200 text-xs sm:text-sm"
               >
                 {isSubmitting ? (
                   <>
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                    <span>Submitting...</span>
+                    <Loader2 className="w-3 h-3 sm:w-4 sm:h-4 animate-spin" />
+                    <span className="hidden sm:inline">Submitting...</span>
+                    <span className="sm:hidden">Submit</span>
                   </>
                 ) : (
                   <>
-                    <Save className="w-4 h-4" />
-                    <span>Submit Exam</span>
+                    <Save className="w-3 h-3 sm:w-4 sm:h-4" />
+                    <span className="hidden sm:inline">Submit Exam</span>
+                    <span className="sm:hidden">Submit</span>
                   </>
                 )}
               </button>
@@ -465,12 +480,12 @@ export const CandidateExamPage: React.FC = () => {
         </div>
       </div>
 
-      <div className="h-full px-4 sm:px-6 lg:px-8 py-4">
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 h-full">
+      <div className="h-full px-3 sm:px-4 lg:px-8 py-3 sm:py-4">
+        <div className="grid grid-cols-1 xl:grid-cols-4 gap-4 sm:gap-6 h-full">
           {/* Main content */}
-          <div className="lg:col-span-3 flex flex-col space-y-6">
+          <div className="xl:col-span-3 flex flex-col space-y-4 sm:space-y-6">
             {/* Timer */}
-            <div className="bg-white/80 backdrop-blur-sm rounded-2xl border border-gray-200/50 shadow-lg p-6">
+            <div className="bg-white/80 backdrop-blur-sm rounded-xl sm:rounded-2xl border border-gray-200/50 shadow-lg p-4 sm:p-6">
                 <ExamTimer
                   duration_minutes={Math.floor(timeRemaining)}
                   onTimeUp={handleTimeUp}
@@ -489,32 +504,32 @@ export const CandidateExamPage: React.FC = () => {
 
             {/* Debug Panel - Remove this in production */}
             {process.env.NODE_ENV === 'development' && (
-              <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-4 mb-6">
-                <h3 className="font-semibold text-yellow-800 mb-2">🔍 Debug Info</h3>
-                <div className="text-sm text-yellow-700 space-y-1">
-                  <div>Session Status: <span className="font-mono bg-yellow-100 px-2 py-1 rounded">{session?.status || 'null'}</span></div>
-                  <div>Session ID: <span className="font-mono bg-yellow-100 px-2 py-1 rounded">{session?.id || 'null'}</span></div>
-                  <div>Questions Count: <span className="font-mono bg-yellow-100 px-2 py-1 rounded">{questions.length}</span></div>
-                  <div>Current Question Index: <span className="font-mono bg-yellow-100 px-2 py-1 rounded">{currentQuestionIndex}</span></div>
-                  <div>Interface Disabled: <span className="font-mono bg-yellow-100 px-2 py-1 rounded">{session?.status !== 'in_progress' ? 'YES' : 'NO'}</span></div>
-                  <div>Auto-save Status: <span className="font-mono bg-yellow-100 px-2 py-1 rounded">{autoSaveStatus}</span></div>
+              <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-3 sm:p-4 mb-4 sm:mb-6">
+                <h3 className="font-semibold text-yellow-800 mb-2 text-sm sm:text-base">🔍 Debug Info</h3>
+                <div className="text-xs sm:text-sm text-yellow-700 space-y-1">
+                  <div className="flex flex-wrap gap-1 sm:gap-2">
+                    <span>Status: <span className="font-mono bg-yellow-100 px-1 sm:px-2 py-0.5 sm:py-1 rounded text-xs">{session?.status || 'null'}</span></span>
+                    <span>Questions: <span className="font-mono bg-yellow-100 px-1 sm:px-2 py-0.5 sm:py-1 rounded text-xs">{questions.length}</span></span>
+                    <span>Current: <span className="font-mono bg-yellow-100 px-1 sm:px-2 py-0.5 sm:py-1 rounded text-xs">{currentQuestionIndex}</span></span>
+                    <span>Auto-save: <span className="font-mono bg-yellow-100 px-1 sm:px-2 py-0.5 sm:py-1 rounded text-xs">{autoSaveStatus}</span></span>
+                  </div>
                 </div>
               </div>
             )}
 
             {/* Current question */}
             {questions.length === 0 ? (
-              <div className="bg-white/80 backdrop-blur-sm rounded-2xl border border-gray-200/50 shadow-lg p-8 text-center">
+              <div className="bg-white/80 backdrop-blur-sm rounded-xl sm:rounded-2xl border border-gray-200/50 shadow-lg p-6 sm:p-8 text-center">
                 <div className="text-gray-500 mb-4">
-                  <div className="text-xl font-semibold mb-2">No Questions Available</div>
-                  <p>Loading questions for this exam...</p>
+                  <div className="text-lg sm:text-xl font-semibold mb-2">No Questions Available</div>
+                  <p className="text-sm sm:text-base">Loading questions for this exam...</p>
                 </div>
-                <div className="text-sm text-gray-400">
+                <div className="text-xs sm:text-sm text-gray-400">
                   Debug: Questions array length: {questions.length}
                 </div>
               </div>
             ) : currentQuestion ? (
-              <div className="bg-white/80 backdrop-blur-sm rounded-2xl border border-gray-200/50 shadow-lg overflow-hidden flex-1">
+              <div className="bg-white/80 backdrop-blur-sm rounded-xl sm:rounded-2xl border border-gray-200/50 shadow-lg overflow-hidden flex-1">
                 {currentQuestion.question_type === 'mcq' ? (
                   <MCQQuestion
                     question={currentQuestion}
@@ -533,45 +548,47 @@ export const CandidateExamPage: React.FC = () => {
                 )}
               </div>
             ) : (
-              <div className="bg-white/80 backdrop-blur-sm rounded-2xl border border-gray-200/50 shadow-lg p-8 text-center">
+              <div className="bg-white/80 backdrop-blur-sm rounded-xl sm:rounded-2xl border border-gray-200/50 shadow-lg p-6 sm:p-8 text-center">
                 <div className="text-gray-500 mb-4">
-                  <div className="text-xl font-semibold mb-2">Question Not Found</div>
-                  <p>Unable to load the current question.</p>
+                  <div className="text-lg sm:text-xl font-semibold mb-2">Question Not Found</div>
+                  <p className="text-sm sm:text-base">Unable to load the current question.</p>
                 </div>
-                <div className="text-sm text-gray-400">
+                <div className="text-xs sm:text-sm text-gray-400">
                   Debug: Current index: {currentQuestionIndex}, Questions length: {questions.length}
                 </div>
               </div>
             )}
 
             {/* Navigation buttons */}
-            <div className="flex items-center justify-between bg-white/80 backdrop-blur-sm rounded-2xl border border-gray-200/50 shadow-lg p-6">
+            <div className="flex items-center justify-between bg-white/80 backdrop-blur-sm rounded-xl sm:rounded-2xl border border-gray-200/50 shadow-lg p-4 sm:p-6">
               <button
                 onClick={handlePreviousQuestion}
                 disabled={currentQuestionIndex === 0}
-                className="flex items-center space-x-2 px-6 py-3 bg-gradient-to-r from-gray-100 to-gray-200 text-gray-700 rounded-xl hover:from-gray-200 hover:to-gray-300 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 shadow-md hover:shadow-lg"
+                className="flex items-center space-x-1 sm:space-x-2 px-3 sm:px-6 py-2 sm:py-3 bg-gradient-to-r from-gray-100 to-gray-200 text-gray-700 rounded-lg sm:rounded-xl hover:from-gray-200 hover:to-gray-300 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 shadow-md hover:shadow-lg text-sm sm:text-base"
               >
-                <ArrowLeft className="w-4 h-4" />
-                <span>Previous</span>
+                <ArrowLeft className="w-3 h-3 sm:w-4 sm:h-4" />
+                <span className="hidden sm:inline">Previous</span>
+                <span className="sm:hidden">Prev</span>
               </button>
 
-              <div className="text-sm text-gray-600 bg-gray-50 px-4 py-2 rounded-lg">
+              <div className="text-xs sm:text-sm text-gray-600 bg-gray-50 px-2 sm:px-4 py-1 sm:py-2 rounded-lg">
                 Question {currentQuestionIndex + 1} of {questions.length}
               </div>
 
               <button
                 onClick={handleNextQuestion}
                 disabled={currentQuestionIndex === questions.length - 1}
-                className="flex items-center space-x-2 px-6 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl hover:from-blue-700 hover:to-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 shadow-md hover:shadow-lg"
+                className="flex items-center space-x-1 sm:space-x-2 px-3 sm:px-6 py-2 sm:py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-lg sm:rounded-xl hover:from-blue-700 hover:to-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 shadow-md hover:shadow-lg text-sm sm:text-base"
               >
-                <span>Next</span>
-                <ArrowRight className="w-4 h-4" />
+                <span className="hidden sm:inline">Next</span>
+                <span className="sm:hidden">Next</span>
+                <ArrowRight className="w-3 h-3 sm:w-4 sm:h-4" />
               </button>
             </div>
           </div>
 
-          {/* Sidebar */}
-          <div className="space-y-8">
+          {/* Sidebar - Hidden on mobile, visible on xl screens */}
+          <div className="hidden xl:block space-y-6">
             {/* Progress */}
             <div className="bg-white/80 backdrop-blur-sm rounded-2xl border border-gray-200/50 shadow-lg overflow-hidden">
               <ExamProgressBar
@@ -592,6 +609,61 @@ export const CandidateExamPage: React.FC = () => {
                 onQuestionSelect={handleQuestionSelect}
                 disabled={session?.status !== 'in_progress'}
               />
+            </div>
+          </div>
+
+          {/* Mobile Bottom Navigation */}
+          <div className="xl:hidden fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-sm border-t border-gray-200/50 shadow-lg z-20">
+            <div className="px-4 py-3">
+              {/* Mobile Progress Bar */}
+              <div className="mb-3">
+                <div className="flex justify-between text-xs text-gray-600 mb-1">
+                  <span>Progress</span>
+                  <span className="font-semibold">{Math.round((answeredQuestions.size / questions.length) * 100)}%</span>
+                </div>
+                <div className="w-full bg-gray-200 rounded-full h-2">
+                  <div
+                    className="bg-gradient-to-r from-blue-600 to-indigo-600 h-2 rounded-full transition-all duration-300"
+                    style={{ width: `${(answeredQuestions.size / questions.length) * 100}%` }}
+                  />
+                </div>
+              </div>
+
+              {/* Mobile Question Navigator */}
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-2 text-xs text-gray-600">
+                  <CheckCircle className="w-4 h-4 text-green-600" />
+                  <span>{answeredQuestions.size} answered</span>
+                </div>
+                
+                {/* Mobile Question Grid */}
+                <div className="flex space-x-1">
+                  {questions.slice(0, 5).map((_, index) => {
+                    const questionIndex = index;
+                    const isAnswered = answeredQuestions.has(questionIndex);
+                    const isCurrent = questionIndex === currentQuestionIndex;
+                    
+                    return (
+                      <button
+                        key={questionIndex}
+                        onClick={() => handleQuestionSelect(questionIndex)}
+                        className={`w-8 h-8 rounded-lg text-xs font-bold transition-all duration-200 ${
+                          isAnswered 
+                            ? 'bg-green-100 text-green-800 border border-green-200' 
+                            : isCurrent 
+                            ? 'bg-blue-100 text-blue-800 border border-blue-200' 
+                            : 'bg-gray-100 text-gray-600 border border-gray-200'
+                        }`}
+                      >
+                        {questionIndex + 1}
+                      </button>
+                    );
+                  })}
+                  {questions.length > 5 && (
+                    <span className="text-xs text-gray-500 px-2 py-1">+{questions.length - 5}</span>
+                  )}
+                </div>
+              </div>
             </div>
           </div>
         </div>

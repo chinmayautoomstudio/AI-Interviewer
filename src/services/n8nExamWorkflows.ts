@@ -1,5 +1,3 @@
-import { supabase } from './supabase';
-
 // N8N Workflow Configuration
 const N8N_BASE_URL = process.env.REACT_APP_N8N_BASE_URL || 'http://localhost:5678';
 const N8N_API_KEY = process.env.REACT_APP_N8N_API_KEY || '';

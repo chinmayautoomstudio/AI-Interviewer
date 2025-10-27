@@ -39,6 +39,7 @@ import ExamResultsPage from './pages/exam/ExamResultsPage';
 import ExamAnalyticsPage from './pages/exam/ExamAnalyticsPage';
 import CandidateExamPage from './pages/CandidateExamPage';
 import ExamCompletionPage from './pages/exam/ExamCompletionPage';
+import MCQExamResultsPage from './pages/exam/MCQExamResultsPage';
 import ExamReportPage from './pages/reports/ExamReportPage';
 import LoadingSpinner from './components/ui/LoadingSpinner';
 
@@ -64,6 +65,7 @@ const AppContent: React.FC = () => {
         <Route path="/candidate/interview/:sessionToken" element={<CandidateInterviewPage />} />
         <Route path="/candidate/exam/:token" element={<CandidateExamPage />} />
         <Route path="/exam/completion/:sessionId" element={<ExamCompletionPage />} />
+        <Route path="/exam/mcq-results/:sessionId" element={<MCQExamResultsPage />} />
         <Route path="/candidate/update-password" element={<CandidatePasswordUpdatePage />} />
         <Route path="/privacy-policy" element={<PrivacyPolicyPage />} />
         <Route path="/terms-and-conditions" element={<TermsAndConditionsPage />} />

@@ -1,21 +1,14 @@
 // Enhanced Question Bank Page
 // Comprehensive question management with filtering, search, and bulk operations
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { 
   Search, 
-  Filter, 
   Plus, 
-  Edit, 
   Trash2, 
   CheckCircle, 
   XCircle, 
-  Clock,
   Zap,
-  Download,
-  Upload,
-  Eye,
-  MoreVertical,
   RefreshCw
 } from 'lucide-react';
 import { ExamQuestion, QuestionFilter } from '../../types';
@@ -70,20 +63,13 @@ const QuestionBankPage: React.FC = () => {
   // Pagination
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
-  const [totalCount, setTotalCount] = useState(0);
 
   // Modals
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showGenerateModal, setShowGenerateModal] = useState(false);
-  const [showEditModal, setShowEditModal] = useState(false);
-  const [editingQuestion, setEditingQuestion] = useState<ExamQuestion | null>(null);
 
   // Load data
-  useEffect(() => {
-    loadData();
-  }, [filters, currentPage]);
-
-  const loadData = async () => {
+  const loadData = useCallback(async () => {
     try {
       setLoading(true);
       
@@ -96,7 +82,6 @@ const QuestionBankPage: React.FC = () => {
       const questionsResult = await questionService.getQuestions(questionFilter);
       if (questionsResult.success && questionsResult.data) {
         setQuestions(questionsResult.data);
-        setTotalCount(questionsResult.data.length);
         setTotalPages(Math.ceil(questionsResult.data.length / (filters.limit || 50)));
       }
 
@@ -117,7 +102,11 @@ const QuestionBankPage: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [filters, currentPage]);
+
+  useEffect(() => {
+    loadData();
+  }, [loadData]);
 
   const handleFilterChange = (key: keyof QuestionFilter, value: any) => {
     setFilters((prev: QuestionFilter) => ({ ...prev, [key]: value }));
@@ -177,11 +166,6 @@ const QuestionBankPage: React.FC = () => {
     }
   };
 
-  const handleEditQuestion = (question: ExamQuestion) => {
-    setEditingQuestion(question);
-    setShowEditModal(true);
-  };
-
   const handleDeleteQuestion = async (questionId: string) => {
     if (window.confirm('Are you sure you want to delete this question?')) {
       const result = await questionService.deleteQuestion(questionId);
@@ -233,25 +217,25 @@ const QuestionBankPage: React.FC = () => {
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
       <div className="bg-white border-b border-gray-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16">
-            <div>
-              <h1 className="text-2xl font-bold text-gray-900">Question Bank</h1>
-              <p className="text-sm text-gray-600">Manage and organize exam questions</p>
+        <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-8">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between h-auto sm:h-16 py-4 sm:py-0 space-y-3 sm:space-y-0">
+            <div className="min-w-0 flex-1">
+              <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Question Bank</h1>
+              <p className="text-xs sm:text-sm text-gray-600">Manage and organize exam questions</p>
             </div>
-            <div className="flex items-center space-x-3">
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center space-y-2 sm:space-y-0 sm:space-x-3">
               <button
                 onClick={() => setShowGenerateModal(true)}
-                className="flex items-center space-x-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+                className="flex items-center justify-center space-x-1 sm:space-x-2 px-3 sm:px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm"
               >
-                <Zap className="w-4 h-4" />
+                <Zap className="w-3 h-3 sm:w-4 sm:h-4" />
                 <span>Generate with AI</span>
               </button>
               <button
                 onClick={() => setShowCreateModal(true)}
-                className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                className="flex items-center justify-center space-x-1 sm:space-x-2 px-3 sm:px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm"
               >
-                <Plus className="w-4 h-4" />
+                <Plus className="w-3 h-3 sm:w-4 sm:h-4" />
                 <span>Add Question</span>
               </button>
             </div>
@@ -259,57 +243,57 @@ const QuestionBankPage: React.FC = () => {
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-8 py-4 sm:py-6 lg:py-8">
         {/* Statistics Cards */}
         {stats && (
-          <div className="grid grid-cols-1 md:grid-cols-5 gap-6 mb-8">
-            <div className="bg-white rounded-lg shadow-sm border p-6">
-              <div className="text-2xl font-bold text-gray-900">{stats.total}</div>
-              <div className="text-sm text-gray-600">Total Questions</div>
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4 lg:gap-6 mb-6 sm:mb-8">
+            <div className="bg-white rounded-lg shadow-sm border p-3 sm:p-4 lg:p-6">
+              <div className="text-lg sm:text-xl lg:text-2xl font-bold text-gray-900">{stats.total}</div>
+              <div className="text-xs sm:text-sm text-gray-600">Total Questions</div>
             </div>
-            <div className="bg-white rounded-lg shadow-sm border p-6">
-              <div className="text-2xl font-bold text-blue-600">{stats.by_category.technical}</div>
-              <div className="text-sm text-gray-600">Technical</div>
+            <div className="bg-white rounded-lg shadow-sm border p-3 sm:p-4 lg:p-6">
+              <div className="text-lg sm:text-xl lg:text-2xl font-bold text-blue-600">{stats.by_category.technical}</div>
+              <div className="text-xs sm:text-sm text-gray-600">Technical</div>
             </div>
-            <div className="bg-white rounded-lg shadow-sm border p-6">
-              <div className="text-2xl font-bold text-purple-600">{stats.by_category.aptitude}</div>
-              <div className="text-sm text-gray-600">Aptitude</div>
+            <div className="bg-white rounded-lg shadow-sm border p-3 sm:p-4 lg:p-6">
+              <div className="text-lg sm:text-xl lg:text-2xl font-bold text-purple-600">{stats.by_category.aptitude}</div>
+              <div className="text-xs sm:text-sm text-gray-600">Aptitude</div>
             </div>
-            <div className="bg-white rounded-lg shadow-sm border p-6">
-              <div className="text-2xl font-bold text-green-600">{stats.by_status.approved}</div>
-              <div className="text-sm text-gray-600">Approved</div>
+            <div className="bg-white rounded-lg shadow-sm border p-3 sm:p-4 lg:p-6">
+              <div className="text-lg sm:text-xl lg:text-2xl font-bold text-green-600">{stats.by_status.approved}</div>
+              <div className="text-xs sm:text-sm text-gray-600">Approved</div>
             </div>
-            <div className="bg-white rounded-lg shadow-sm border p-6">
-              <div className="text-2xl font-bold text-yellow-600">{stats.by_status.pending}</div>
-              <div className="text-sm text-gray-600">Pending</div>
+            <div className="bg-white rounded-lg shadow-sm border p-3 sm:p-4 lg:p-6">
+              <div className="text-lg sm:text-xl lg:text-2xl font-bold text-yellow-600">{stats.by_status.pending}</div>
+              <div className="text-xs sm:text-sm text-gray-600">Pending</div>
             </div>
           </div>
         )}
 
         {/* Filters */}
-        <div className="bg-white rounded-lg shadow-sm border p-6 mb-6">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-semibold text-gray-900">Filters</h3>
+        <div className="bg-white rounded-lg shadow-sm border p-4 sm:p-6 mb-4 sm:mb-6">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-3 sm:mb-4 space-y-2 sm:space-y-0">
+            <h3 className="text-base sm:text-lg font-semibold text-gray-900">Filters</h3>
             <button
               onClick={loadData}
-              className="flex items-center space-x-2 text-gray-600 hover:text-gray-900"
+              className="flex items-center space-x-1 sm:space-x-2 text-gray-600 hover:text-gray-900 text-sm self-start sm:self-auto"
             >
-              <RefreshCw className="w-4 h-4" />
+              <RefreshCw className="w-3 h-3 sm:w-4 sm:h-4" />
               <span>Refresh</span>
             </button>
           </div>
           
-          <div className="grid grid-cols-1 md:grid-cols-6 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-3 sm:gap-4">
             {/* Search */}
-            <div className="md:col-span-2">
+            <div className="sm:col-span-2 lg:col-span-1 xl:col-span-2">
               <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                <Search className="absolute left-2 sm:left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-3 h-3 sm:w-4 sm:h-4" />
                 <input
                   type="text"
                   placeholder="Search questions..."
                   value={filters.search}
                   onChange={(e) => handleSearch(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full pl-8 sm:pl-10 pr-3 sm:pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
                 />
               </div>
             </div>
@@ -319,7 +303,7 @@ const QuestionBankPage: React.FC = () => {
               <select
                 value={filters.category}
                 onChange={(e) => handleFilterChange('category', e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full px-2 sm:px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
               >
                 <option value="">All Categories</option>
                 <option value="technical">Technical</option>
@@ -332,7 +316,7 @@ const QuestionBankPage: React.FC = () => {
               <select
                 value={filters.difficulty}
                 onChange={(e) => handleFilterChange('difficulty', e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full px-2 sm:px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
               >
                 <option value="">All Difficulties</option>
                 <option value="easy">Easy</option>
@@ -346,7 +330,7 @@ const QuestionBankPage: React.FC = () => {
               <select
                 value={filters.status}
                 onChange={(e) => handleFilterChange('status', e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full px-2 sm:px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
               >
                 <option value="">All Status</option>
                 <option value="draft">Draft</option>
@@ -361,7 +345,7 @@ const QuestionBankPage: React.FC = () => {
               <select
                 value={filters.job_description_id}
                 onChange={(e) => handleFilterChange('job_description_id', e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full px-2 sm:px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
               >
                 <option value="">All Jobs</option>
                 {jobDescriptions.map(job => (
@@ -376,30 +360,30 @@ const QuestionBankPage: React.FC = () => {
 
         {/* Bulk Actions */}
         {showBulkActions && (
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-4">
-                <span className="text-sm font-medium text-blue-900">
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 sm:p-4 mb-4 sm:mb-6">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-3 sm:space-y-0">
+              <div className="flex flex-col sm:flex-row sm:items-center space-y-2 sm:space-y-0 sm:space-x-4">
+                <span className="text-xs sm:text-sm font-medium text-blue-900">
                   {selectedQuestions.size} question{selectedQuestions.size !== 1 ? 's' : ''} selected
                 </span>
-                <div className="flex items-center space-x-2">
+                <div className="flex flex-wrap items-center gap-2">
                   <button
                     onClick={() => handleBulkAction('approve')}
-                    className="flex items-center space-x-1 px-3 py-1 bg-green-600 text-white rounded text-sm hover:bg-green-700"
+                    className="flex items-center space-x-1 px-2 sm:px-3 py-1 bg-green-600 text-white rounded text-xs sm:text-sm hover:bg-green-700"
                   >
                     <CheckCircle className="w-3 h-3" />
                     <span>Approve</span>
                   </button>
                   <button
                     onClick={() => handleBulkAction('reject')}
-                    className="flex items-center space-x-1 px-3 py-1 bg-red-600 text-white rounded text-sm hover:bg-red-700"
+                    className="flex items-center space-x-1 px-2 sm:px-3 py-1 bg-red-600 text-white rounded text-xs sm:text-sm hover:bg-red-700"
                   >
                     <XCircle className="w-3 h-3" />
                     <span>Reject</span>
                   </button>
                   <button
                     onClick={() => handleBulkAction('delete')}
-                    className="flex items-center space-x-1 px-3 py-1 bg-gray-600 text-white rounded text-sm hover:bg-gray-700"
+                    className="flex items-center space-x-1 px-2 sm:px-3 py-1 bg-gray-600 text-white rounded text-xs sm:text-sm hover:bg-gray-700"
                   >
                     <Trash2 className="w-3 h-3" />
                     <span>Delete</span>
@@ -411,7 +395,7 @@ const QuestionBankPage: React.FC = () => {
                   setSelectedQuestions(new Set());
                   setShowBulkActions(false);
                 }}
-                className="text-blue-600 hover:text-blue-800 text-sm"
+                className="text-blue-600 hover:text-blue-800 text-xs sm:text-sm self-start sm:self-auto"
               >
                 Clear Selection
               </button>
@@ -425,7 +409,7 @@ const QuestionBankPage: React.FC = () => {
             <table className="min-w-full divide-y divide-gray-200">
               <thead className="bg-gray-50">
                 <tr>
-                  <th className="px-6 py-3 text-left">
+                  <th className="px-3 sm:px-6 py-2 sm:py-3 text-left">
                     <input
                       type="checkbox"
                       checked={selectedQuestions.size === questions.length && questions.length > 0}
@@ -433,25 +417,25 @@ const QuestionBankPage: React.FC = () => {
                       className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                     />
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-3 sm:px-6 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Question
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-3 sm:px-6 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Category
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-3 sm:px-6 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Difficulty
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-3 sm:px-6 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Status
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-3 sm:px-6 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Creator
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-3 sm:px-6 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Points
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-3 sm:px-6 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Actions
                   </th>
                 </tr>
@@ -459,7 +443,7 @@ const QuestionBankPage: React.FC = () => {
               <tbody className="bg-white divide-y divide-gray-200">
                 {questions.map((question) => (
                   <tr key={question.id} className="hover:bg-gray-50">
-                    <td className="px-6 py-4">
+                    <td className="px-3 sm:px-6 py-3 sm:py-4">
                       <input
                         type="checkbox"
                         checked={selectedQuestions.has(question.id)}
@@ -467,9 +451,9 @@ const QuestionBankPage: React.FC = () => {
                         className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                       />
                     </td>
-                    <td className="px-6 py-4">
+                    <td className="px-3 sm:px-6 py-3 sm:py-4">
                       <div className="max-w-xs">
-                        <div className="text-sm font-medium text-gray-900 truncate">
+                        <div className="text-xs sm:text-sm font-medium text-gray-900 truncate">
                           {question.question_text}
                         </div>
                         <div className="text-xs text-gray-500">
@@ -477,46 +461,39 @@ const QuestionBankPage: React.FC = () => {
                         </div>
                       </div>
                     </td>
-                    <td className="px-6 py-4">
-                      <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getCategoryColor(question.question_category)}`}>
+                    <td className="px-3 sm:px-6 py-3 sm:py-4">
+                      <span className={`inline-flex px-1.5 sm:px-2 py-0.5 sm:py-1 text-xs font-semibold rounded-full ${getCategoryColor(question.question_category)}`}>
                         {question.question_category}
                       </span>
                     </td>
-                    <td className="px-6 py-4">
-                      <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getDifficultyColor(question.difficulty_level)}`}>
+                    <td className="px-3 sm:px-6 py-3 sm:py-4">
+                      <span className={`inline-flex px-1.5 sm:px-2 py-0.5 sm:py-1 text-xs font-semibold rounded-full ${getDifficultyColor(question.difficulty_level)}`}>
                         {question.difficulty_level}
                       </span>
                     </td>
-                    <td className="px-6 py-4">
-                      <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(question.status)}`}>
+                    <td className="px-3 sm:px-6 py-3 sm:py-4">
+                      <span className={`inline-flex px-1.5 sm:px-2 py-0.5 sm:py-1 text-xs font-semibold rounded-full ${getStatusColor(question.status)}`}>
                         {question.status}
                       </span>
                     </td>
-                    <td className="px-6 py-4">
-                      <span className="text-sm text-gray-900">
+                    <td className="px-3 sm:px-6 py-3 sm:py-4">
+                      <span className="text-xs sm:text-sm text-gray-900">
                         {question.created_by === 'ai' ? 'AI' : 'HR'}
                       </span>
                     </td>
-                    <td className="px-6 py-4">
-                      <span className="text-sm font-medium text-gray-900">
+                    <td className="px-3 sm:px-6 py-3 sm:py-4">
+                      <span className="text-xs sm:text-sm font-medium text-gray-900">
                         {question.points}
                       </span>
                     </td>
-                    <td className="px-6 py-4">
-                      <div className="flex items-center space-x-2">
-                        <button
-                          onClick={() => handleEditQuestion(question)}
-                          className="text-blue-600 hover:text-blue-900"
-                          title="Edit"
-                        >
-                          <Edit className="w-4 h-4" />
-                        </button>
+                    <td className="px-3 sm:px-6 py-3 sm:py-4">
+                      <div className="flex items-center space-x-1 sm:space-x-2">
                         <button
                           onClick={() => handleDeleteQuestion(question.id)}
-                          className="text-red-600 hover:text-red-900"
+                          className="text-red-600 hover:text-red-900 p-1"
                           title="Delete"
                         >
-                          <Trash2 className="w-4 h-4" />
+                          <Trash2 className="w-3 h-3 sm:w-4 sm:h-4" />
                         </button>
                       </div>
                     </td>
@@ -528,23 +505,23 @@ const QuestionBankPage: React.FC = () => {
 
           {/* Pagination */}
           {totalPages > 1 && (
-            <div className="bg-white px-4 py-3 border-t border-gray-200 sm:px-6">
-              <div className="flex items-center justify-between">
-                <div className="text-sm text-gray-700">
+            <div className="bg-white px-3 sm:px-4 py-3 border-t border-gray-200 sm:px-6">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-2 sm:space-y-0">
+                <div className="text-xs sm:text-sm text-gray-700">
                   Showing page {currentPage} of {totalPages}
                 </div>
-                <div className="flex items-center space-x-2">
+                <div className="flex items-center space-x-1 sm:space-x-2">
                   <button
                     onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
                     disabled={currentPage === 1}
-                    className="px-3 py-1 text-sm border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="px-2 sm:px-3 py-1 text-xs sm:text-sm border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     Previous
                   </button>
                   <button
                     onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
                     disabled={currentPage === totalPages}
-                    className="px-3 py-1 text-sm border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="px-2 sm:px-3 py-1 text-xs sm:text-sm border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     Next
                   </button>

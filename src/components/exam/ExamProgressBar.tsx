@@ -2,7 +2,7 @@
 // Shows overall exam progress with time and question statistics
 
 import React from 'react';
-import { Clock, CheckCircle, Target, TrendingUp } from 'lucide-react';
+import { Clock, Target, TrendingUp } from 'lucide-react';
 import { ExamProgressProps } from '../../types';
 
 export const ExamProgressBar: React.FC<ExamProgressProps> = ({

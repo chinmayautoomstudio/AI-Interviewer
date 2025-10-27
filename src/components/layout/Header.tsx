@@ -242,12 +242,12 @@ const Header: React.FC<HeaderProps> = ({ user, onLogout }) => {
                       <div
                         key={notification.id}
                         onClick={() => {
-                          if (!notification.read) {
+                          if (!notification.isRead) {
                             markAsRead(notification.id);
                           }
                         }}
                         className={`p-4 border-b border-gray-100 hover:bg-gray-50 cursor-pointer ${
-                          !notification.read ? 'bg-blue-50' : ''
+                          !notification.isRead ? 'bg-blue-50' : ''
                         }`}
                       >
                         <div className="flex items-start space-x-3">
@@ -261,7 +261,7 @@ const Header: React.FC<HeaderProps> = ({ user, onLogout }) => {
                             </p>
                             <p className="text-xs text-gray-500 mt-2 flex items-center">
                               <Clock className="h-3 w-3 mr-1" />
-                              {formatNotificationTime(notification.timestamp)}
+                              {formatNotificationTime(notification.createdAt)}
                             </p>
                           </div>
                         </div>

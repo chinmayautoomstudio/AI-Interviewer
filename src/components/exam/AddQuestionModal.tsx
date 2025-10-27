@@ -200,11 +200,6 @@ const AddQuestionModal: React.FC<AddQuestionModalProps> = ({
     }
   };
 
-  const handleQuestionsAdded = (questions: any[]) => {
-    if (onQuestionsAdded) {
-      onQuestionsAdded(questions);
-    }
-  };
 
   if (!isOpen) return null;
 

@@ -19,6 +19,8 @@ import { InterviewSystemService } from '../services/interviewSystem';
 import { getCandidates } from '../services/candidates';
 import { getJobDescriptions } from '../services/jobDescriptions';
 import { useNotifications } from '../contexts/NotificationContext';
+import NotificationBell from '../components/notifications/NotificationBell';
+import { NotificationToastManager } from '../components/notifications/NotificationToast';
 
 const DashboardPage: React.FC = () => {
   const navigate = useNavigate();
@@ -166,24 +168,6 @@ const DashboardPage: React.FC = () => {
     }
   };
 
-  const formatNotificationTime = (timestamp: string) => {
-    const date = new Date(timestamp);
-    const now = new Date();
-    const diffInMinutes = Math.floor((now.getTime() - date.getTime()) / (1000 * 60));
-    
-    if (diffInMinutes < 1) {
-      return 'just now';
-    } else if (diffInMinutes < 60) {
-      return `${diffInMinutes} minute${diffInMinutes > 1 ? 's' : ''} ago`;
-    } else if (diffInMinutes < 1440) {
-      const hours = Math.floor(diffInMinutes / 60);
-      return `${hours} hour${hours > 1 ? 's' : ''} ago`;
-    } else {
-      const days = Math.floor(diffInMinutes / 1440);
-      return `${days} day${days > 1 ? 's' : ''} ago`;
-    }
-  };
-
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'suitable': return 'bg-green-100 text-green-800';
@@ -221,10 +205,16 @@ const DashboardPage: React.FC = () => {
 
   return (
     <div className="p-4 sm:p-6 lg:p-8 space-y-4 sm:space-y-6 lg:space-y-8">
+      {/* Notification Toast Manager */}
+      <NotificationToastManager userId="admin" />
+      
       {/* Header */}
-      <div>
-        <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-ai-teal">Dashboard</h1>
-        <p className="text-sm sm:text-base lg:text-lg text-gray-600">Welcome back! Here's what's happening with your interviews.</p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-ai-teal">Dashboard</h1>
+          <p className="text-sm sm:text-base lg:text-lg text-gray-600">Welcome back! Here's what's happening with your interviews.</p>
+        </div>
+        <NotificationBell userId="admin" />
       </div>
 
       {/* Main Content Grid */}
@@ -329,7 +319,7 @@ const DashboardPage: React.FC = () => {
           ) : (
             <div className="space-y-3">
               {notifications
-                .filter(n => n.type === 'interview_started')
+                .filter(n => n.type === 'exam_started')
                 .slice(0, 5)
                 .map((notification) => (
                   <div key={notification.id} className="flex items-center justify-between p-3 bg-blue-50 rounded-lg border border-blue-200">
@@ -339,16 +329,16 @@ const DashboardPage: React.FC = () => {
                       </div>
                       <div>
                         <p className="text-sm font-medium text-gray-900">
-                          {notification.candidateName}
+                          {(notification.data as any)?.candidateName || 'Unknown Candidate'}
                         </p>
                         <p className="text-xs text-gray-600">
-                          Interviewing for {notification.jobTitle}
+                          Exam for {(notification.data as any)?.jobTitle || 'Unknown Job'}
                         </p>
                       </div>
                     </div>
                     <div className="text-right">
                       <p className="text-xs text-gray-500">
-                        Started {formatNotificationTime(notification.timestamp)}
+                        Started {formatTimeAgo(notification.createdAt)}
                       </p>
                       <div className="flex items-center space-x-1 mt-1">
                         <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>

@@ -6,8 +6,6 @@ import {
   CheckCircle, 
   XCircle, 
   AlertCircle,
-  Calendar,
-  Filter,
   Search
 } from 'lucide-react';
 import { supabase } from '../../services/supabase';
@@ -127,10 +125,6 @@ const ExamSessionsPage: React.FC = () => {
     }
   };
 
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleString();
-  };
-
   const getTimeRemaining = (expiresAt: string) => {
     const now = new Date();
     const expiry = new Date(expiresAt);
@@ -178,14 +172,14 @@ const ExamSessionsPage: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="p-6">
+      <div className="p-3 sm:p-4 lg:p-6">
         <div className="animate-pulse">
-          <div className="h-8 bg-gray-200 rounded w-1/4 mb-6"></div>
-          <div className="space-y-4">
+          <div className="h-6 sm:h-8 bg-gray-200 rounded w-1/3 sm:w-1/4 mb-4 sm:mb-6"></div>
+          <div className="space-y-3 sm:space-y-4">
             {[...Array(4)].map((_, i) => (
-              <div key={i} className="bg-white p-6 rounded-lg shadow-sm border">
-                <div className="h-4 bg-gray-200 rounded w-3/4 mb-2"></div>
-                <div className="h-3 bg-gray-200 rounded w-1/2"></div>
+              <div key={i} className="bg-white p-4 sm:p-6 rounded-lg shadow-sm border">
+                <div className="h-3 sm:h-4 bg-gray-200 rounded w-3/4 mb-2"></div>
+                <div className="h-2 sm:h-3 bg-gray-200 rounded w-1/2"></div>
               </div>
             ))}
           </div>
@@ -195,67 +189,67 @@ const ExamSessionsPage: React.FC = () => {
   }
 
   return (
-    <div className="p-6">
+    <div className="p-3 sm:p-4 lg:p-6">
       {/* Header */}
-      <div className="flex justify-between items-center mb-6">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">Exam Sessions</h1>
-          <p className="text-gray-600 mt-1">Monitor and manage exam sessions</p>
+      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-4 sm:mb-6 space-y-3 sm:space-y-0">
+        <div className="min-w-0 flex-1">
+          <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Exam Sessions</h1>
+          <p className="text-sm sm:text-base text-gray-600 mt-1">Monitor and manage exam sessions</p>
         </div>
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
-        <div className="bg-white p-6 rounded-lg shadow-sm border">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 lg:gap-6 mb-4 sm:mb-6">
+        <div className="bg-white p-4 sm:p-6 rounded-lg shadow-sm border">
           <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-gray-600">Total Sessions</p>
-              <p className="text-2xl font-bold text-gray-900">{sessions.length}</p>
+            <div className="min-w-0 flex-1">
+              <p className="text-xs sm:text-sm font-medium text-gray-600">Total Sessions</p>
+              <p className="text-xl sm:text-2xl font-bold text-gray-900">{sessions.length}</p>
             </div>
-            <div className="p-3 bg-blue-100 rounded-full">
-              <Users className="h-6 w-6 text-blue-600" />
+            <div className="p-2 sm:p-3 bg-blue-100 rounded-full flex-shrink-0">
+              <Users className="h-4 w-4 sm:h-6 sm:w-6 text-blue-600" />
             </div>
           </div>
         </div>
 
-        <div className="bg-white p-6 rounded-lg shadow-sm border">
+        <div className="bg-white p-4 sm:p-6 rounded-lg shadow-sm border">
           <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-gray-600">Active Sessions</p>
-              <p className="text-2xl font-bold text-gray-900">
+            <div className="min-w-0 flex-1">
+              <p className="text-xs sm:text-sm font-medium text-gray-600">Active Sessions</p>
+              <p className="text-xl sm:text-2xl font-bold text-gray-900">
                 {sessions.filter(s => s.status === 'in_progress').length}
               </p>
             </div>
-            <div className="p-3 bg-green-100 rounded-full">
-              <Clock className="h-6 w-6 text-green-600" />
+            <div className="p-2 sm:p-3 bg-green-100 rounded-full flex-shrink-0">
+              <Clock className="h-4 w-4 sm:h-6 sm:w-6 text-green-600" />
             </div>
           </div>
         </div>
 
-        <div className="bg-white p-6 rounded-lg shadow-sm border">
+        <div className="bg-white p-4 sm:p-6 rounded-lg shadow-sm border">
           <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-gray-600">Completed</p>
-              <p className="text-2xl font-bold text-gray-900">
+            <div className="min-w-0 flex-1">
+              <p className="text-xs sm:text-sm font-medium text-gray-600">Completed</p>
+              <p className="text-xl sm:text-2xl font-bold text-gray-900">
                 {sessions.filter(s => s.status === 'completed').length}
               </p>
             </div>
-            <div className="p-3 bg-purple-100 rounded-full">
-              <CheckCircle className="h-6 w-6 text-purple-600" />
+            <div className="p-2 sm:p-3 bg-purple-100 rounded-full flex-shrink-0">
+              <CheckCircle className="h-4 w-4 sm:h-6 sm:w-6 text-purple-600" />
             </div>
           </div>
         </div>
 
-        <div className="bg-white p-6 rounded-lg shadow-sm border">
+        <div className="bg-white p-4 sm:p-6 rounded-lg shadow-sm border">
           <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-gray-600">Pending</p>
-              <p className="text-2xl font-bold text-gray-900">
+            <div className="min-w-0 flex-1">
+              <p className="text-xs sm:text-sm font-medium text-gray-600">Pending</p>
+              <p className="text-xl sm:text-2xl font-bold text-gray-900">
                 {sessions.filter(s => s.status === 'pending').length}
               </p>
             </div>
-            <div className="p-3 bg-yellow-100 rounded-full">
-              <AlertCircle className="h-6 w-6 text-yellow-600" />
+            <div className="p-2 sm:p-3 bg-yellow-100 rounded-full flex-shrink-0">
+              <AlertCircle className="h-4 w-4 sm:h-6 sm:w-6 text-yellow-600" />
             </div>
           </div>
         </div>

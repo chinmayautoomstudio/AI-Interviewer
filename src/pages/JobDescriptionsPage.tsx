@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import Card from '../components/ui/Card';
 import Button from '../components/ui/Button';
@@ -100,18 +100,7 @@ const JobDescriptionsPage: React.FC = () => {
   const [salaryMax, setSalaryMax] = useState('');
   const [salaryCurrency, setSalaryCurrency] = useState('INR');
 
-  useEffect(() => {
-    loadJobDescriptions();
-  }, []);
-
-  // Load job data for edit mode
-  useEffect(() => {
-    if (isEditMode && id) {
-      loadJobForEdit(id);
-    }
-  }, [isEditMode, id]);
-
-  const loadJobDescriptions = async () => {
+  const loadJobDescriptions = useCallback(async () => {
     try {
       setJobDescriptionsLoading(true);
       setJobDescriptionsError(null);
@@ -126,7 +115,11 @@ const JobDescriptionsPage: React.FC = () => {
     } finally {
       setJobDescriptionsLoading(false);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    loadJobDescriptions();
+  }, [loadJobDescriptions]);
 
   const loadApplicationCounts = async (jobs: JobDescription[]) => {
     try {
@@ -301,6 +294,7 @@ const JobDescriptionsPage: React.FC = () => {
     }
   };
 
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars, no-unused-vars
   const loadJobForEdit = async (jobId: string) => {
     try {
       setLoading(true);

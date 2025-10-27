@@ -11,9 +11,9 @@ import {
   SubmitAnswerRequest,
   ExamPerformanceMetrics
 } from '../types';
-import { topicManagementService } from './topicManagementService';
 import { MCQEvaluationService, MCQEvaluationResult } from './mcqEvaluationService';
 import { TextEvaluationService } from './textEvaluationService';
+import { notificationService } from './notificationService';
 
 export class ExamService {
   /**
@@ -30,6 +30,7 @@ export class ExamService {
         .eq('job_description_id', jobDescriptionId)
         .eq('status', 'approved')
         .eq('is_active', true)
+        .eq('question_type', 'mcq') // Only MCQ questions for now
         .order('created_at', { ascending: false });
 
       if (error) {
@@ -66,13 +67,14 @@ export class ExamService {
     const expires_at = new Date();
     expires_at.setHours(expires_at.getHours() + expires_in_hours);
 
-    // Check if we have enough questions for this job description
+    // Check if we have enough MCQ questions for this job description
     const { data: availableQuestions, error: questionsError } = await supabase
       .from('exam_questions')
       .select('id')
       .eq('job_description_id', job_description_id)
       .eq('status', 'approved')
-      .eq('is_active', true);
+      .eq('is_active', true)
+      .eq('question_type', 'mcq'); // Only MCQ questions for now
 
     if (questionsError) {
       console.error('Error checking available questions:', questionsError);
@@ -83,13 +85,9 @@ export class ExamService {
     console.log(`📊 Available questions for job description ${job_description_id}: ${availableCount}`);
 
     if (availableCount < total_questions) {
-      console.warn(`⚠️ Not enough questions available. Requested: ${total_questions}, Available: ${availableCount}`);
-      // Adjust total questions to available count
-      const adjustedTotal = Math.min(total_questions, availableCount);
-      if (adjustedTotal === 0) {
-        throw new Error('No approved questions available for this job description. Please add questions first.');
-      }
-      console.log(`🔄 Adjusted total questions to: ${adjustedTotal}`);
+      console.warn(`⚠️ Not enough MCQ questions available. Requested: ${total_questions}, Available: ${availableCount}`);
+      // Don't adjust automatically - let the frontend handle this
+      throw new Error(`Cannot create MCQ exam with ${total_questions} questions. Only ${availableCount} MCQ questions are available for this job description.`);
     }
 
     // Create exam session
@@ -99,9 +97,9 @@ export class ExamService {
         candidate_id,
         job_description_id,
         exam_token,
-        total_questions: Math.min(total_questions, availableCount),
+        total_questions: total_questions,
         duration_minutes,
-        initial_question_count: Math.min(total_questions, availableCount),
+        initial_question_count: total_questions,
         expires_at: expires_at.toISOString(),
         performance_metadata: {}
       }])
@@ -115,6 +113,25 @@ export class ExamService {
     if (error) {
       console.error('Error creating exam session:', error);
       throw new Error(`Failed to create exam session: ${error.message}`);
+    }
+
+    // Send notification to admins about exam session creation
+    try {
+      await notificationService.notifyExamStarted({
+        examSessionId: data.id,
+        candidateId: data.candidate_id,
+        candidateName: data.candidate?.name || 'Unknown Candidate',
+        candidateEmail: data.candidate?.email || 'unknown@example.com',
+        jobDescriptionId: data.job_description_id,
+        jobTitle: data.job_description?.title || 'Unknown Job',
+        examToken: data.exam_token,
+        durationMinutes: data.duration_minutes,
+        totalQuestions: data.total_questions,
+        startedAt: data.created_at
+      });
+    } catch (notificationError) {
+      console.warn('Failed to send exam started notification:', notificationError);
+      // Don't fail the exam creation if notification fails
     }
 
     return data;
@@ -207,6 +224,45 @@ export class ExamService {
       console.error('Error updating session status:', error);
       throw new Error(`Failed to update session status: ${error.message}`);
     }
+
+    // Send notifications for status changes
+    try {
+      const session = await this.getSessionById(sessionId);
+      if (session) {
+        if (status === 'expired') {
+          await notificationService.notifyExamExpired({
+            examSessionId: sessionId,
+            candidateId: session.candidate_id,
+            candidateName: session.candidate?.name || 'Unknown Candidate',
+            candidateEmail: session.candidate?.email || 'unknown@example.com',
+            jobDescriptionId: session.job_description_id,
+            jobTitle: session.job_description?.title || 'Unknown Job',
+            examToken: session.exam_token,
+            durationMinutes: session.duration_minutes,
+            totalQuestions: session.total_questions,
+            startedAt: session.started_at,
+            completedAt: new Date().toISOString()
+          });
+        } else if (status === 'terminated') {
+          await notificationService.notifyExamTerminated({
+            examSessionId: sessionId,
+            candidateId: session.candidate_id,
+            candidateName: session.candidate?.name || 'Unknown Candidate',
+            candidateEmail: session.candidate?.email || 'unknown@example.com',
+            jobDescriptionId: session.job_description_id,
+            jobTitle: session.job_description?.title || 'Unknown Job',
+            examToken: session.exam_token,
+            durationMinutes: session.duration_minutes,
+            totalQuestions: session.total_questions,
+            startedAt: session.started_at,
+            completedAt: new Date().toISOString()
+          });
+        }
+      }
+    } catch (notificationError) {
+      console.warn('Failed to send status change notification:', notificationError);
+      // Don't fail the status update if notification fails
+    }
   }
 
   // ===== QUESTION SELECTION =====
@@ -231,7 +287,7 @@ export class ExamService {
       throw new Error('Exam session has no associated job description');
     }
 
-    // Simplified approach: Get questions directly by job description
+    // Simplified approach: Get MCQ questions only by job description
     const { data: questions, error } = await supabase
       .from('exam_questions')
       .select(`
@@ -241,6 +297,7 @@ export class ExamService {
       .eq('job_description_id', session.job_description_id)
       .eq('status', 'approved')
       .eq('is_active', true)
+      .eq('question_type', 'mcq') // Only MCQ questions for now
       .order('created_at', { ascending: false })
       .limit(session.total_questions);
 
@@ -384,10 +441,9 @@ export class ExamService {
       // Upsert the response with retry mechanism
       let data: ExamResponse | null = null;
       let error: any = null;
-      let retryCount = 0;
       const maxRetries = 3;
 
-      while (retryCount < maxRetries) {
+      for (let attempt = 0; attempt < maxRetries; attempt++) {
         const result = await supabase
           .from('exam_responses')
           .upsert([responseData], {
@@ -406,12 +462,11 @@ export class ExamService {
           break; // Success, exit retry loop
         }
 
-        retryCount++;
-        console.warn(`⚠️ Attempt ${retryCount} failed, retrying...`, error);
+        console.warn(`⚠️ Attempt ${attempt + 1} failed, retrying...`, error);
 
-        if (retryCount < maxRetries) {
+        if (attempt < maxRetries - 1) {
           // Wait before retry (exponential backoff)
-          await new Promise(resolve => setTimeout(resolve, Math.pow(2, retryCount) * 1000));
+          await new Promise(resolve => setTimeout(resolve, Math.pow(2, attempt) * 1000));
         }
       }
 
@@ -873,6 +928,28 @@ export class ExamService {
     return additionalQuestions;
   }
 
+  /**
+   * Get exam result by session ID
+   */
+  async getExamResult(sessionId: string): Promise<ExamResult> {
+    const { data, error } = await supabase
+      .from('exam_results')
+      .select(`
+        *,
+        exam_session:exam_sessions(*),
+        candidate:candidates(*)
+      `)
+      .eq('exam_session_id', sessionId)
+      .single();
+
+    if (error) {
+      console.error('Error fetching exam result:', error);
+      throw new Error(`Failed to fetch exam result: ${error.message}`);
+    }
+
+    return data;
+  }
+
   // ===== EXAM COMPLETION =====
 
   /**
@@ -939,9 +1016,9 @@ export class ExamService {
     // Update session status
     await this.updateSessionStatus(sessionId, 'completed');
 
-    // Trigger auto-evaluation of MCQ answers
+    // Trigger auto-evaluation of MCQ answers (MCQ-only for now)
     try {
-      console.log('🤖 Triggering auto-evaluation for completed exam...');
+      console.log('🤖 Triggering auto-evaluation for completed MCQ exam...');
       const autoEvalResult = await this.autoEvaluateMCQAnswers(sessionId);
       console.log('✅ Auto-evaluation completed:', {
         success: autoEvalResult.success,
@@ -953,19 +1030,29 @@ export class ExamService {
       // Don't throw error as this is not critical for exam completion
     }
 
-    // Trigger text evaluation for text questions
+    // Note: Text evaluation is disabled for now - will be implemented later
+    // Text-based exams will be added in future updates
+
+    // Send notification to admins about exam completion
     try {
-      console.log('📝 Triggering text evaluation for completed exam...');
-      const textEvalResult = await TextEvaluationService.evaluateTextAnswers(sessionId);
-      console.log('✅ Text evaluation completed:', {
-        success: textEvalResult.success,
-        evaluatedCount: textEvalResult.evaluated_count,
-        overallScore: textEvalResult.overall_score,
-        processingTime: textEvalResult.processing_time
+      await notificationService.notifyExamCompleted({
+        examSessionId: sessionId,
+        candidateId: session.candidate_id,
+        candidateName: session.candidate?.name || 'Unknown Candidate',
+        candidateEmail: session.candidate?.email || 'unknown@example.com',
+        jobDescriptionId: session.job_description_id,
+        jobTitle: session.job_description?.title || 'Unknown Job',
+        examToken: session.exam_token,
+        durationMinutes: session.duration_minutes,
+        totalQuestions: session.total_questions,
+        startedAt: session.started_at,
+        completedAt: new Date().toISOString(),
+        score: total_score,
+        percentage: percentage
       });
-    } catch (error) {
-      console.error('❌ Text evaluation failed (non-critical):', error);
-      // Don't throw error as this is not critical for exam completion
+    } catch (notificationError) {
+      console.warn('Failed to send exam completed notification:', notificationError);
+      // Don't fail the exam completion if notification fails
     }
 
     return data;

@@ -1,6 +1,5 @@
 import { supabase } from './supabase';
-import { Interview, InterviewForm, InterviewEmailData } from '../types';
-import { emailService } from './emailService';
+import { Interview, InterviewForm } from '../types';
 
 // Helper function to ensure array fields are properly handled
 const ensureArray = (field: any): any[] => {
@@ -504,15 +503,6 @@ async function sendInterviewEmailNotification(interview: Interview): Promise<voi
       console.error('Error in credential storage:', credentialError);
       // Continue with email sending even if credential storage fails
     }
-
-    const emailData: InterviewEmailData = {
-      candidate: interview.candidate,
-      jobDescription: interview.jobDescription,
-      aiAgent: interview.aiAgent,
-      interview,
-      interviewLink,
-      candidateLoginCredentials,
-    };
 
     // For now, just log the email data instead of sending
     console.log('Interview email notification data:', {

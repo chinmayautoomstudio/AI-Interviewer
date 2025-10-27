@@ -47,28 +47,28 @@ export const TextQuestion: React.FC<TextQuestionProps> = ({
   };
 
   return (
-    <div className="bg-white rounded-2xl border border-gray-200/50 p-8 shadow-lg">
+    <div className="bg-white rounded-xl sm:rounded-2xl border border-gray-200/50 p-4 sm:p-6 lg:p-8 shadow-lg">
       {/* Question Header */}
-      <div className="mb-8">
-        <div className="flex items-center justify-between mb-6">
-          <div className="flex items-center space-x-3">
-            <span className="bg-gradient-to-r from-green-100 to-green-200 text-green-800 text-sm font-semibold px-3 py-1.5 rounded-full shadow-sm">
+      <div className="mb-6 sm:mb-8">
+        <div className="flex items-center justify-between mb-4 sm:mb-6">
+          <div className="flex items-center space-x-2 sm:space-x-3">
+            <span className="bg-gradient-to-r from-green-100 to-green-200 text-green-800 text-xs sm:text-sm font-semibold px-2 sm:px-3 py-1 sm:py-1.5 rounded-full shadow-sm">
               {question.points} point{question.points !== 1 ? 's' : ''}
             </span>
           </div>
-          <div className="flex items-center space-x-2 text-sm text-gray-500 bg-gray-50 px-3 py-1.5 rounded-lg">
-            <Clock className="w-4 h-4" />
+          <div className="flex items-center space-x-1 sm:space-x-2 text-xs sm:text-sm text-gray-500 bg-gray-50 px-2 sm:px-3 py-1 sm:py-1.5 rounded-lg">
+            <Clock className="w-3 h-3 sm:w-4 sm:h-4" />
             <span>Time limit: {question.time_limit_seconds}s</span>
           </div>
         </div>
         
-        <h3 className="text-xl font-semibold text-gray-900 leading-relaxed">
+        <h3 className="text-lg sm:text-xl font-semibold text-gray-900 leading-relaxed">
           {question.question_text}
         </h3>
       </div>
 
       {/* Answer Input */}
-      <div className="space-y-6">
+      <div className="space-y-4 sm:space-y-6">
         <div className="relative">
           <textarea
             value={localAnswer}
@@ -76,7 +76,7 @@ export const TextQuestion: React.FC<TextQuestionProps> = ({
             disabled={disabled}
             placeholder="Type your answer here..."
             className={`
-              w-full h-40 p-6 border-2 rounded-xl resize-none transition-all duration-200 text-lg
+              w-full h-32 sm:h-40 p-4 sm:p-6 border-2 rounded-lg sm:rounded-xl resize-none transition-all duration-200 text-sm sm:text-base lg:text-lg
               focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent
               ${disabled 
                 ? 'bg-gray-50 border-gray-200 cursor-not-allowed' 
@@ -88,20 +88,20 @@ export const TextQuestion: React.FC<TextQuestionProps> = ({
           />
           
           {/* Character count */}
-          <div className="absolute bottom-3 right-3">
-            <span className={`text-sm font-medium ${getCharCountColor()} bg-white px-2 py-1 rounded-lg shadow-sm`}>
+          <div className="absolute bottom-2 sm:bottom-3 right-2 sm:right-3">
+            <span className={`text-xs sm:text-sm font-medium ${getCharCountColor()} bg-white px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-lg shadow-sm`}>
               {charCount}/{maxLength}
             </span>
           </div>
         </div>
 
         {/* Answer guidelines */}
-        <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-xl p-6 shadow-sm">
-          <div className="flex items-start space-x-3">
-            <FileText className="w-6 h-6 text-blue-600 mt-0.5 flex-shrink-0" />
-            <div className="text-sm text-blue-800">
-              <p className="font-semibold mb-2 text-lg">Answer Guidelines:</p>
-              <ul className="space-y-2 text-blue-700 text-lg">
+        <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-lg sm:rounded-xl p-4 sm:p-6 shadow-sm">
+          <div className="flex items-start space-x-2 sm:space-x-3">
+            <FileText className="w-5 h-5 sm:w-6 sm:h-6 text-blue-600 mt-0.5 flex-shrink-0" />
+            <div className="text-xs sm:text-sm text-blue-800">
+              <p className="font-semibold mb-1 sm:mb-2 text-sm sm:text-base lg:text-lg">Answer Guidelines:</p>
+              <ul className="space-y-1 sm:space-y-2 text-blue-700 text-sm sm:text-base lg:text-lg">
                 <li>• Be specific and provide clear explanations</li>
                 <li>• Include relevant examples where applicable</li>
                 <li>• Use proper grammar and formatting</li>
@@ -114,9 +114,9 @@ export const TextQuestion: React.FC<TextQuestionProps> = ({
 
       {/* Answer explanation (show when disabled and answer exists) */}
       {disabled && localAnswer && question.answer_explanation && (
-        <div className="mt-8 p-6 bg-gradient-to-r from-gray-50 to-green-50 rounded-xl border border-gray-200 shadow-sm">
-          <h4 className="font-semibold text-gray-900 mb-3 text-lg">Model Answer:</h4>
-          <p className="text-gray-700 leading-relaxed text-lg">
+        <div className="mt-6 sm:mt-8 p-4 sm:p-6 bg-gradient-to-r from-gray-50 to-green-50 rounded-lg sm:rounded-xl border border-gray-200 shadow-sm">
+          <h4 className="font-semibold text-gray-900 mb-2 sm:mb-3 text-base sm:text-lg">Model Answer:</h4>
+          <p className="text-gray-700 leading-relaxed text-sm sm:text-base lg:text-lg">
             {question.answer_explanation}
           </p>
         </div>
@@ -124,16 +124,16 @@ export const TextQuestion: React.FC<TextQuestionProps> = ({
 
       {/* Topic and tags */}
       {(question.topic || question.tags.length > 0) && (
-        <div className="mt-6 flex flex-wrap gap-3">
+        <div className="mt-4 sm:mt-6 flex flex-wrap gap-2 sm:gap-3">
           {question.topic && (
-            <span className="bg-gradient-to-r from-purple-100 to-purple-200 text-purple-800 text-sm font-semibold px-3 py-1.5 rounded-full shadow-sm">
+            <span className="bg-gradient-to-r from-purple-100 to-purple-200 text-purple-800 text-xs sm:text-sm font-semibold px-2 sm:px-3 py-1 sm:py-1.5 rounded-full shadow-sm">
               {question.topic.name}
             </span>
           )}
           {question.tags.map((tag, index) => (
             <span
               key={index}
-              className="bg-gradient-to-r from-gray-100 to-gray-200 text-gray-800 text-sm font-semibold px-3 py-1.5 rounded-full shadow-sm"
+              className="bg-gradient-to-r from-gray-100 to-gray-200 text-gray-800 text-xs sm:text-sm font-semibold px-2 sm:px-3 py-1 sm:py-1.5 rounded-full shadow-sm"
             >
               {tag}
             </span>

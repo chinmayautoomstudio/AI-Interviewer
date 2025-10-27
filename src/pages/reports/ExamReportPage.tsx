@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Download, FileText, TrendingUp, TrendingDown, Clock, Target, Brain, CheckCircle, XCircle, AlertCircle, User, Briefcase, Calendar, DollarSign, BookOpen, Lightbulb, MessageSquare } from 'lucide-react';
+import { ArrowLeft, Download, FileText, TrendingUp, TrendingDown, Clock, Target, Brain, CheckCircle, XCircle, AlertCircle, Calendar, DollarSign, BookOpen, Lightbulb, MessageSquare } from 'lucide-react';
 import { ReportData, reportGenerationService } from '../../services/reportGenerationService';
 import { supabase } from '../../services/supabase';
 
@@ -121,13 +121,7 @@ const ExamReportPage: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    if (sessionId) {
-      loadReport();
-    }
-  }, [sessionId]);
-
-  const loadReport = async () => {
+  const loadReport = useCallback(async () => {
     if (!sessionId) return;
     
     setLoading(true);
@@ -192,7 +186,13 @@ const ExamReportPage: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [sessionId]);
+
+  useEffect(() => {
+    if (sessionId) {
+      loadReport();
+    }
+  }, [sessionId, loadReport]);
 
   const handleBack = () => {
     navigate('/exams/results');

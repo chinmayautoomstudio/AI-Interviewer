@@ -1,7 +1,7 @@
 // Exam Creation Page
 // Dedicated page for creating and managing exam sessions
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
   ArrowLeft, 
@@ -51,11 +51,36 @@ const ExamCreationPage: React.FC = () => {
     examTitle: '',
     instructions: ''
   });
+  const [availableQuestionsCount, setAvailableQuestionsCount] = useState<number>(0);
 
   // Load candidates and job descriptions
   useEffect(() => {
     loadData();
   }, []);
+
+  const checkAvailableQuestions = useCallback(async (jobDescriptionId: string) => {
+    try {
+      const { count } = await examService.getAvailableQuestions(jobDescriptionId);
+      setAvailableQuestionsCount(count);
+      
+      // If requested questions exceed available, adjust the count
+      if (config.totalQuestions > count && count > 0) {
+        setConfig(prev => ({ ...prev, totalQuestions: count }));
+      }
+    } catch (err) {
+      console.error('Error checking available questions:', err);
+      setAvailableQuestionsCount(0);
+    }
+  }, [config.totalQuestions]);
+
+  // Check available questions when job description changes
+  useEffect(() => {
+    if (config.jobDescriptionId) {
+      checkAvailableQuestions(config.jobDescriptionId);
+    } else {
+      setAvailableQuestionsCount(0);
+    }
+  }, [config.jobDescriptionId, checkAvailableQuestions]);
 
   const loadData = async () => {
     try {
@@ -83,6 +108,17 @@ const ExamCreationPage: React.FC = () => {
     
     if (!config.candidateId || !config.jobDescriptionId) {
       setError('Please select both candidate and job description');
+      return;
+    }
+
+    // Validate question count
+    if (config.totalQuestions > availableQuestionsCount) {
+      setError(`Cannot create exam with ${config.totalQuestions} questions. Only ${availableQuestionsCount} questions are available for this job description.`);
+      return;
+    }
+
+    if (availableQuestionsCount === 0) {
+      setError('No approved questions available for this job description. Please add questions first.');
       return;
     }
 
@@ -159,71 +195,71 @@ const ExamCreationPage: React.FC = () => {
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
       <div className="bg-white border-b border-gray-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16">
-            <div className="flex items-center space-x-4">
+        <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-8">
+          <div className="flex items-center justify-between h-14 sm:h-16">
+            <div className="flex items-center space-x-2 sm:space-x-4">
               <button
                 onClick={() => navigate('/exams')}
-                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                className="p-1.5 sm:p-2 hover:bg-gray-100 rounded-lg transition-colors"
               >
-                <ArrowLeft className="w-5 h-5 text-gray-600" />
+                <ArrowLeft className="w-4 h-4 sm:w-5 sm:h-5 text-gray-600" />
               </button>
-              <div>
-                <h1 className="text-xl font-semibold text-gray-900">Create New Exam</h1>
-                <p className="text-sm text-gray-600">Set up an exam session for a candidate</p>
+              <div className="min-w-0 flex-1">
+                <h1 className="text-lg sm:text-xl font-semibold text-gray-900">Create New Exam</h1>
+                <p className="text-xs sm:text-sm text-gray-600">Set up an exam session for a candidate</p>
               </div>
             </div>
           </div>
         </div>
       </div>
 
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="max-w-4xl mx-auto px-3 sm:px-4 lg:px-8 py-4 sm:py-6 lg:py-8">
         {/* Success Message */}
         {success && createdExamToken && (
-          <div className="mb-8 p-6 bg-green-50 border border-green-200 rounded-xl">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-4">
-                <div className="p-3 bg-green-100 rounded-lg">
-                  <CheckCircle className="w-6 h-6 text-green-600" />
+          <div className="mb-6 sm:mb-8 p-4 sm:p-6 bg-green-50 border border-green-200 rounded-xl">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-3 sm:space-y-0">
+              <div className="flex items-center space-x-2 sm:space-x-4">
+                <div className="p-2 sm:p-3 bg-green-100 rounded-lg flex-shrink-0">
+                  <CheckCircle className="w-5 h-5 sm:w-6 sm:h-6 text-green-600" />
                 </div>
-                <div>
-                  <h3 className="text-lg font-semibold text-green-900">Exam Created Successfully!</h3>
-                  <p className="text-sm text-green-700">Share this link with the candidate to start the exam</p>
+                <div className="min-w-0 flex-1">
+                  <h3 className="text-base sm:text-lg font-semibold text-green-900">Exam Created Successfully!</h3>
+                  <p className="text-xs sm:text-sm text-green-700">Share this link with the candidate to start the exam</p>
                 </div>
               </div>
-              <div className="flex items-center space-x-3">
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center space-y-2 sm:space-y-0 sm:space-x-3">
                 <button
                   onClick={copyExamLink}
-                  className="flex items-center space-x-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+                  className="flex items-center justify-center space-x-1 sm:space-x-2 px-3 sm:px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm"
                 >
-                  <Copy className="w-4 h-4" />
+                  <Copy className="w-3 h-3 sm:w-4 sm:h-4" />
                   <span>Copy Link</span>
                 </button>
                 <button
                   onClick={openExamLink}
-                  className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                  className="flex items-center justify-center space-x-1 sm:space-x-2 px-3 sm:px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm"
                 >
-                  <ExternalLink className="w-4 h-4" />
+                  <ExternalLink className="w-3 h-3 sm:w-4 sm:h-4" />
                   <span>Open Exam</span>
                 </button>
               </div>
             </div>
-            <div className="mt-4 p-4 bg-white rounded-lg border">
-              <p className="text-sm text-gray-600 mb-2">Exam Link:</p>
-              <code className="text-sm text-gray-800 break-all">
+            <div className="mt-3 sm:mt-4 p-3 sm:p-4 bg-white rounded-lg border">
+              <p className="text-xs sm:text-sm text-gray-600 mb-1 sm:mb-2">Exam Link:</p>
+              <code className="text-xs sm:text-sm text-gray-800 break-all">
                 {`${window.location.origin}/candidate/exam/${createdExamToken}`}
               </code>
             </div>
-            <div className="mt-4 flex items-center space-x-3">
+            <div className="mt-3 sm:mt-4 flex flex-col sm:flex-row items-stretch sm:items-center space-y-2 sm:space-y-0 sm:space-x-3">
               <button
                 onClick={resetForm}
-                className="px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
+                className="px-3 sm:px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors text-sm"
               >
                 Create Another Exam
               </button>
               <button
                 onClick={() => navigate('/exams')}
-                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                className="px-3 sm:px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm"
               >
                 Back to Dashboard
               </button>
@@ -233,34 +269,34 @@ const ExamCreationPage: React.FC = () => {
 
         {/* Main Form */}
         <div className="bg-white rounded-xl shadow-sm border">
-          <form onSubmit={handleSubmit} className="p-8 space-y-8">
+          <form onSubmit={handleSubmit} className="p-4 sm:p-6 lg:p-8 space-y-6 sm:space-y-8">
             {/* Error Message */}
             {error && (
-              <div className="flex items-center space-x-3 p-4 bg-red-50 border border-red-200 rounded-lg">
-                <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0" />
-                <span className="text-red-800 text-sm">{error}</span>
+              <div className="flex items-center space-x-2 sm:space-x-3 p-3 sm:p-4 bg-red-50 border border-red-200 rounded-lg">
+                <AlertCircle className="w-4 h-4 sm:w-5 sm:h-5 text-red-600 flex-shrink-0" />
+                <span className="text-red-800 text-xs sm:text-sm">{error}</span>
               </div>
             )}
 
             {/* Basic Information */}
-            <div className="space-y-6">
-              <div className="flex items-center space-x-3">
-                <div className="p-2 bg-blue-100 rounded-lg">
-                  <Settings className="w-5 h-5 text-blue-600" />
+            <div className="space-y-4 sm:space-y-6">
+              <div className="flex items-center space-x-2 sm:space-x-3">
+                <div className="p-1.5 sm:p-2 bg-blue-100 rounded-lg">
+                  <Settings className="w-4 h-4 sm:w-5 sm:h-5 text-blue-600" />
                 </div>
-                <h2 className="text-lg font-semibold text-gray-900">Basic Information</h2>
+                <h2 className="text-base sm:text-lg font-semibold text-gray-900">Basic Information</h2>
               </div>
 
               {/* Candidate Selection */}
-              <div className="space-y-2">
-                <label className="flex items-center space-x-2 text-sm font-medium text-gray-700">
-                  <Users className="w-4 h-4" />
+              <div className="space-y-1 sm:space-y-2">
+                <label className="flex items-center space-x-1 sm:space-x-2 text-xs sm:text-sm font-medium text-gray-700">
+                  <Users className="w-3 h-3 sm:w-4 sm:h-4" />
                   <span>Select Candidate</span>
                 </label>
                 <select
                   value={config.candidateId}
                   onChange={(e) => setConfig(prev => ({ ...prev, candidateId: e.target.value }))}
-                  className="w-full p-4 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full p-3 sm:p-4 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm sm:text-base"
                   required
                 >
                   <option value="">Choose a candidate...</option>
@@ -273,15 +309,15 @@ const ExamCreationPage: React.FC = () => {
               </div>
 
               {/* Job Description Selection */}
-              <div className="space-y-2">
-                <label className="flex items-center space-x-2 text-sm font-medium text-gray-700">
-                  <BookOpen className="w-4 h-4" />
+              <div className="space-y-1 sm:space-y-2">
+                <label className="flex items-center space-x-1 sm:space-x-2 text-xs sm:text-sm font-medium text-gray-700">
+                  <BookOpen className="w-3 h-3 sm:w-4 sm:h-4" />
                   <span>Select Job Description</span>
                 </label>
                 <select
                   value={config.jobDescriptionId}
                   onChange={(e) => setConfig(prev => ({ ...prev, jobDescriptionId: e.target.value }))}
-                  className="w-full p-4 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full p-3 sm:p-4 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm sm:text-base"
                   required
                 >
                   <option value="">Choose a job description...</option>
@@ -294,32 +330,53 @@ const ExamCreationPage: React.FC = () => {
               </div>
 
               {/* Info Message */}
-              <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-                <div className="flex items-center space-x-2">
-                  <CheckCircle className="w-5 h-5 text-green-600" />
-                  <span className="font-medium text-green-900">Ready to Create Exam</span>
+              <div className={`border rounded-lg p-3 sm:p-4 ${
+                availableQuestionsCount > 0 
+                  ? 'bg-green-50 border-green-200' 
+                  : 'bg-yellow-50 border-yellow-200'
+              }`}>
+                <div className="flex items-center space-x-1 sm:space-x-2">
+                  <CheckCircle className={`w-4 h-4 sm:w-5 sm:h-5 ${
+                    availableQuestionsCount > 0 ? 'text-green-600' : 'text-yellow-600'
+                  }`} />
+                  <span className={`font-medium text-sm sm:text-base ${
+                    availableQuestionsCount > 0 ? 'text-green-900' : 'text-yellow-900'
+                  }`}>
+                    {availableQuestionsCount > 0 ? 'Ready to Create Exam' : 'Limited Questions Available'}
+                  </span>
                 </div>
-                <div className="mt-2 text-sm text-green-800">
-                  <p>All job descriptions shown have approved questions available.</p>
-                  <p>You can create exams with confidence knowing questions are ready.</p>
+                <div className={`mt-1 sm:mt-2 text-xs sm:text-sm ${
+                  availableQuestionsCount > 0 ? 'text-green-800' : 'text-yellow-800'
+                }`}>
+                  {availableQuestionsCount > 0 ? (
+                    <>
+                      <p>This job description has <strong>{availableQuestionsCount}</strong> approved questions available.</p>
+                      <p>You can create exams with confidence knowing questions are ready.</p>
+                    </>
+                  ) : (
+                    <>
+                      <p>No approved questions available for this job description.</p>
+                      <p>Please add questions to the question bank first.</p>
+                    </>
+                  )}
                 </div>
               </div>
             </div>
 
             {/* Exam Configuration */}
-            <div className="space-y-6">
-              <div className="flex items-center space-x-3">
-                <div className="p-2 bg-green-100 rounded-lg">
-                  <Calendar className="w-5 h-5 text-green-600" />
+            <div className="space-y-4 sm:space-y-6">
+              <div className="flex items-center space-x-2 sm:space-x-3">
+                <div className="p-1.5 sm:p-2 bg-green-100 rounded-lg">
+                  <Calendar className="w-4 h-4 sm:w-5 sm:h-5 text-green-600" />
                 </div>
-                <h2 className="text-lg font-semibold text-gray-900">Exam Configuration</h2>
+                <h2 className="text-base sm:text-lg font-semibold text-gray-900">Exam Configuration</h2>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
                 {/* Duration */}
-                <div className="space-y-2">
-                  <label className="flex items-center space-x-2 text-sm font-medium text-gray-700">
-                    <Clock className="w-4 h-4" />
+                <div className="space-y-1 sm:space-y-2">
+                  <label className="flex items-center space-x-1 sm:space-x-2 text-xs sm:text-sm font-medium text-gray-700">
+                    <Clock className="w-3 h-3 sm:w-4 sm:h-4" />
                     <span>Duration (minutes)</span>
                   </label>
                   <input
@@ -328,33 +385,55 @@ const ExamCreationPage: React.FC = () => {
                     max="180"
                     value={config.durationMinutes}
                     onChange={(e) => setConfig(prev => ({ ...prev, durationMinutes: parseInt(e.target.value) || 30 }))}
-                    className="w-full p-4 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="w-full p-3 sm:p-4 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm sm:text-base"
                     required
                   />
                 </div>
 
                 {/* Total Questions */}
-                <div className="space-y-2">
-                  <label className="text-sm font-medium text-gray-700">Total Questions</label>
+                <div className="space-y-1 sm:space-y-2">
+                  <label className="text-xs sm:text-sm font-medium text-gray-700">
+                    Total Questions
+                    {availableQuestionsCount > 0 && (
+                      <span className="text-gray-500 ml-1">(Max: {availableQuestionsCount})</span>
+                    )}
+                  </label>
                   <input
                     type="number"
-                    min="5"
-                    max="50"
+                    min="1"
+                    max={availableQuestionsCount > 0 ? availableQuestionsCount : 50}
                     value={config.totalQuestions}
-                    onChange={(e) => setConfig(prev => ({ ...prev, totalQuestions: parseInt(e.target.value) || 15 }))}
-                    className="w-full p-4 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    onChange={(e) => {
+                      const value = parseInt(e.target.value) || 1;
+                      const maxValue = availableQuestionsCount > 0 ? availableQuestionsCount : 50;
+                      setConfig(prev => ({ 
+                        ...prev, 
+                        totalQuestions: Math.min(value, maxValue)
+                      }));
+                    }}
+                    className={`w-full p-3 sm:p-4 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm sm:text-base ${
+                      config.totalQuestions > availableQuestionsCount && availableQuestionsCount > 0
+                        ? 'border-red-300 bg-red-50'
+                        : 'border-gray-300'
+                    }`}
                     required
+                    disabled={availableQuestionsCount === 0}
                   />
+                  {config.totalQuestions > availableQuestionsCount && availableQuestionsCount > 0 && (
+                    <p className="text-xs text-red-600">
+                      Cannot exceed {availableQuestionsCount} available questions
+                    </p>
+                  )}
                 </div>
               </div>
 
               {/* Expiry Time */}
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-gray-700">Exam Expires In</label>
+              <div className="space-y-1 sm:space-y-2">
+                <label className="text-xs sm:text-sm font-medium text-gray-700">Exam Expires In</label>
                 <select
                   value={config.expiresInHours}
                   onChange={(e) => setConfig(prev => ({ ...prev, expiresInHours: parseInt(e.target.value) }))}
-                  className="w-full p-4 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full p-3 sm:p-4 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm sm:text-base"
                 >
                   <option value={24}>24 hours</option>
                   <option value={48}>48 hours</option>
@@ -365,30 +444,30 @@ const ExamCreationPage: React.FC = () => {
             </div>
 
             {/* Exam Preview */}
-            <div className="space-y-6">
-              <div className="flex items-center space-x-3">
-                <div className="p-2 bg-purple-100 rounded-lg">
-                  <Eye className="w-5 h-5 text-purple-600" />
+            <div className="space-y-4 sm:space-y-6">
+              <div className="flex items-center space-x-2 sm:space-x-3">
+                <div className="p-1.5 sm:p-2 bg-purple-100 rounded-lg">
+                  <Eye className="w-4 h-4 sm:w-5 sm:h-5 text-purple-600" />
                 </div>
-                <h2 className="text-lg font-semibold text-gray-900">Exam Preview</h2>
+                <h2 className="text-base sm:text-lg font-semibold text-gray-900">Exam Preview</h2>
               </div>
 
-              <div className="bg-gray-50 rounded-lg p-6 space-y-4">
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+              <div className="bg-gray-50 rounded-lg p-4 sm:p-6 space-y-3 sm:space-y-4">
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4 text-xs sm:text-sm">
                   <div className="text-center">
-                    <div className="text-2xl font-bold text-blue-600">{config.durationMinutes}</div>
+                    <div className="text-lg sm:text-2xl font-bold text-blue-600">{config.durationMinutes}</div>
                     <div className="text-gray-600">Minutes</div>
                   </div>
                   <div className="text-center">
-                    <div className="text-2xl font-bold text-green-600">{config.totalQuestions}</div>
+                    <div className="text-lg sm:text-2xl font-bold text-green-600">{config.totalQuestions}</div>
                     <div className="text-gray-600">Questions</div>
                   </div>
                   <div className="text-center">
-                    <div className="text-2xl font-bold text-purple-600">{config.expiresInHours}h</div>
+                    <div className="text-lg sm:text-2xl font-bold text-purple-600">{config.expiresInHours}h</div>
                     <div className="text-gray-600">Expires</div>
                   </div>
                   <div className="text-center">
-                    <div className="text-2xl font-bold text-orange-600">Ready</div>
+                    <div className="text-lg sm:text-2xl font-bold text-orange-600">Ready</div>
                     <div className="text-gray-600">Status</div>
                   </div>
                 </div>
@@ -396,11 +475,11 @@ const ExamCreationPage: React.FC = () => {
             </div>
 
             {/* Actions */}
-            <div className="flex items-center justify-end space-x-4 pt-6 border-t border-gray-200">
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-end space-y-3 sm:space-y-0 sm:space-x-4 pt-4 sm:pt-6 border-t border-gray-200">
               <button
                 type="button"
                 onClick={() => navigate('/exams')}
-                className="px-6 py-3 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
+                className="px-4 sm:px-6 py-2 sm:py-3 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors text-sm sm:text-base"
                 disabled={submitting}
               >
                 Cancel
@@ -408,16 +487,16 @@ const ExamCreationPage: React.FC = () => {
               <button
                 type="submit"
                 disabled={submitting || !config.candidateId || !config.jobDescriptionId}
-                className="px-8 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center space-x-2"
+                className="px-6 sm:px-8 py-2 sm:py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center space-x-1 sm:space-x-2 text-sm sm:text-base"
               >
                 {submitting ? (
                   <>
-                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    <div className="w-3 h-3 sm:w-4 sm:h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
                     <span>Creating Exam...</span>
                   </>
                 ) : (
                   <>
-                    <Plus className="w-4 h-4" />
+                    <Plus className="w-3 h-3 sm:w-4 sm:h-4" />
                     <span>Create Exam</span>
                   </>
                 )}

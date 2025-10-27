@@ -2,18 +2,13 @@ import React, { useState } from 'react';
 import { 
   X, 
   Upload, 
-  FileText, 
-  CheckCircle, 
   AlertCircle,
   Loader2,
-  Eye,
-  Edit,
   Trash2,
   Save
 } from 'lucide-react';
 import { questionPaperExtractionService, ExtractedQuestion, QuestionPaperExtractionRequest } from '../../services/questionPaperExtractionService';
 import { questionService } from '../../services/questionService';
-import { QuestionFormData } from '../../types';
 import { QuestionTopic } from '../../services/topicManagementService';
 
 interface QuestionPaperUploadModalProps {
@@ -31,7 +26,6 @@ const QuestionPaperUploadModal: React.FC<QuestionPaperUploadModalProps> = ({
   onQuestionsAdded,
   loading = false
 }) => {
-  const [uploadedFile, setUploadedFile] = useState<File | null>(null);
   const [extracting, setExtracting] = useState(false);
   const [extractedQuestions, setExtractedQuestions] = useState<ExtractedQuestion[]>([]);
   const [showPreview, setShowPreview] = useState(false);
@@ -44,18 +38,6 @@ const QuestionPaperUploadModal: React.FC<QuestionPaperUploadModalProps> = ({
   const [defaultPoints, setDefaultPoints] = useState<number>(2);
   const [defaultTimeLimit, setDefaultTimeLimit] = useState<number>(60);
 
-  const resetForm = () => {
-    setUploadedFile(null);
-    setExtracting(false);
-    setExtractedQuestions([]);
-    setShowPreview(false);
-    setErrors({});
-    setSaving(false);
-    setDefaultTopic('');
-    setDefaultDifficulty('medium');
-    setDefaultPoints(2);
-    setDefaultTimeLimit(60);
-  };
 
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -67,7 +49,6 @@ const QuestionPaperUploadModal: React.FC<QuestionPaperUploadModalProps> = ({
       return;
     }
 
-    setUploadedFile(file);
     setExtracting(true);
     setErrors({});
 

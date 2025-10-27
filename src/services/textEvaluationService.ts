@@ -2,7 +2,7 @@
 // Handles AI-powered evaluation of text answers through n8n workflows
 
 import { supabase } from './supabase';
-import { ExamSession, ExamResponse, ExamQuestion, Candidate, JobDescription } from '../types';
+import { ExamSession, Candidate, JobDescription } from '../types';
 
 export interface TextEvaluationRequest {
   session_id: string;

@@ -64,6 +64,19 @@ const InterviewPage: React.FC<InterviewPageProps> = ({
     }
   }, []);
 
+  const endInterview = useCallback(async () => {
+    setIsLoading(true);
+    try {
+      await InterviewSystemService.cancelInterview(session.sessionId);
+      onEndInterview();
+    } catch (error) {
+      console.error('Error ending interview:', error);
+      setError('Failed to end interview');
+    } finally {
+      setIsLoading(false);
+    }
+  }, [session.sessionId, onEndInterview]);
+
   useEffect(() => {
     console.log('🔄 InterviewPage useEffect called');
     console.log('📊 useEffect called at:', new Date().toISOString());
@@ -204,7 +217,7 @@ const InterviewPage: React.FC<InterviewPageProps> = ({
         InterviewSystemService.clearResponseCache(session.sessionId);
       }
     };
-  }, [playAudio, session]); // Include dependencies to prevent warnings
+  }, [playAudio, session, endInterview]); // Include dependencies to prevent warnings
 
   const formatDuration = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
@@ -246,19 +259,6 @@ const InterviewPage: React.FC<InterviewPageProps> = ({
   const handleVoiceError = (error: string) => {
     console.error('Voice error:', error);
     setError('Voice error: ' + error);
-  };
-
-  const endInterview = async () => {
-    setIsLoading(true);
-    try {
-      await InterviewSystemService.cancelInterview(session.sessionId);
-      onEndInterview();
-    } catch (error) {
-      console.error('Error ending interview:', error);
-      setError('Failed to end interview');
-    } finally {
-      setIsLoading(false);
-    }
   };
 
   return (

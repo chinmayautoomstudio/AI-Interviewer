@@ -1,5 +1,8 @@
 // Core types for the AI HR Saathi Platform
 
+// Export notification types
+export * from './notifications';
+
 // Question Management Types
 export interface CreateQuestionRequest {
   job_description_id: string;

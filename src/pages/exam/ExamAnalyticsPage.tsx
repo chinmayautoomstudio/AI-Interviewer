@@ -6,10 +6,7 @@ import {
   Clock,
   Target,
   BarChart3,
-  PieChart,
-  Activity,
-  Calendar,
-  Filter
+  Activity
 } from 'lucide-react';
 
 interface AnalyticsData {

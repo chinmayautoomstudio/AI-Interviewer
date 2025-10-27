@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { 
   ArrowLeft, 
@@ -48,13 +48,7 @@ const JobViewPage: React.FC = () => {
   const [showRemoveDialog, setShowRemoveDialog] = useState(false);
   const [applicationToRemove, setApplicationToRemove] = useState<CandidateJobApplication | null>(null);
 
-  useEffect(() => {
-    if (id) {
-      loadJob();
-    }
-  }, [id]);
-
-  const loadJob = async () => {
+  const loadJob = useCallback(async () => {
     try {
       setLoading(true);
       const jobs = await getJobDescriptions();
@@ -73,7 +67,13 @@ const JobViewPage: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [id]);
+
+  useEffect(() => {
+    if (id) {
+      loadJob();
+    }
+  }, [id, loadJob]);
 
   const loadApplications = async (jobId: string) => {
     try {

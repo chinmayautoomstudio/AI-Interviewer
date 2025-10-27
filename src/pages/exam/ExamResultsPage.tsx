@@ -1,16 +1,13 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
   Eye, 
   Download, 
-  TrendingUp, 
-  TrendingDown,
   CheckCircle,
   XCircle,
   Clock,
   Users,
   BarChart3,
-  Filter,
   Search,
   RefreshCw,
   Brain,
@@ -35,15 +32,7 @@ const ExamResultsPage: React.FC = () => {
   const [evaluatingSessions, setEvaluatingSessions] = useState<Set<string>>(new Set());
   const [generatingReports, setGeneratingReports] = useState<Set<string>>(new Set());
 
-  useEffect(() => {
-    loadData();
-  }, []);
-
-  useEffect(() => {
-    loadData();
-  }, [searchTerm, selectedStatus, selectedScoreRange, sortBy]);
-
-  const loadData = async () => {
+  const loadData = useCallback(async () => {
     try {
       setLoading(true);
       
@@ -73,7 +62,11 @@ const ExamResultsPage: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [searchTerm, selectedStatus, selectedScoreRange, sortBy]);
+
+  useEffect(() => {
+    loadData();
+  }, [loadData]);
 
   const handleViewDetails = (resultId: string) => {
     setSelectedResultId(resultId);
