@@ -11,6 +11,7 @@ import {
   SubmitAnswerRequest,
   ExamPerformanceMetrics
 } from '../types';
+import { SecurityViolation } from './examSecurityService';
 import { MCQEvaluationService, MCQEvaluationResult } from './mcqEvaluationService';
 import { TextEvaluationService } from './textEvaluationService';
 import { notificationService } from './notificationService';
@@ -262,6 +263,34 @@ export class ExamService {
     } catch (notificationError) {
       console.warn('Failed to send status change notification:', notificationError);
       // Don't fail the status update if notification fails
+    }
+  }
+
+  /**
+   * Log security violation for an exam session
+   */
+  async logSecurityViolation(sessionId: string, violation: SecurityViolation): Promise<void> {
+    try {
+      const { error } = await supabase
+        .from('exam_security_violations')
+        .insert({
+          exam_session_id: sessionId,
+          violation_type: violation.type,
+          violation_details: violation.details,
+          severity: violation.severity,
+          timestamp: violation.timestamp,
+          created_at: new Date().toISOString()
+        });
+
+      if (error) {
+        console.error('Error logging security violation:', error);
+        // Don't throw error to avoid disrupting exam flow
+      } else {
+        console.log('🔒 Security violation logged:', violation.type);
+      }
+    } catch (error) {
+      console.error('Failed to log security violation:', error);
+      // Don't throw error to avoid disrupting exam flow
     }
   }
 

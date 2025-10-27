@@ -10,3 +10,5 @@ export { default as ExamInstructions } from './ExamInstructions';
 export { default as AddQuestionModal } from './AddQuestionModal';
 export { default as GenerateQuestionModal } from './GenerateQuestionModal';
 export { default as QuestionPaperUploadModal } from './QuestionPaperUploadModal';
+export { default as FullScreenExam } from './FullScreenExam';
+export { default as SecurityDashboard } from './SecurityDashboard';

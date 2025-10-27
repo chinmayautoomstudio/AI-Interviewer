@@ -11,12 +11,14 @@ import {
   ExamProgressBar,
   ExamInstructions 
 } from '../components/exam';
+import FullScreenExam from '../components/exam/FullScreenExam';
 import { 
   ExamSession, 
   ExamQuestion
 } from '../types';
 import { examService } from '../services/examService';
 import { getClientInfo } from '../utils/ipDetection';
+import { SecurityViolation } from '../services/examSecurityService';
 import { 
   ArrowLeft, 
   ArrowRight, 
@@ -42,6 +44,32 @@ export const CandidateExamPage: React.FC = () => {
   const [showInstructions, setShowInstructions] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [autoSaveStatus, setAutoSaveStatus] = useState<'saved' | 'saving' | 'error'>('saved');
+  const [examStarted, setExamStarted] = useState(false);
+
+  // Security violation handler
+  const handleSecurityViolation = useCallback((violation: SecurityViolation) => {
+    // Log violation to server
+    if (session) {
+      examService.logSecurityViolation(session.id, violation).catch(console.error);
+    }
+
+    // Show warning for high severity violations
+    if (violation.severity === 'high') {
+      alert(`Security violation detected: ${violation.details}\n\nThis violation has been logged. Continued violations may result in exam termination.`);
+    }
+  }, [session]);
+
+  // Exam start handler
+  const handleExamStart = useCallback(() => {
+    setExamStarted(true);
+    console.log('🎯 Exam started with full security monitoring');
+  }, []);
+
+  // Exam end handler
+  const handleExamEnd = useCallback(() => {
+    setExamStarted(false);
+    console.log('🏁 Exam ended');
+  }, []);
 
   // Load exam session and questions
   useEffect(() => {
@@ -418,7 +446,14 @@ export const CandidateExamPage: React.FC = () => {
   const currentAnswer = currentQuestion ? answers.get(currentQuestion.id) : '';
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50 fixed inset-0 overflow-auto">
+    <FullScreenExam
+      onViolation={handleSecurityViolation}
+      onExamStart={handleExamStart}
+      onExamEnd={handleExamEnd}
+      showWarning={!examStarted}
+      warningMessage="This exam is monitored for security purposes. Fullscreen mode and security monitoring are required. Please ensure you follow all exam rules and do not attempt to use restricted keys or switch tabs."
+    >
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50 fixed inset-0 overflow-auto">
       {/* Header */}
       <div className="bg-white/95 backdrop-blur-sm border-b border-gray-200/50 sticky top-0 z-10 shadow-sm">
         <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-8">
@@ -715,6 +750,7 @@ export const CandidateExamPage: React.FC = () => {
         </div>
       </div>
     </div>
+    </FullScreenExam>
   );
 };
 
