@@ -361,7 +361,7 @@ const SinglePageReport: React.FC<{ reportData: ReportData }> = ({ reportData }) 
           <div className="space-y-4">
             <div className="flex justify-between items-center">
               <span className="text-gray-600">Score:</span>
-              <span className="font-bold text-lg">{reportData.mcqResults.score}/{reportData.mcqResults.totalQuestions}</span>
+              <span className="font-bold text-lg">{reportData.mcqResults.score}/{reportData.mcqResults.maxScore}</span>
             </div>
             <div className="flex justify-between items-center">
               <span className="text-gray-600">Percentage:</span>

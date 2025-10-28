@@ -19,6 +19,7 @@ export interface ReportData {
     totalQuestions: number;
     correctAnswers: number;
     score: number;
+    maxScore: number;
     percentage: number;
     averageTimePerQuestion: number;
   };
@@ -295,6 +296,7 @@ export class ReportGenerationService {
         totalQuestions: 0,
         correctAnswers: 0,
         score: 0,
+        maxScore: 0,
         percentage: 0,
         averageTimePerQuestion: 0
       };
@@ -309,6 +311,7 @@ export class ReportGenerationService {
       totalQuestions: mcqResponses.length,
       correctAnswers,
       score: totalScore,
+      maxScore,
       percentage: maxScore > 0 ? Math.round((totalScore / maxScore) * 100) : 0,
       averageTimePerQuestion: mcqResponses.length > 0 ? Math.round(totalTime / mcqResponses.length) : 0
     };
