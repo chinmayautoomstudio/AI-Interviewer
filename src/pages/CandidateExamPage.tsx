@@ -72,6 +72,47 @@ export const CandidateExamPage: React.FC = () => {
     console.log('🏁 Exam ended');
   }, []);
 
+  // Auto-save functionality
+  const autoSave = useCallback(async () => {
+    if (!session || answers.size === 0) {
+      console.log('⏭️ Auto-save skipped:', { 
+        hasSession: !!session, 
+        answersCount: answers.size 
+      });
+      return;
+    }
+
+    try {
+      console.log('💾 Starting auto-save:', {
+        sessionId: session.id,
+        answersCount: answers.size,
+        answers: Array.from(answers.entries()).map(([id, answer]) => ({
+          questionId: id,
+          answer: answer?.substring(0, 50) + '...'
+        }))
+      });
+
+      setAutoSaveStatus('saving');
+      
+      // Submit all current answers
+      for (const [questionId, answer] of Array.from(answers.entries())) {
+        console.log('📤 Submitting answer for question:', questionId);
+        await examService.submitAnswer({
+          exam_session_id: session.id,
+          question_id: questionId,
+          answer_text: answer
+        });
+        console.log('✅ Answer submitted for question:', questionId);
+      }
+      
+      setAutoSaveStatus('saved');
+      console.log('✅ Auto-save completed successfully');
+    } catch (err) {
+      console.error('❌ Auto-save error:', err);
+      setAutoSaveStatus('error');
+    }
+  }, [session, answers]);
+
   // Handle exam submission and stop security
   const handleExamSubmission = useCallback(async () => {
     try {
@@ -199,47 +240,6 @@ export const CandidateExamPage: React.FC = () => {
 
     loadExam();
   }, [token, navigate]);
-
-  // Auto-save functionality
-  const autoSave = useCallback(async () => {
-    if (!session || answers.size === 0) {
-      console.log('⏭️ Auto-save skipped:', { 
-        hasSession: !!session, 
-        answersCount: answers.size 
-      });
-      return;
-    }
-
-    try {
-      console.log('💾 Starting auto-save:', {
-        sessionId: session.id,
-        answersCount: answers.size,
-        answers: Array.from(answers.entries()).map(([id, answer]) => ({
-          questionId: id,
-          answer: answer?.substring(0, 50) + '...'
-        }))
-      });
-
-      setAutoSaveStatus('saving');
-      
-      // Submit all current answers
-      for (const [questionId, answer] of Array.from(answers.entries())) {
-        console.log('📤 Submitting answer for question:', questionId);
-        await examService.submitAnswer({
-          exam_session_id: session.id,
-          question_id: questionId,
-          answer_text: answer
-        });
-        console.log('✅ Answer submitted for question:', questionId);
-      }
-      
-      setAutoSaveStatus('saved');
-      console.log('✅ Auto-save completed successfully');
-    } catch (err) {
-      console.error('❌ Auto-save error:', err);
-      setAutoSaveStatus('error');
-    }
-  }, [session, answers]);
 
   // Auto-save every 30 seconds
   useEffect(() => {
