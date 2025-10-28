@@ -1051,7 +1051,50 @@ export class ExamService {
       throw new Error(`Failed to fetch exam result: ${error.message}`);
     }
 
-    return data;
+    // Transform snake_case to camelCase to match ExamResult interface
+    const transformedResult: ExamResult = {
+      id: data.id,
+      examSessionId: data.exam_session_id,
+      candidateId: data.candidate_id,
+      totalScore: data.total_score,
+      maxScore: data.max_score,
+      percentage: data.percentage,
+      correctAnswers: data.correct_answers,
+      wrongAnswers: data.wrong_answers,
+      skippedQuestions: data.skipped_questions,
+      technicalScore: data.technical_score,
+      aptitudeScore: data.aptitude_score,
+      timeTakenMinutes: data.time_taken_minutes,
+      evaluationStatus: data.evaluation_status,
+      aiEvaluation: data.ai_evaluation,
+      createdAt: data.created_at,
+      textEvaluationSummary: data.text_evaluation_summary,
+      hiringRecommendations: data.hiring_recommendations,
+      processingMetadata: data.processing_metadata,
+      textEvaluationCompleted: data.text_evaluation_completed,
+      // Include joined data
+      examSession: data.exam_session,
+      candidate: data.candidate
+    };
+
+    console.log('🔄 Transformed exam result:', {
+      original: {
+        correct_answers: data.correct_answers,
+        wrong_answers: data.wrong_answers,
+        skipped_questions: data.skipped_questions,
+        total_score: data.total_score,
+        percentage: data.percentage
+      },
+      transformed: {
+        correctAnswers: transformedResult.correctAnswers,
+        wrongAnswers: transformedResult.wrongAnswers,
+        skippedQuestions: transformedResult.skippedQuestions,
+        totalScore: transformedResult.totalScore,
+        percentage: transformedResult.percentage
+      }
+    });
+
+    return transformedResult;
   }
 
   // ===== EXAM COMPLETION =====

@@ -75,6 +75,10 @@ export const CandidateExamPage: React.FC = () => {
   // Handle exam submission and stop security
   const handleExamSubmission = useCallback(async () => {
     try {
+      // Save all answers before completing exam
+      console.log('💾 Saving all answers before exam completion...');
+      await autoSave();
+      
       // Stop security monitoring when exam is submitted
       if (examSecurityService.isSecurityActive()) {
         examSecurityService.stopSecurityForExamCompletion();
@@ -85,7 +89,7 @@ export const CandidateExamPage: React.FC = () => {
     } catch (error) {
       console.error('Error stopping security on exam submission:', error);
     }
-  }, []);
+  }, [autoSave]);
 
   // Load exam session and questions
   useEffect(() => {
