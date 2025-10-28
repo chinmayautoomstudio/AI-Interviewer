@@ -49,19 +49,6 @@ export const QuestionNavigator: React.FC<QuestionNavigatorProps> = ({
   };
 
 
-  const getDifficultyColor = (difficulty: string) => {
-    switch (difficulty) {
-      case 'easy':
-        return 'text-green-600';
-      case 'medium':
-        return 'text-yellow-600';
-      case 'hard':
-        return 'text-red-600';
-      default:
-        return 'text-gray-600';
-    }
-  };
-
   return (
     <div className="bg-white rounded-xl sm:rounded-2xl border border-gray-200/50 p-4 sm:p-6 shadow-lg">
       <div className="flex items-center justify-between mb-3 sm:mb-4">
@@ -105,28 +92,12 @@ export const QuestionNavigator: React.FC<QuestionNavigatorProps> = ({
               ${disabled ? 'cursor-not-allowed opacity-60' : 'cursor-pointer'}
               ${index === currentQuestionIndex ? 'ring-2 ring-blue-500 ring-offset-1' : ''}
             `}
-            title={`Question ${index + 1}: ${question.question_type.toUpperCase()} - ${question.difficulty_level}`}
+            title={`Question ${index + 1}`}
           >
-            {/* Question number */}
+            {/* Question number only */}
             <div className="flex items-center space-x-1 mb-1">
               {getQuestionIcon(index)}
-              <span className="text-xs font-bold">{index + 1}</span>
-            </div>
-
-            {/* Question type and difficulty - combined to save space */}
-            <div className="mb-1 flex flex-col items-center space-y-0.5">
-              {question.question_type === 'mcq' ? (
-                <span className="bg-blue-100 text-blue-800 text-xs font-medium px-1 py-0.5 rounded text-center">
-                  MCQ
-                </span>
-              ) : (
-                <span className="bg-green-100 text-green-800 text-xs font-medium px-1 py-0.5 rounded text-center">
-                  TEXT
-                </span>
-              )}
-              <div className={`text-xs font-bold ${getDifficultyColor(question.difficulty_level)}`}>
-                {question.difficulty_level.charAt(0).toUpperCase()}
-              </div>
+              <span className="text-sm font-bold">{index + 1}</span>
             </div>
 
             {/* Points indicator */}
