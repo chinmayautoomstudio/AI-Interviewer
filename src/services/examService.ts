@@ -118,7 +118,7 @@ export class ExamService {
 
     // Send notification to admins about exam session creation
     try {
-      await notificationService.notifyExamStarted({
+      const notificationResult = await notificationService.notifyExamStarted({
         examSessionId: data.id,
         candidateId: data.candidate_id,
         candidateName: data.candidate?.name || 'Unknown Candidate',
@@ -130,8 +130,16 @@ export class ExamService {
         totalQuestions: data.total_questions,
         startedAt: data.created_at
       });
+      
+      if (!notificationResult.success) {
+        console.warn('⚠️ Exam started notification failed:', notificationResult.error);
+        console.warn('📝 Exam creation will continue without notification');
+      } else {
+        console.log('✅ Exam started notification sent successfully');
+      }
     } catch (notificationError) {
-      console.warn('Failed to send exam started notification:', notificationError);
+      console.warn('⚠️ Failed to send exam started notification:', notificationError);
+      console.warn('📝 Exam creation will continue without notification');
       // Don't fail the exam creation if notification fails
     }
 

@@ -49,12 +49,16 @@ export class NotificationService {
 
       if (error) {
         console.error('Error creating notification:', error);
+        // Don't throw error - just log it and continue
+        console.warn('⚠️ Notification creation failed, but continuing with exam creation');
         return { success: false, error: error.message };
       }
 
       return { success: true, data: this.transformNotification(data) };
     } catch (error) {
       console.error('Error in createNotification:', error);
+      // Don't throw error - just log it and continue
+      console.warn('⚠️ Notification creation failed, but continuing with exam creation');
       return { 
         success: false, 
         error: error instanceof Error ? error.message : 'Unknown error' 
