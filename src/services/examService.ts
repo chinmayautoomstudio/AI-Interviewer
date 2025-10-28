@@ -297,7 +297,7 @@ export class ExamService {
   // ===== QUESTION SELECTION =====
 
   /**
-   * Get questions for an exam session based on job description and topic distribution
+   * Get questions for an exam session based on job description and difficulty distribution
    */
   async getExamQuestions(sessionId: string): Promise<ExamQuestion[]> {
     // Get session details
@@ -316,8 +316,8 @@ export class ExamService {
       throw new Error('Exam session has no associated job description');
     }
 
-    // Simplified approach: Get MCQ questions only by job description
-    const { data: questions, error } = await supabase
+    // Get all available MCQ questions for this job description
+    const { data: allQuestions, error } = await supabase
       .from('exam_questions')
       .select(`
         *,
@@ -327,24 +327,99 @@ export class ExamService {
       .eq('status', 'approved')
       .eq('is_active', true)
       .eq('question_type', 'mcq') // Only MCQ questions for now
-      .order('created_at', { ascending: false })
-      .limit(session.total_questions);
+      .order('created_at', { ascending: false });
 
     if (error) {
       console.error('Error fetching questions:', error);
       throw new Error(`Failed to fetch questions: ${error.message}`);
     }
 
-    console.log('✅ Found', questions?.length || 0, 'questions');
-    
-    if (questions && questions.length > 0) {
-      questions.forEach((q, index) => {
-        console.log(`  ${index + 1}. [${q.question_type.toUpperCase()}] [${q.difficulty_level}] ${q.question_text?.substring(0, 50)}...`);
-      });
+    if (!allQuestions || allQuestions.length === 0) {
+      throw new Error('No questions available for this job description');
     }
 
-    // Shuffle questions to randomize order
-    return this.shuffleArray(questions || []);
+    console.log('📊 Total available questions:', allQuestions.length);
+
+    // Group questions by difficulty level
+    const questionsByDifficulty = {
+      easy: allQuestions.filter(q => q.difficulty_level === 'easy'),
+      medium: allQuestions.filter(q => q.difficulty_level === 'medium'),
+      hard: allQuestions.filter(q => q.difficulty_level === 'hard')
+    };
+
+    console.log('📈 Questions by difficulty:', {
+      easy: questionsByDifficulty.easy.length,
+      medium: questionsByDifficulty.medium.length,
+      hard: questionsByDifficulty.hard.length
+    });
+
+    // Calculate difficulty distribution for Web Developer Intern position
+    // For intern level: 50% easy, 30% medium, 20% hard
+    const totalQuestions = session.total_questions;
+    const easyCount = Math.ceil(totalQuestions * 0.5); // 50% easy
+    const mediumCount = Math.ceil(totalQuestions * 0.3); // 30% medium
+    const hardCount = totalQuestions - easyCount - mediumCount; // Remaining for hard
+
+    console.log('🎯 Target distribution:', {
+      easy: easyCount,
+      medium: mediumCount,
+      hard: hardCount,
+      total: easyCount + mediumCount + hardCount
+    });
+
+    // Select questions with proper distribution
+    const selectedQuestions: ExamQuestion[] = [];
+
+    // Helper function to shuffle array and select random questions
+    const shuffleAndSelect = (questions: ExamQuestion[], count: number): ExamQuestion[] => {
+      const shuffled = [...questions].sort(() => Math.random() - 0.5);
+      return shuffled.slice(0, Math.min(count, shuffled.length));
+    };
+
+    // Add easy questions
+    if (questionsByDifficulty.easy.length > 0 && easyCount > 0) {
+      const selectedEasy = shuffleAndSelect(questionsByDifficulty.easy, easyCount);
+      selectedQuestions.push(...selectedEasy);
+      console.log('✅ Selected easy questions:', selectedEasy.length);
+    }
+
+    // Add medium questions
+    if (questionsByDifficulty.medium.length > 0 && mediumCount > 0) {
+      const selectedMedium = shuffleAndSelect(questionsByDifficulty.medium, mediumCount);
+      selectedQuestions.push(...selectedMedium);
+      console.log('✅ Selected medium questions:', selectedMedium.length);
+    }
+
+    // Add hard questions
+    if (questionsByDifficulty.hard.length > 0 && hardCount > 0) {
+      const selectedHard = shuffleAndSelect(questionsByDifficulty.hard, hardCount);
+      selectedQuestions.push(...selectedHard);
+      console.log('✅ Selected hard questions:', selectedHard.length);
+    }
+
+    // If we don't have enough questions with the ideal distribution, fill with available questions
+    if (selectedQuestions.length < totalQuestions) {
+      const remainingNeeded = totalQuestions - selectedQuestions.length;
+      const allRemainingQuestions = allQuestions.filter(q => 
+        !selectedQuestions.some(selected => selected.id === q.id)
+      );
+      
+      const additionalQuestions = shuffleAndSelect(allRemainingQuestions, remainingNeeded);
+      selectedQuestions.push(...additionalQuestions);
+      console.log('📝 Added additional questions:', additionalQuestions.length);
+    }
+
+    // Shuffle the final selection to randomize order
+    const finalQuestions = selectedQuestions.sort(() => Math.random() - 0.5);
+
+    console.log('🎉 Final question selection:', {
+      total: finalQuestions.length,
+      easy: finalQuestions.filter(q => q.difficulty_level === 'easy').length,
+      medium: finalQuestions.filter(q => q.difficulty_level === 'medium').length,
+      hard: finalQuestions.filter(q => q.difficulty_level === 'hard').length
+    });
+
+    return finalQuestions;
   }
 
   /**
