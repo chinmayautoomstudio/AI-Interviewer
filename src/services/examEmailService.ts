@@ -53,7 +53,7 @@ export class ExamEmailService {
           .exam-details { background: #f8f9fa; padding: 20px; border-radius: 8px; margin: 20px 0; }
           .exam-link { background: #e8f5e8; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #14B8A6; }
           .instructions { background: #fff3cd; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #ffc107; }
-          .btn { background: #14B8A6; color: white; padding: 15px 30px; text-decoration: none; border-radius: 8px; display: inline-block; font-weight: bold; font-size: 16px; }
+          .btn { background: #14B8A6; color: #ffffff !important; padding: 15px 30px; text-decoration: none; border-radius: 8px; display: inline-block; font-weight: bold; font-size: 16px; }
           .footer { text-align: center; margin-top: 30px; color: #666; font-size: 12px; }
           table { width: 100%; border-collapse: collapse; }
           td { padding: 8px 0; }
@@ -103,7 +103,7 @@ export class ExamEmailService {
               <h3 style="color: #14B8A6; margin-top: 0;">Access Your Exam</h3>
               <p style="margin-bottom: 15px;">Click the button below to start your exam:</p>
               <div style="text-align: center;">
-                <a href="${examUrl}" class="btn">Start Exam Now</a>
+                <a href="${examUrl}" class="btn" style="color: #ffffff !important;">Start Exam Now</a>
               </div>
               <p style="margin-top: 15px; font-size: 12px; color: #666;">
                 Or copy and paste this link in your browser:<br>
@@ -190,7 +190,7 @@ ${data.customMessage ? `Additional Information: ${data.customMessage}` : ''}
 Good luck!
 
 Best regards,
-HR Team
+AI HR Saathi Team
       `;
 
       // Try to send email via Netlify function with fallback
