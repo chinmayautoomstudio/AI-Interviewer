@@ -19,6 +19,8 @@ import CreateExamModal from '../../components/exam/CreateExamModal';
 import EmailInvitationModal from '../../components/exam/EmailInvitationModal';
 import IPDetectionTest from '../../components/test/IPDetectionTest';
 import { supabase } from '../../services/supabase';
+import { getButtonClass, getIconClass, getButtonTextClass } from '../../styles/buttonStyles';
+import { examSecurityService } from '../../services/examSecurityService';
 
 interface ExamStats {
   totalQuestions: number;
@@ -250,88 +252,107 @@ const ExamDashboardPage: React.FC = () => {
   }
 
   return (
-    <div className="p-3 sm:p-4 lg:p-6">
-      {/* Success Message for Created Exam */}
-      {createdExamToken && (
-        <div className="mb-4 sm:mb-6 p-3 sm:p-4 bg-green-50 border border-green-200 rounded-lg">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-3 sm:space-y-0">
-            <div className="flex items-center space-x-2 sm:space-x-3">
-              <div className="p-1.5 sm:p-2 bg-green-100 rounded-lg flex-shrink-0">
-                <CheckCircle className="w-4 h-4 sm:w-5 sm:h-5 text-green-600" />
+    <div className="min-h-screen bg-gray-50 overflow-x-hidden">
+      <div className="w-full max-w-full md:max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 overflow-x-hidden">
+        {/* Success Message for Created Exam */}
+        {createdExamToken && (
+          <div className="mb-4 sm:mb-6 p-3 sm:p-4 bg-green-50 border border-green-200 rounded-lg">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-3 sm:space-y-0">
+              <div className="flex items-center space-x-2 sm:space-x-3">
+                <div className="p-1.5 sm:p-2 bg-green-100 rounded-lg flex-shrink-0">
+                  <CheckCircle className="w-4 h-4 sm:w-5 sm:h-5 text-green-600" />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <h3 className="font-semibold text-green-900 text-sm sm:text-base">Exam Created Successfully!</h3>
+                  <p className="text-xs sm:text-sm text-green-700">Share this link with the candidate to start the exam</p>
+                </div>
               </div>
-              <div className="min-w-0 flex-1">
-                <h3 className="font-semibold text-green-900 text-sm sm:text-base">Exam Created Successfully!</h3>
-                <p className="text-xs sm:text-sm text-green-700">Share this link with the candidate to start the exam</p>
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center space-y-2 sm:space-y-0 sm:space-x-2">
+                <button
+                  onClick={copyExamLink}
+                  className={getButtonClass('success')}
+                >
+                  <Copy className={getIconClass('success')} />
+                  <span>Copy Link</span>
+                </button>
+                <button
+                  onClick={openExamLink}
+                  className={getButtonClass('primary')}
+                >
+                  <ExternalLink className={getIconClass('primary')} />
+                  <span>Open Exam</span>
+                </button>
               </div>
             </div>
-            <div className="flex flex-col sm:flex-row items-stretch sm:items-center space-y-2 sm:space-y-0 sm:space-x-2">
-              <button
-                onClick={copyExamLink}
-                className="flex items-center justify-center space-x-1 sm:space-x-2 px-3 py-2 text-xs sm:text-sm bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
-              >
-                <Copy className="w-3 h-3 sm:w-4 sm:h-4" />
-                <span>Copy Link</span>
-              </button>
-              <button
-                onClick={openExamLink}
-                className="flex items-center justify-center space-x-1 sm:space-x-2 px-3 py-2 text-xs sm:text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-              >
-                <ExternalLink className="w-3 h-3 sm:w-4 sm:h-4" />
-                <span>Open Exam</span>
-              </button>
+            <div className="mt-3 p-2 sm:p-3 bg-white rounded-lg border">
+              <p className="text-xs sm:text-sm text-gray-600 mb-1">Exam Link:</p>
+              <code className="text-xs sm:text-sm text-gray-800 break-all">
+                {`${window.location.origin}/candidate/exam/${createdExamToken}`}
+              </code>
             </div>
           </div>
-          <div className="mt-3 p-2 sm:p-3 bg-white rounded-lg border">
-            <p className="text-xs sm:text-sm text-gray-600 mb-1">Exam Link:</p>
-            <code className="text-xs sm:text-sm text-gray-800 break-all">
-              {`${window.location.origin}/candidate/exam/${createdExamToken}`}
-            </code>
+        )}
+        
+        {/* Header */}
+        <div className="mb-4 sm:mb-6">
+          <div className="mb-3 sm:mb-4">
+            <h1 className="text-lg sm:text-xl md:text-2xl font-bold text-gray-900">Exam Dashboard</h1>
+            <p className="text-sm sm:text-base text-gray-600 mt-1">Overview of your exam system</p>
           </div>
-        </div>
-      )}
-      
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-4 sm:mb-6 space-y-3 sm:space-y-0">
-        <div className="min-w-0 flex-1">
-          <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Exam Dashboard</h1>
-          <p className="text-sm sm:text-base text-gray-600 mt-1">Overview of your exam system</p>
-        </div>
-        <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-2 sm:space-x-3">
+          <div className="flex flex-wrap gap-2 sm:gap-3 w-full">
           <button 
             onClick={loadDashboardData}
-            className="bg-gray-600 text-white px-3 sm:px-4 py-2 rounded-lg hover:bg-gray-700 transition-colors flex items-center justify-center space-x-1 sm:space-x-2 text-sm"
+            className={getButtonClass('secondary')}
           >
-            <RefreshCw className="h-3 w-3 sm:h-4 sm:w-4" />
-            <span>Refresh</span>
+            <RefreshCw className={getIconClass('secondary')} />
+            <span className={getButtonTextClass()}>Refresh</span>
           </button>
           <button 
             onClick={() => navigate('/exams/create')}
-            className="bg-blue-600 text-white px-3 sm:px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors flex items-center justify-center space-x-1 sm:space-x-2 text-sm"
+            className={getButtonClass('primary')}
           >
-            <Plus className="h-3 w-3 sm:h-4 sm:w-4" />
-            <span>Create Exam</span>
+            <Plus className={getIconClass('primary')} />
+            <span className={getButtonTextClass()}>
+              <span className="hidden sm:inline">Create Exam</span>
+              <span className="sm:hidden">Create</span>
+            </span>
           </button>
           <button 
             onClick={() => setIsCreateExamModalOpen(true)}
-            className="bg-gray-600 text-white px-3 sm:px-4 py-2 rounded-lg hover:bg-gray-700 transition-colors flex items-center justify-center space-x-1 sm:space-x-2 text-sm"
+            className={getButtonClass('secondary')}
           >
-            <Calendar className="h-3 w-3 sm:h-4 sm:w-4" />
-            <span className="hidden sm:inline">Quick Create</span>
-            <span className="sm:hidden">Quick</span>
+            <Calendar className={getIconClass('secondary')} />
+            <span className={getButtonTextClass()}>
+              <span className="hidden sm:inline">Quick Create</span>
+              <span className="sm:hidden">Quick</span>
+            </span>
           </button>
           <button 
             onClick={() => setIsIPTestModalOpen(true)}
-            className="bg-green-600 text-white px-3 sm:px-4 py-2 rounded-lg hover:bg-green-700 transition-colors flex items-center justify-center space-x-1 sm:space-x-2 text-sm"
+            className={getButtonClass('success')}
           >
-            <CheckCircle className="h-3 w-3 sm:h-4 sm:w-4" />
-            <span className="hidden sm:inline">Test IP</span>
-            <span className="sm:hidden">IP</span>
+            <CheckCircle className={getIconClass('success')} />
+            <span className={getButtonTextClass()}>
+              <span className="hidden sm:inline">Test IP</span>
+              <span className="sm:hidden">IP</span>
+            </span>
+          </button>
+          <button 
+            onClick={() => {
+              examSecurityService.disableAllSecurityForDebugging();
+              alert('🔓 All security measures disabled for mobile debugging!\n\nYou can now take screenshots on mobile devices.\n\nRemember to re-enable security after debugging.');
+            }}
+            className="bg-orange-500 text-white px-3 py-2 rounded-lg hover:bg-orange-600 transition-colors flex items-center space-x-1 sm:space-x-2 text-sm min-h-[44px] sm:min-h-0 flex-shrink-0"
+          >
+            <RefreshCw className="w-4 h-4" />
+            <span className="hidden sm:inline">Debug Mode</span>
+            <span className="sm:hidden">Debug</span>
           </button>
         </div>
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 lg:gap-6 mb-6 sm:mb-8">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4 mb-6">
         <div className="bg-white p-4 sm:p-6 rounded-lg shadow-sm border">
           <div className="flex items-center justify-between">
             <div className="min-w-0 flex-1">
@@ -443,26 +464,29 @@ const ExamDashboardPage: React.FC = () => {
         </div>
         
         {recentSessions.length > 0 ? (
-          <div className="overflow-x-auto">
-            <table className="w-full">
+          <>
+            {/* Desktop Table View */}
+            <div className="hidden md:block overflow-x-auto">
+            <div className="inline-block min-w-full align-middle">
+              <table className="min-w-full divide-y divide-gray-200">
               <thead className="bg-gray-50">
                 <tr>
-                  <th className="px-3 sm:px-6 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-3 sm:px-6 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
                     Candidate
                   </th>
-                  <th className="px-3 sm:px-6 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-3 sm:px-6 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
                     Job Title
                   </th>
-                  <th className="px-3 sm:px-6 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-3 sm:px-6 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
                     Status
                   </th>
-                  <th className="px-3 sm:px-6 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-3 sm:px-6 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
                     Score
                   </th>
-                  <th className="px-3 sm:px-6 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-3 sm:px-6 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
                     Started
                   </th>
-                  <th className="px-3 sm:px-6 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-3 sm:px-6 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
                     Actions
                   </th>
                 </tr>
@@ -513,7 +537,52 @@ const ExamDashboardPage: React.FC = () => {
                 ))}
               </tbody>
             </table>
-          </div>
+            </div>
+            </div>
+
+            {/* Mobile Card View */}
+            <div className="md:hidden space-y-3 p-4">
+              {recentSessions.map((session) => (
+                <div key={session.id} className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm">
+                  <div className="flex items-start justify-between mb-3">
+                    <div className="min-w-0 flex-1">
+                      <h3 className="text-sm font-medium text-gray-900 truncate">
+                        {session.candidateName}
+                      </h3>
+                      <p className="text-xs text-gray-600 truncate">{session.jobTitle}</p>
+                    </div>
+                    <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(session.status)}`}>
+                      {getStatusText(session.status)}
+                    </span>
+                  </div>
+                  
+                  <div className="grid grid-cols-2 gap-3 text-xs">
+                    <div>
+                      <span className="text-gray-500">Score:</span>
+                      <span className="ml-1 font-medium text-gray-900">
+                        {session.score ? `${session.score}%` : '-'}
+                      </span>
+                    </div>
+                    <div>
+                      <span className="text-gray-500">Started:</span>
+                      <span className="ml-1 font-medium text-gray-900">
+                        {session.startedAt ? new Date(session.startedAt).toLocaleDateString() : '-'}
+                      </span>
+                    </div>
+                  </div>
+                  
+                  <div className="mt-3 pt-3 border-t border-gray-100">
+                    <button
+                      onClick={() => navigate(`/exams/sessions/${session.id}`)}
+                      className="text-blue-600 hover:text-blue-900 text-xs font-medium"
+                    >
+                      View Details →
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </>
         ) : (
           <div className="p-6 sm:p-8 text-center">
             <div className="text-gray-500 mb-4">
@@ -599,8 +668,8 @@ const ExamDashboardPage: React.FC = () => {
 
       {/* IP Detection Test Modal */}
       {isIPTestModalOpen && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50 overflow-y-auto">
+          <div className="bg-white rounded-lg w-full max-w-md sm:max-w-lg md:max-w-xl lg:max-w-4xl max-h-[90vh] overflow-y-auto">
             <div className="p-4 border-b border-gray-200 flex justify-between items-center">
               <h2 className="text-xl font-semibold text-gray-900">IP Detection Test</h2>
               <button
@@ -616,6 +685,7 @@ const ExamDashboardPage: React.FC = () => {
           </div>
         </div>
       )}
+      </div>
     </div>
   );
 };

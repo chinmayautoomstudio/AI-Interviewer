@@ -4,7 +4,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { 
-  ExamTimer, 
   MCQQuestion, 
   TextQuestion, 
   QuestionNavigator, 
@@ -20,13 +19,15 @@ import { examService } from '../services/examService';
 import { getClientInfo } from '../utils/ipDetection';
 import { SecurityViolation } from '../services/examSecurityService';
 import { examSecurityService } from '../services/examSecurityService';
+import { getButtonClass, getIconClass } from '../styles/buttonStyles';
 import { 
   ArrowLeft, 
   ArrowRight, 
   Save, 
   CheckCircle, 
   AlertTriangle,
-  Loader2 
+  Loader2,
+  Clock
 } from 'lucide-react';
 
 export const CandidateExamPage: React.FC = () => {
@@ -40,12 +41,12 @@ export const CandidateExamPage: React.FC = () => {
   const [answers, setAnswers] = useState<Map<string, string>>(new Map());
   const [answeredQuestions, setAnsweredQuestions] = useState<Set<number>>(new Set());
   const [timeRemaining, setTimeRemaining] = useState(0); // minutes - will be set from session
+  const [examStarted, setExamStarted] = useState(false); // Track if exam has actually started
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showInstructions, setShowInstructions] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [autoSaveStatus, setAutoSaveStatus] = useState<'saved' | 'saving' | 'error'>('saved');
-  const [examStarted, setExamStarted] = useState(false);
 
   // Security violation handler
   const handleSecurityViolation = useCallback((violation: SecurityViolation) => {
@@ -178,6 +179,15 @@ export const CandidateExamPage: React.FC = () => {
 
         setSession(examSession);
 
+        // Skip instructions if exam is already in progress (handles page refresh)
+        if (examSession.status === 'in_progress') {
+          console.log('✅ Exam already in progress - skipping instructions');
+          setShowInstructions(false);
+          setExamStarted(true);
+        } else {
+          setShowInstructions(true);
+        }
+
         // Start exam if not already started
         if (examSession.status === 'pending') {
           try {
@@ -208,9 +218,66 @@ export const CandidateExamPage: React.FC = () => {
 
         // Load questions
         console.log('🔄 Loading questions for session:', examSession.id);
-        const examQuestions = await examService.getExamQuestions(examSession.id);
+        let examQuestions = await examService.getExamQuestions(examSession.id);
         console.log('📚 Loaded questions:', examQuestions.length);
+
+        // Ensure stable question order across reloads (persisted per session)
+        const orderKey = `exam_question_order_${examSession.id}`;
+        const storedOrder = localStorage.getItem(orderKey);
+        if (storedOrder) {
+          const orderArr: string[] = JSON.parse(storedOrder);
+          // Reorder questions to match stored order; append any new ones to the end
+          const idToQuestion = new Map(examQuestions.map(q => [q.id, q]));
+          const reordered: typeof examQuestions = [];
+          orderArr.forEach(id => {
+            const q = idToQuestion.get(id);
+            if (q) {
+              reordered.push(q);
+              idToQuestion.delete(id);
+            }
+          });
+          // Add any remaining (new) questions
+          reordered.push(...Array.from(idToQuestion.values()));
+          examQuestions = reordered;
+        } else {
+          // First load - store order
+          localStorage.setItem(orderKey, JSON.stringify(examQuestions.map(q => q.id)));
+        }
+
         setQuestions(examQuestions);
+
+        // Restore saved progress (answers and current index) from DB and localStorage
+        try {
+          const existingResponses = await examService.getSessionResponses(examSession.id);
+          if (existingResponses && existingResponses.length > 0) {
+            const restoredAnswers = new Map<string, string>();
+            const restoredAnsweredIdx = new Set<number>();
+            existingResponses.forEach(r => {
+              if (r.question_id && r.answer_text) {
+                restoredAnswers.set(r.question_id, r.answer_text);
+                const idx = examQuestions.findIndex(q => q.id === r.question_id);
+                if (idx !== -1) restoredAnsweredIdx.add(idx);
+              }
+            });
+            if (restoredAnswers.size > 0) setAnswers(restoredAnswers);
+            if (restoredAnsweredIdx.size > 0) setAnsweredQuestions(restoredAnsweredIdx);
+          }
+
+          const lsKey = `exam_progress_${examSession.id}`;
+          const saved = localStorage.getItem(lsKey);
+          if (saved) {
+            const parsed = JSON.parse(saved);
+            if (typeof parsed.currentIndex === 'number') {
+              setCurrentQuestionIndex(Math.max(0, Math.min(examQuestions.length - 1, parsed.currentIndex)));
+            }
+            if (parsed.answers && typeof parsed.answers === 'object') {
+              const map = new Map<string, string>(Object.entries(parsed.answers));
+              if (map.size > 0) setAnswers(map);
+            }
+          }
+        } catch (restoreErr) {
+          console.warn('⚠️ Failed to restore progress:', restoreErr);
+        }
 
         // Calculate time remaining
         if (examSession.started_at) {
@@ -228,6 +295,7 @@ export const CandidateExamPage: React.FC = () => {
         } else {
           console.log('⏰ Initial time remaining:', examSession.duration_minutes);
           setTimeRemaining(examSession.duration_minutes);
+          // Don't start timer yet - wait for exam to actually begin
         }
 
         setIsLoading(false);
@@ -263,6 +331,26 @@ export const CandidateExamPage: React.FC = () => {
     };
   }, [session, autoSave]);
 
+  // Start exam timer when exam actually begins
+  const startExamTimer = useCallback(() => {
+    if (!examStarted && session) {
+      console.log('🎯 Starting exam timer - exam has begun');
+      setExamStarted(true);
+      
+      // If exam was already started, calculate remaining time
+      if (session.started_at) {
+        const now = new Date();
+        const startTime = new Date(session.started_at);
+        const elapsedMinutes = (now.getTime() - startTime.getTime()) / (1000 * 60);
+        const remaining = Math.max(0, session.duration_minutes - elapsedMinutes);
+        setTimeRemaining(remaining);
+      } else {
+        // Fresh start
+        setTimeRemaining(session.duration_minutes);
+      }
+    }
+  }, [examStarted, session]);
+
   // Handle time up
   const handleTimeUp = useCallback(async () => {
     if (!session) return;
@@ -281,9 +369,9 @@ export const CandidateExamPage: React.FC = () => {
     }
   }, [session, navigate, handleExamSubmission]);
 
-  // Timer countdown
+  // Timer countdown - only run when exam has started
   useEffect(() => {
-    if (!session || session.status !== 'in_progress' || timeRemaining <= 0) return;
+    if (!session || session.status !== 'in_progress' || timeRemaining <= 0 || !examStarted) return;
 
     const interval = setInterval(() => {
       setTimeRemaining(prev => {
@@ -297,7 +385,57 @@ export const CandidateExamPage: React.FC = () => {
     }, 1000);
 
     return () => clearInterval(interval);
-  }, [session, timeRemaining, handleTimeUp]);
+  }, [session, timeRemaining, handleTimeUp, examStarted]);
+
+  // Start timer when exam begins
+  useEffect(() => {
+    if (!showInstructions && questions.length > 0 && !examStarted) {
+      startExamTimer();
+    }
+  }, [showInstructions, questions.length, examStarted, startExamTimer]);
+
+  // Manual save function for current question
+  const handleSaveResponse = useCallback(async () => {
+    if (!session || questions.length === 0) {
+      alert('No question to save. Please select an answer first.');
+      return;
+    }
+
+    const question = questions[currentQuestionIndex];
+    if (!question) {
+      alert('No question to save. Please select an answer first.');
+      return;
+    }
+
+    const answer = answers.get(question.id);
+    if (!answer || answer.trim() === '') {
+      alert('Please select an answer before saving.');
+      return;
+    }
+
+    try {
+      setAutoSaveStatus('saving');
+      console.log('💾 Manually saving response for question:', question.id);
+      
+      await examService.submitAnswer({
+        exam_session_id: session.id,
+        question_id: question.id,
+        answer_text: answer
+      });
+      
+      console.log('✅ Response manually saved successfully');
+      setAutoSaveStatus('saved');
+      
+      // Show success feedback
+      setTimeout(() => {
+        setAutoSaveStatus('saved');
+      }, 2000);
+    } catch (error) {
+      console.error('❌ Error manually saving response:', error);
+      setAutoSaveStatus('error');
+      alert(`Failed to save response: ${error instanceof Error ? error.message : 'Unknown error'}. Please try again.`);
+    }
+  }, [session, questions, currentQuestionIndex, answers]);
 
   // Handle answer selection
   const handleAnswerSelect = async (questionId: string, answer: string) => {
@@ -368,6 +506,20 @@ export const CandidateExamPage: React.FC = () => {
       setAutoSaveStatus('error');
     }
   };
+
+  // Persist progress to localStorage whenever answers or index changes
+  useEffect(() => {
+    if (!session || questions.length === 0) return;
+    const lsKey = `exam_progress_${session.id}`;
+    const obj: any = {
+      currentIndex: currentQuestionIndex,
+      answers: Object.fromEntries(answers.entries()),
+      updatedAt: Date.now()
+    };
+    try {
+      localStorage.setItem(lsKey, JSON.stringify(obj));
+    } catch {}
+  }, [session, currentQuestionIndex, answers, questions.length]);
 
   // Handle manual submit
   const handleSubmitExam = async () => {
@@ -547,17 +699,17 @@ export const CandidateExamPage: React.FC = () => {
               <button
                 onClick={handleSubmitExam}
                 disabled={isSubmitting}
-                className="px-3 sm:px-6 py-2 sm:py-2.5 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-lg sm:rounded-xl hover:from-green-700 hover:to-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-1 sm:space-x-2 shadow-lg hover:shadow-xl transition-all duration-200 text-xs sm:text-sm"
+                className={`${getButtonClass('submit')} ${isSubmitting ? 'opacity-50 cursor-not-allowed' : ''}`}
               >
                 {isSubmitting ? (
                   <>
-                    <Loader2 className="w-3 h-3 sm:w-4 sm:h-4 animate-spin" />
+                    <Loader2 className={`${getIconClass('submit')} animate-spin`} />
                     <span className="hidden sm:inline">Submitting...</span>
                     <span className="sm:hidden">Submit</span>
                   </>
                 ) : (
                   <>
-                    <Save className="w-3 h-3 sm:w-4 sm:h-4" />
+                    <Save className={getIconClass('submit')} />
                     <span className="hidden sm:inline">
                       Submit Exam {answers.size < questions.length ? `(${questions.length - answers.size} unanswered)` : ''}
                     </span>
@@ -576,34 +728,58 @@ export const CandidateExamPage: React.FC = () => {
         <div className="grid grid-cols-1 xl:grid-cols-4 gap-4 sm:gap-6 h-full">
           {/* Main content */}
           <div className="xl:col-span-3 flex flex-col space-y-4 sm:space-y-6">
-            {/* Timer */}
-            <div className="bg-white/80 backdrop-blur-sm rounded-xl sm:rounded-2xl border border-gray-200/50 shadow-lg p-4 sm:p-6">
-                <ExamTimer
-                  duration_minutes={Math.floor(timeRemaining)}
-                  onTimeUp={handleTimeUp}
-                  onWarning={(timeRemaining) => {
-                    if (timeRemaining <= 60) {
-                      // Show critical warning
-                      console.log('Critical: Less than 1 minute remaining');
-                    } else if (timeRemaining <= 300) {
-                      // Show warning
-                      console.log('Warning: Less than 5 minutes remaining');
-                    }
-                  }}
-                  isActive={session?.status === 'in_progress'}
-                />
+            {/* Custom Timer with Working Progress Bar */}
+            <div className="bg-white/80 backdrop-blur-sm rounded-lg sm:rounded-xl border border-gray-200/50 shadow-sm p-3 sm:p-4">
+              <div className="flex items-center space-x-2 sm:space-x-4">
+                <Clock className="w-5 h-5 sm:w-6 sm:h-6 text-blue-600" />
+                
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center justify-between mb-1 sm:mb-2">
+                    <span className="text-lg sm:text-xl font-bold text-blue-600 font-mono">
+                      {Math.floor(timeRemaining)}:{(Math.round((timeRemaining % 1) * 60)).toString().padStart(2, '0')}
+                    </span>
+                    <span className="text-xs sm:text-sm text-gray-600 font-medium hidden sm:inline">
+                      Time Remaining
+                    </span>
+                  </div>
+                  
+                  {/* Progress bar - shows elapsed time */}
+                  <div className="w-full bg-gray-200 rounded-full h-1.5 sm:h-2">
+                    <div
+                      className="bg-gradient-to-r from-blue-500 to-blue-600 h-1.5 sm:h-2 rounded-full transition-all duration-1000"
+                      style={{ 
+                        width: `${Math.max(0, Math.min(100, ((session?.duration_minutes || 30) - timeRemaining) / (session?.duration_minutes || 30) * 100))}%` 
+                      }}
+                    />
+                  </div>
+                </div>
+
+                {/* Warning indicators */}
+                {timeRemaining <= 1 && (
+                  <div className="flex items-center space-x-1 text-red-600 bg-red-50 px-2 py-1 rounded-lg border border-red-200">
+                    <AlertTriangle className="w-3 h-3" />
+                    <span className="text-xs font-semibold">1 min!</span>
+                  </div>
+                )}
+                {timeRemaining <= 5 && timeRemaining > 1 && (
+                  <div className="flex items-center space-x-1 text-yellow-600 bg-yellow-50 px-2 py-1 rounded-lg border border-yellow-200">
+                    <AlertTriangle className="w-3 h-3" />
+                    <span className="text-xs font-semibold">5 min!</span>
+                  </div>
+                )}
+              </div>
             </div>
 
-            {/* Unanswered Questions Warning */}
+            {/* Unanswered Questions Warning - Mobile Optimized */}
             {answers.size < questions.length && (
-              <div className="bg-yellow-50 border border-yellow-200 rounded-xl sm:rounded-2xl p-4 sm:p-6 shadow-lg">
-                <div className="flex items-center space-x-3">
-                  <AlertTriangle className="w-5 h-5 sm:w-6 sm:h-6 text-yellow-600" />
-                  <div>
-                    <h3 className="text-sm sm:text-base font-semibold text-yellow-800">
+              <div className="bg-yellow-50 border border-yellow-200 rounded-lg sm:rounded-xl p-3 sm:p-4 shadow-sm">
+                <div className="flex items-center space-x-2 sm:space-x-3">
+                  <AlertTriangle className="w-4 h-4 sm:w-5 sm:h-5 text-yellow-600 flex-shrink-0" />
+                  <div className="min-w-0 flex-1">
+                    <h3 className="text-xs sm:text-sm font-semibold text-yellow-800">
                       {questions.length - answers.size} Question{questions.length - answers.size > 1 ? 's' : ''} Remaining
                     </h3>
-                    <p className="text-xs sm:text-sm text-yellow-700 mt-1">
+                    <p className="text-xs text-yellow-700 mt-1 hidden sm:block">
                       You have {questions.length - answers.size} unanswered question{questions.length - answers.size > 1 ? 's' : ''}. 
                       Make sure to answer all questions before submitting your exam.
                     </p>
@@ -612,8 +788,8 @@ export const CandidateExamPage: React.FC = () => {
               </div>
             )}
 
-            {/* Debug Panel - Remove this in production */}
-            {process.env.NODE_ENV === 'development' && (
+            {/* Debug Panel - COMPLETELY HIDDEN FOR CANDIDATES */}
+            {false && process.env.NODE_ENV === 'development' && (
               <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-3 sm:p-4 mb-4 sm:mb-6">
                 <h3 className="font-semibold text-yellow-800 mb-2 text-sm sm:text-base">🔍 Debug Info</h3>
                 <div className="text-xs sm:text-sm text-yellow-700 space-y-1">
@@ -627,72 +803,107 @@ export const CandidateExamPage: React.FC = () => {
               </div>
             )}
 
-            {/* Current question */}
+            {/* Current question - Mobile Optimized */}
             {questions.length === 0 ? (
-              <div className="bg-white/80 backdrop-blur-sm rounded-xl sm:rounded-2xl border border-gray-200/50 shadow-lg p-6 sm:p-8 text-center">
+              <div className="bg-white/80 backdrop-blur-sm rounded-lg sm:rounded-xl border border-gray-200/50 shadow-sm p-4 sm:p-6 text-center">
                 <div className="text-gray-500 mb-4">
-                  <div className="text-lg sm:text-xl font-semibold mb-2">No Questions Available</div>
-                  <p className="text-sm sm:text-base">Loading questions for this exam...</p>
-                </div>
-                <div className="text-xs sm:text-sm text-gray-400">
-                  Debug: Questions array length: {questions.length}
+                  <div className="text-base sm:text-lg font-semibold mb-2">No Questions Available</div>
+                  <p className="text-sm">Loading questions for this exam...</p>
                 </div>
               </div>
             ) : currentQuestion ? (
-              <div className="bg-white/80 backdrop-blur-sm rounded-xl sm:rounded-2xl border border-gray-200/50 shadow-lg overflow-hidden">
-                {currentQuestion.question_type === 'mcq' ? (
-                  <MCQQuestion
-                    question={currentQuestion}
-                    selectedAnswer={currentAnswer}
-                    onAnswerSelect={(answer) => handleAnswerSelect(currentQuestion.id, answer)}
-                    disabled={session?.status !== 'in_progress'}
-                  />
-                ) : (
-                  <TextQuestion
-                    question={currentQuestion}
-                    answer={currentAnswer}
-                    onAnswerChange={(answer) => handleAnswerSelect(currentQuestion.id, answer)}
-                    disabled={session?.status !== 'in_progress'}
-                    maxLength={1000}
-                  />
+              <div className="space-y-4 pb-24 xl:pb-0">
+                <div className="bg-white/80 backdrop-blur-sm rounded-lg sm:rounded-xl border border-gray-200/50 shadow-sm overflow-hidden">
+                  {/* Question Number Badge */}
+                  <div className="px-4 sm:px-6 lg:px-8 pt-4 sm:pt-6 pb-2 sm:pb-3">
+                    <div className="flex items-center justify-between">
+                      <span className="inline-flex items-center px-3 py-1.5 rounded-full text-sm sm:text-base font-semibold bg-gradient-to-r from-blue-100 to-indigo-100 text-blue-800 border border-blue-200">
+                        Question {currentQuestionIndex + 1} of {questions.length}
+                      </span>
+                    </div>
+                  </div>
+                  
+                  {currentQuestion.question_type === 'mcq' ? (
+                    <MCQQuestion
+                      question={currentQuestion}
+                      selectedAnswer={currentAnswer}
+                      onAnswerSelect={(answer) => handleAnswerSelect(currentQuestion.id, answer)}
+                      disabled={session?.status !== 'in_progress'}
+                    />
+                  ) : (
+                    <TextQuestion
+                      question={currentQuestion}
+                      answer={currentAnswer}
+                      onAnswerChange={(answer) => handleAnswerSelect(currentQuestion.id, answer)}
+                      disabled={session?.status !== 'in_progress'}
+                      maxLength={1000}
+                    />
+                  )}
+                </div>
+
+                {/* Save Response Button - Hidden on mobile, visible on desktop */}
+                {session?.status === 'in_progress' && (
+                  <div className="hidden xl:flex justify-start">
+                    <button
+                      onClick={handleSaveResponse}
+                      disabled={autoSaveStatus === 'saving' || !currentAnswer || !currentAnswer.trim()}
+                      className={`flex items-center justify-center space-x-2 px-6 py-3 rounded-lg font-semibold text-base transition-all duration-200 shadow-lg hover:shadow-xl ${
+                        autoSaveStatus === 'saving' || !currentAnswer || !currentAnswer.trim()
+                          ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                          : 'bg-gradient-to-r from-green-600 to-emerald-600 text-white hover:from-green-700 hover:to-emerald-700 active:scale-95'
+                      }`}
+                    >
+                      {autoSaveStatus === 'saving' ? (
+                        <>
+                          <Loader2 className="w-5 h-5 animate-spin" />
+                          <span>Saving...</span>
+                        </>
+                      ) : autoSaveStatus === 'saved' ? (
+                        <>
+                          <CheckCircle className="w-5 h-5" />
+                          <span>Response Saved ✓</span>
+                        </>
+                      ) : (
+                        <>
+                          <Save className="w-5 h-5" />
+                          <span>Save Response</span>
+                        </>
+                      )}
+                    </button>
+                  </div>
                 )}
               </div>
             ) : (
-              <div className="bg-white/80 backdrop-blur-sm rounded-xl sm:rounded-2xl border border-gray-200/50 shadow-lg p-6 sm:p-8 text-center">
+              <div className="bg-white/80 backdrop-blur-sm rounded-lg sm:rounded-xl border border-gray-200/50 shadow-sm p-4 sm:p-6 text-center">
                 <div className="text-gray-500 mb-4">
-                  <div className="text-lg sm:text-xl font-semibold mb-2">Question Not Found</div>
-                  <p className="text-sm sm:text-base">Unable to load the current question.</p>
-                </div>
-                <div className="text-xs sm:text-sm text-gray-400">
-                  Debug: Current index: {currentQuestionIndex}, Questions length: {questions.length}
+                  <div className="text-base sm:text-lg font-semibold mb-2">Question Not Found</div>
+                  <p className="text-sm">Unable to load the current question.</p>
                 </div>
               </div>
             )}
 
-            {/* Navigation buttons */}
-            <div className="flex items-center justify-between bg-white/80 backdrop-blur-sm rounded-xl sm:rounded-2xl border border-gray-200/50 shadow-lg p-4 sm:p-6">
+            {/* Navigation buttons - Mobile Optimized */}
+            <div className="flex items-center justify-between bg-white/80 backdrop-blur-sm rounded-lg sm:rounded-xl border border-gray-200/50 shadow-sm p-3 sm:p-4">
               <button
                 onClick={handlePreviousQuestion}
                 disabled={currentQuestionIndex === 0}
-                className="flex items-center space-x-1 sm:space-x-2 px-3 sm:px-6 py-2 sm:py-3 bg-gradient-to-r from-gray-100 to-gray-200 text-gray-700 rounded-lg sm:rounded-xl hover:from-gray-200 hover:to-gray-300 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 shadow-md hover:shadow-lg text-sm sm:text-base"
+                className={`flex items-center space-x-1 sm:space-x-2 px-3 sm:px-4 py-2 sm:py-3 rounded-lg font-semibold text-sm sm:text-base transition-all duration-200 bg-gradient-to-r from-gray-100 to-gray-200 text-gray-700 hover:from-gray-200 hover:to-gray-300 shadow-md hover:shadow-lg ${currentQuestionIndex === 0 ? 'opacity-50 cursor-not-allowed' : ''}`}
               >
-                <ArrowLeft className="w-3 h-3 sm:w-4 sm:h-4" />
-                <span className="hidden sm:inline">Previous</span>
-                <span className="sm:hidden">Prev</span>
+                <ArrowLeft className="w-4 h-4 sm:w-5 sm:h-5" />
+                <span>Previous</span>
               </button>
 
-              <div className="text-xs sm:text-sm text-gray-600 bg-gray-50 px-2 sm:px-4 py-1 sm:py-2 rounded-lg">
-                Question {currentQuestionIndex + 1} of {questions.length}
+              <div className="text-xs sm:text-sm text-gray-600 bg-gray-50 px-2 sm:px-3 py-1 sm:py-2 rounded-lg font-medium">
+                Q{currentQuestionIndex + 1}/{questions.length}
               </div>
 
               <button
                 onClick={handleNextQuestion}
                 disabled={currentQuestionIndex === questions.length - 1}
-                className="flex items-center space-x-1 sm:space-x-2 px-3 sm:px-6 py-2 sm:py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-lg sm:rounded-xl hover:from-blue-700 hover:to-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 shadow-md hover:shadow-lg text-sm sm:text-base"
+                className={`flex items-center space-x-1 sm:space-x-2 px-3 sm:px-4 py-2 sm:py-3 rounded-lg font-semibold text-sm sm:text-base transition-all duration-200 bg-gradient-to-r from-blue-600 to-indigo-600 text-white hover:from-blue-700 hover:to-indigo-700 shadow-md hover:shadow-lg ${currentQuestionIndex === questions.length - 1 ? 'opacity-50 cursor-not-allowed' : ''}`}
               >
-                <span className="hidden sm:inline">Next</span>
-                <span className="sm:hidden">Next</span>
-                <ArrowRight className="w-3 h-3 sm:w-4 sm:h-4" />
+                <span>Next</span>
+                <ArrowRight className="w-4 h-4 sm:w-5 sm:h-5" />
               </button>
             </div>
           </div>
@@ -722,33 +933,101 @@ export const CandidateExamPage: React.FC = () => {
             </div>
           </div>
 
-          {/* Mobile Bottom Navigation */}
+          {/* Mobile Bottom Navigation - Simplified */}
           <div className="xl:hidden fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-sm border-t border-gray-200/50 shadow-lg z-20">
-            <div className="px-4 py-3">
-              {/* Mobile Progress Bar */}
-              <div className="mb-3">
+            {/* Save Response Button - Always visible on Mobile when exam is in progress */}
+            {session?.status === 'in_progress' && (
+              <div className="px-3 pt-2 pb-1 border-b border-gray-200">
+                <button
+                  onClick={handleSaveResponse}
+                  disabled={autoSaveStatus === 'saving' || !currentAnswer || !currentAnswer.trim()}
+                  className={`w-full flex items-center justify-center space-x-2 px-4 py-2.5 rounded-lg font-semibold text-sm transition-all duration-200 shadow-md ${
+                    autoSaveStatus === 'saving' || !currentAnswer || !currentAnswer.trim()
+                      ? 'bg-gray-300 text-gray-400 cursor-not-allowed'
+                      : 'bg-gradient-to-r from-green-600 to-emerald-600 text-white hover:from-green-700 hover:to-emerald-700 active:scale-95'
+                  }`}
+                >
+                  {autoSaveStatus === 'saving' ? (
+                    <>
+                      <Loader2 className="w-5 h-5 animate-spin" />
+                      <span>Saving Response...</span>
+                    </>
+                  ) : autoSaveStatus === 'saved' ? (
+                    <>
+                      <CheckCircle className="w-5 h-5" />
+                      <span>✓ Response Saved</span>
+                    </>
+                  ) : (
+                    <>
+                      <Save className="w-5 h-5" />
+                      <span>{currentAnswer && currentAnswer.trim() ? '💾 Save Response' : '💾 Select Answer to Save'}</span>
+                    </>
+                  )}
+                </button>
+              </div>
+            )}
+            
+            <div className="px-3 py-2">
+              {/* Mobile Progress Bar - Compact */}
+              <div className="mb-2">
                 <div className="flex justify-between text-xs text-gray-600 mb-1">
                   <span>Progress</span>
                   <span className="font-semibold">{Math.round((answeredQuestions.size / questions.length) * 100)}%</span>
                 </div>
-                <div className="w-full bg-gray-200 rounded-full h-2">
+                <div className="w-full bg-gray-200 rounded-full h-1.5">
                   <div
-                    className="bg-gradient-to-r from-blue-600 to-indigo-600 h-2 rounded-full transition-all duration-300"
+                    className="bg-gradient-to-r from-blue-600 to-indigo-600 h-1.5 rounded-full transition-all duration-300"
                     style={{ width: `${(answeredQuestions.size / questions.length) * 100}%` }}
                   />
                 </div>
               </div>
 
-              {/* Mobile Question Navigator */}
+              {/* Mobile Navigation Controls */}
+              <div className="flex items-center justify-between mb-2">
+                {/* Previous Button */}
+                <button
+                  onClick={handlePreviousQuestion}
+                  disabled={currentQuestionIndex === 0}
+                  className={`flex items-center space-x-1 px-2 py-1 rounded text-xs font-semibold transition-all duration-200 ${
+                    currentQuestionIndex === 0 
+                      ? 'bg-gray-100 text-gray-400 cursor-not-allowed' 
+                      : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                  }`}
+                >
+                  <ArrowLeft className="w-3 h-3" />
+                  <span>Prev</span>
+                </button>
+
+                {/* Question Counter */}
+                <div className="text-xs text-gray-600 font-medium">
+                  Q{currentQuestionIndex + 1}/{questions.length}
+                </div>
+
+                {/* Next Button */}
+                <button
+                  onClick={handleNextQuestion}
+                  disabled={currentQuestionIndex === questions.length - 1}
+                  className={`flex items-center space-x-1 px-2 py-1 rounded text-xs font-semibold transition-all duration-200 ${
+                    currentQuestionIndex === questions.length - 1 
+                      ? 'bg-gray-100 text-gray-400 cursor-not-allowed' 
+                      : 'bg-blue-600 text-white hover:bg-blue-700'
+                  }`}
+                >
+                  <span>Next</span>
+                  <ArrowRight className="w-3 h-3" />
+                </button>
+              </div>
+
+              {/* Mobile Question Navigator - Compact (scrolls all questions) */}
               <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-2 text-xs text-gray-600">
-                  <CheckCircle className="w-4 h-4 text-green-600" />
-                  <span>{answeredQuestions.size} answered</span>
+                <div className="flex items-center space-x-1 text-xs text-gray-600">
+                  <CheckCircle className="w-3 h-3 text-green-600" />
+                  <span>{answeredQuestions.size}/{questions.length}</span>
                 </div>
                 
-                {/* Mobile Question Grid */}
-                <div className="flex space-x-1">
-                  {questions.slice(0, 5).map((_, index) => {
+                {/* Mobile Question Grid - Compact */}
+                <div className="flex space-x-1 overflow-x-auto no-scrollbar max-w-[70%]">
+                  {questions.map((_, index) => {
                     const questionIndex = index;
                     const isAnswered = answeredQuestions.has(questionIndex);
                     const isCurrent = questionIndex === currentQuestionIndex;
@@ -757,7 +1036,7 @@ export const CandidateExamPage: React.FC = () => {
                       <button
                         key={questionIndex}
                         onClick={() => handleQuestionSelect(questionIndex)}
-                        className={`w-8 h-8 rounded-lg text-xs font-bold transition-all duration-200 ${
+                        className={`w-6 h-6 rounded text-xs font-bold transition-all duration-200 ${
                           isAnswered 
                             ? 'bg-green-100 text-green-800 border border-green-200' 
                             : isCurrent 
@@ -769,9 +1048,6 @@ export const CandidateExamPage: React.FC = () => {
                       </button>
                     );
                   })}
-                  {questions.length > 5 && (
-                    <span className="text-xs text-gray-500 px-2 py-1">+{questions.length - 5}</span>
-                  )}
                 </div>
               </div>
             </div>

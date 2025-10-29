@@ -98,14 +98,14 @@ const ExamAnalyticsPage: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="p-6">
+      <div className="p-3 sm:p-4 lg:p-6">
         <div className="animate-pulse">
-          <div className="h-8 bg-gray-200 rounded w-1/4 mb-6"></div>
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+          <div className="h-6 sm:h-8 bg-gray-200 rounded w-1/3 sm:w-1/4 mb-4 sm:mb-6"></div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 lg:gap-6 mb-4 sm:mb-6">
             {[...Array(4)].map((_, i) => (
-              <div key={i} className="bg-white p-6 rounded-lg shadow-sm border">
-                <div className="h-4 bg-gray-200 rounded w-1/2 mb-2"></div>
-                <div className="h-8 bg-gray-200 rounded w-3/4"></div>
+              <div key={i} className="bg-white p-3 sm:p-4 lg:p-6 rounded-lg shadow-sm border">
+                <div className="h-3 sm:h-4 bg-gray-200 rounded w-1/2 mb-2"></div>
+                <div className="h-6 sm:h-8 bg-gray-200 rounded w-3/4"></div>
               </div>
             ))}
           </div>
@@ -117,98 +117,99 @@ const ExamAnalyticsPage: React.FC = () => {
   if (!analytics) return null;
 
   return (
-    <div className="p-6">
-      {/* Header */}
-      <div className="flex justify-between items-center mb-6">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">Exam Analytics</h1>
-          <p className="text-gray-600 mt-1">Comprehensive analysis of exam performance</p>
+    <div className="min-h-screen bg-gray-50">
+      <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-8 py-4 sm:py-6 lg:py-8">
+        {/* Header */}
+        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-4 sm:mb-6 space-y-3 sm:space-y-0">
+          <div>
+            <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Exam Analytics</h1>
+            <p className="text-sm sm:text-base text-gray-600 mt-1">Comprehensive analysis of exam performance</p>
+          </div>
+          <div className="flex items-center space-x-2 sm:space-x-3">
+            <select
+              value={selectedTimeRange}
+              onChange={(e) => setSelectedTimeRange(e.target.value)}
+              className="px-2 sm:px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-ai-teal focus:border-transparent text-sm"
+            >
+              <option value="7days">Last 7 days</option>
+              <option value="30days">Last 30 days</option>
+              <option value="90days">Last 90 days</option>
+              <option value="1year">Last year</option>
+            </select>
+          </div>
         </div>
-        <div className="flex items-center space-x-3">
-          <select
-            value={selectedTimeRange}
-            onChange={(e) => setSelectedTimeRange(e.target.value)}
-            className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-ai-teal focus:border-transparent"
-          >
-            <option value="7days">Last 7 days</option>
-            <option value="30days">Last 30 days</option>
-            <option value="90days">Last 90 days</option>
-            <option value="1year">Last year</option>
-          </select>
-        </div>
-      </div>
 
       {/* Key Metrics */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-        <div className="bg-white p-6 rounded-lg shadow-sm border">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 lg:gap-6 mb-4 sm:mb-6">
+        <div className="bg-white p-3 sm:p-4 lg:p-6 rounded-lg shadow-sm border">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-gray-600">Total Exams</p>
-              <p className="text-2xl font-bold text-gray-900">{analytics.totalExams}</p>
+              <p className="text-xs sm:text-sm font-medium text-gray-600">Total Exams</p>
+              <p className="text-xl sm:text-2xl font-bold text-gray-900">{analytics.totalExams}</p>
             </div>
-            <div className="p-3 bg-blue-100 rounded-full">
-              <Users className="h-6 w-6 text-blue-600" />
+            <div className="p-2 sm:p-3 bg-blue-100 rounded-full">
+              <Users className="h-4 w-4 sm:h-6 sm:w-6 text-blue-600" />
             </div>
           </div>
         </div>
 
-        <div className="bg-white p-6 rounded-lg shadow-sm border">
+        <div className="bg-white p-3 sm:p-4 lg:p-6 rounded-lg shadow-sm border">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-gray-600">Average Score</p>
-              <p className="text-2xl font-bold text-gray-900">{analytics.averageScore.toFixed(1)}%</p>
+              <p className="text-xs sm:text-sm font-medium text-gray-600">Average Score</p>
+              <p className="text-xl sm:text-2xl font-bold text-gray-900">{analytics.averageScore.toFixed(1)}%</p>
             </div>
-            <div className="p-3 bg-green-100 rounded-full">
-              <Target className="h-6 w-6 text-green-600" />
+            <div className="p-2 sm:p-3 bg-green-100 rounded-full">
+              <Target className="h-4 w-4 sm:h-6 sm:w-6 text-green-600" />
             </div>
           </div>
         </div>
 
-        <div className="bg-white p-6 rounded-lg shadow-sm border">
+        <div className="bg-white p-3 sm:p-4 lg:p-6 rounded-lg shadow-sm border">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-gray-600">Pass Rate</p>
-              <p className="text-2xl font-bold text-gray-900">{analytics.passRate.toFixed(1)}%</p>
+              <p className="text-xs sm:text-sm font-medium text-gray-600">Pass Rate</p>
+              <p className="text-xl sm:text-2xl font-bold text-gray-900">{analytics.passRate.toFixed(1)}%</p>
             </div>
-            <div className="p-3 bg-purple-100 rounded-full">
-              <TrendingUp className="h-6 w-6 text-purple-600" />
+            <div className="p-2 sm:p-3 bg-purple-100 rounded-full">
+              <TrendingUp className="h-4 w-4 sm:h-6 sm:w-6 text-purple-600" />
             </div>
           </div>
         </div>
 
-        <div className="bg-white p-6 rounded-lg shadow-sm border">
+        <div className="bg-white p-3 sm:p-4 lg:p-6 rounded-lg shadow-sm border">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-gray-600">Avg. Time</p>
-              <p className="text-2xl font-bold text-gray-900">{analytics.averageTimeTaken.toFixed(1)}m</p>
+              <p className="text-xs sm:text-sm font-medium text-gray-600">Avg. Time</p>
+              <p className="text-xl sm:text-2xl font-bold text-gray-900">{analytics.averageTimeTaken.toFixed(1)}m</p>
             </div>
-            <div className="p-3 bg-yellow-100 rounded-full">
-              <Clock className="h-6 w-6 text-yellow-600" />
+            <div className="p-2 sm:p-3 bg-yellow-100 rounded-full">
+              <Clock className="h-4 w-4 sm:h-6 sm:w-6 text-yellow-600" />
             </div>
           </div>
         </div>
       </div>
 
       {/* Charts Row */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-4 lg:gap-6 mb-4 sm:mb-6">
         {/* Score Distribution */}
-        <div className="bg-white p-6 rounded-lg shadow-sm border">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">Score Distribution</h3>
-          <div className="space-y-3">
+        <div className="bg-white p-3 sm:p-4 lg:p-6 rounded-lg shadow-sm border">
+          <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-3 sm:mb-4">Score Distribution</h3>
+          <div className="space-y-2 sm:space-y-3">
             {analytics.scoreDistribution.map((item, index) => (
               <div key={index} className="flex items-center justify-between">
-                <div className="flex items-center space-x-3">
-                  <div className="w-3 h-3 rounded-full bg-ai-teal"></div>
-                  <span className="text-sm font-medium text-gray-700">{item.range}</span>
+                <div className="flex items-center space-x-2 sm:space-x-3">
+                  <div className="w-2 h-2 sm:w-3 sm:h-3 rounded-full bg-ai-teal"></div>
+                  <span className="text-xs sm:text-sm font-medium text-gray-700">{item.range}</span>
                 </div>
-                <div className="flex items-center space-x-3">
-                  <div className="w-32 bg-gray-200 rounded-full h-2">
+                <div className="flex items-center space-x-2 sm:space-x-3">
+                  <div className="w-20 sm:w-32 bg-gray-200 rounded-full h-1.5 sm:h-2">
                     <div 
-                      className="bg-ai-teal h-2 rounded-full" 
+                      className="bg-ai-teal h-1.5 sm:h-2 rounded-full" 
                       style={{ width: `${item.percentage}%` }}
                     ></div>
                   </div>
-                  <span className="text-sm text-gray-600 w-12 text-right">{item.count}</span>
+                  <span className="text-xs sm:text-sm text-gray-600 w-8 sm:w-12 text-right">{item.count}</span>
                 </div>
               </div>
             ))}
@@ -216,17 +217,17 @@ const ExamAnalyticsPage: React.FC = () => {
         </div>
 
         {/* Top Performing Topics */}
-        <div className="bg-white p-6 rounded-lg shadow-sm border">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">Top Performing Topics</h3>
-          <div className="space-y-4">
+        <div className="bg-white p-3 sm:p-4 lg:p-6 rounded-lg shadow-sm border">
+          <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-3 sm:mb-4">Top Performing Topics</h3>
+          <div className="space-y-3 sm:space-y-4">
             {analytics.topPerformingTopics.map((topic, index) => (
               <div key={index} className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-gray-900">{topic.topic}</p>
+                  <p className="text-xs sm:text-sm font-medium text-gray-900">{topic.topic}</p>
                   <p className="text-xs text-gray-500">{topic.questionCount} questions</p>
                 </div>
                 <div className="text-right">
-                  <p className={`text-sm font-bold ${getScoreColor(topic.averageScore)}`}>
+                  <p className={`text-xs sm:text-sm font-bold ${getScoreColor(topic.averageScore)}`}>
                     {topic.averageScore.toFixed(1)}%
                   </p>
                 </div>
@@ -237,42 +238,45 @@ const ExamAnalyticsPage: React.FC = () => {
       </div>
 
       {/* Daily Performance */}
-      <div className="bg-white p-6 rounded-lg shadow-sm border mb-8">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">Daily Performance Trend</h3>
-        <div className="overflow-x-auto">
+      <div className="bg-white p-3 sm:p-4 lg:p-6 rounded-lg shadow-sm border mb-4 sm:mb-6">
+        <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-3 sm:mb-4">Daily Performance Trend</h3>
+        <div className="overflow-x-auto -mx-3 sm:-mx-4 lg:-mx-8">
           <table className="w-full">
             <thead>
               <tr className="border-b border-gray-200">
-                <th className="text-left py-3 px-4 text-sm font-medium text-gray-700">Date</th>
-                <th className="text-left py-3 px-4 text-sm font-medium text-gray-700">Exams Completed</th>
-                <th className="text-left py-3 px-4 text-sm font-medium text-gray-700">Average Score</th>
-                <th className="text-left py-3 px-4 text-sm font-medium text-gray-700">Performance</th>
+                <th className="text-left py-2 sm:py-3 px-2 sm:px-4 text-xs sm:text-sm font-medium text-gray-700">Date</th>
+                <th className="text-left py-2 sm:py-3 px-2 sm:px-4 text-xs sm:text-sm font-medium text-gray-700">Exams Completed</th>
+                <th className="text-left py-2 sm:py-3 px-2 sm:px-4 text-xs sm:text-sm font-medium text-gray-700">Average Score</th>
+                <th className="text-left py-2 sm:py-3 px-2 sm:px-4 text-xs sm:text-sm font-medium text-gray-700">Performance</th>
               </tr>
             </thead>
             <tbody>
               {analytics.dailyStats.map((day, index) => (
                 <tr key={index} className="border-b border-gray-100">
-                  <td className="py-3 px-4 text-sm text-gray-900">
+                  <td className="py-2 sm:py-3 px-2 sm:px-4 text-xs sm:text-sm text-gray-900">
                     {new Date(day.date).toLocaleDateString()}
                   </td>
-                  <td className="py-3 px-4 text-sm text-gray-900">{day.examsCompleted}</td>
-                  <td className="py-3 px-4 text-sm text-gray-900">{day.averageScore.toFixed(1)}%</td>
-                  <td className="py-3 px-4">
-                    <div className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${getScoreBgColor(day.averageScore)} ${getScoreColor(day.averageScore)}`}>
+                  <td className="py-2 sm:py-3 px-2 sm:px-4 text-xs sm:text-sm text-gray-900">{day.examsCompleted}</td>
+                  <td className="py-2 sm:py-3 px-2 sm:px-4 text-xs sm:text-sm text-gray-900">{day.averageScore.toFixed(1)}%</td>
+                  <td className="py-2 sm:py-3 px-2 sm:px-4">
+                    <div className={`inline-flex items-center px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-full text-xs font-medium ${getScoreBgColor(day.averageScore)} ${getScoreColor(day.averageScore)}`}>
                       {day.averageScore >= 80 ? (
                         <>
-                          <TrendingUp className="h-3 w-3 mr-1" />
-                          Excellent
+                          <TrendingUp className="h-2 w-2 sm:h-3 sm:w-3 mr-1" />
+                          <span className="hidden sm:inline">Excellent</span>
+                          <span className="sm:hidden">Exc</span>
                         </>
                       ) : day.averageScore >= 60 ? (
                         <>
-                          <Activity className="h-3 w-3 mr-1" />
-                          Good
+                          <Activity className="h-2 w-2 sm:h-3 sm:w-3 mr-1" />
+                          <span className="hidden sm:inline">Good</span>
+                          <span className="sm:hidden">Good</span>
                         </>
                       ) : (
                         <>
-                          <TrendingDown className="h-3 w-3 mr-1" />
-                          Needs Improvement
+                          <TrendingDown className="h-2 w-2 sm:h-3 sm:w-3 mr-1" />
+                          <span className="hidden sm:inline">Needs Improvement</span>
+                          <span className="sm:hidden">Poor</span>
                         </>
                       )}
                     </div>
@@ -285,29 +289,30 @@ const ExamAnalyticsPage: React.FC = () => {
       </div>
 
       {/* Difficulty Analysis */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 lg:gap-6">
         {analytics.difficultyBreakdown.map((difficulty, index) => (
-          <div key={index} className="bg-white p-6 rounded-lg shadow-sm border">
-            <div className="flex items-center justify-between mb-4">
-              <h4 className="text-lg font-semibold text-gray-900 capitalize">{difficulty.difficulty}</h4>
-              <div className={`p-2 rounded-full ${getScoreBgColor(difficulty.averageScore)}`}>
-                <BarChart3 className={`h-5 w-5 ${getScoreColor(difficulty.averageScore)}`} />
+          <div key={index} className="bg-white p-3 sm:p-4 lg:p-6 rounded-lg shadow-sm border">
+            <div className="flex items-center justify-between mb-3 sm:mb-4">
+              <h4 className="text-base sm:text-lg font-semibold text-gray-900 capitalize">{difficulty.difficulty}</h4>
+              <div className={`p-1.5 sm:p-2 rounded-full ${getScoreBgColor(difficulty.averageScore)}`}>
+                <BarChart3 className={`h-4 w-4 sm:h-5 sm:w-5 ${getScoreColor(difficulty.averageScore)}`} />
               </div>
             </div>
             <div className="space-y-2">
               <div className="flex justify-between">
-                <span className="text-sm text-gray-600">Questions</span>
-                <span className="text-sm font-medium text-gray-900">{difficulty.count}</span>
+                <span className="text-xs sm:text-sm text-gray-600">Questions</span>
+                <span className="text-xs sm:text-sm font-medium text-gray-900">{difficulty.count}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-sm text-gray-600">Average Score</span>
-                <span className={`text-sm font-bold ${getScoreColor(difficulty.averageScore)}`}>
+                <span className="text-xs sm:text-sm text-gray-600">Average Score</span>
+                <span className={`text-xs sm:text-sm font-bold ${getScoreColor(difficulty.averageScore)}`}>
                   {difficulty.averageScore.toFixed(1)}%
                 </span>
               </div>
             </div>
           </div>
         ))}
+      </div>
       </div>
     </div>
   );

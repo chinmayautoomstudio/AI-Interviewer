@@ -20,6 +20,7 @@ export interface ExamEmailResult {
   success: boolean;
   error?: string;
   messageId?: string;
+  warning?: string;
 }
 
 export class ExamEmailService {

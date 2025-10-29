@@ -263,58 +263,59 @@ const QuestionAssignmentPage: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="bg-gray-50 flex items-center justify-center p-3 sm:p-4 min-h-[100vh]">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading question assignments...</p>
+          <div className="animate-spin rounded-full h-8 w-8 sm:h-12 sm:w-12 border-b-2 border-blue-600 mx-auto mb-3 sm:mb-4"></div>
+          <p className="text-sm sm:text-base text-gray-600">Loading question assignments...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="bg-gray-50 min-h-[100vh]">
       {/* Header */}
       <div className="bg-white border-b border-gray-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16">
+        <div className="w-full max-w-full md:max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between h-auto md:h-16 py-4 md:py-0 space-y-3 md:space-y-0">
             <div>
-              <h1 className="text-2xl font-bold text-gray-900">Question Assignment</h1>
-              <p className="text-sm text-gray-600">Manage which questions are assigned to job descriptions</p>
+              <h1 className="text-lg sm:text-xl md:text-2xl font-bold text-gray-900">Question Assignment</h1>
+              <p className="text-sm sm:text-base text-gray-600">Manage which questions are assigned to job descriptions</p>
             </div>
-            <div className="flex items-center space-x-3">
+            <div className="flex items-center space-x-2 sm:space-x-3">
               <button
                 onClick={loadData}
-                className="flex items-center space-x-2 px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors"
+                className="flex items-center justify-center space-x-1 sm:space-x-2 px-3 sm:px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors text-sm"
               >
-                <RefreshCw className="w-4 h-4" />
-                <span>Refresh</span>
+                <RefreshCw className="w-3 h-3 sm:w-4 sm:h-4" />
+                <span className="hidden sm:inline">Refresh</span>
+                <span className="sm:hidden">Refresh</span>
               </button>
             </div>
           </div>
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="w-full max-w-full md:max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
         {/* Job Description Selection */}
-        <div className="bg-white rounded-lg shadow-sm border p-6 mb-6">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-semibold text-gray-900">Select Job Description</h3>
-            <div className="flex items-center space-x-2 text-sm text-gray-600">
-              <Users className="w-4 h-4" />
+        <div className="bg-white rounded-lg shadow-sm border p-3 sm:p-4 lg:p-6 mb-4 sm:mb-6">
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-3 md:mb-4 space-y-2 md:space-y-0">
+            <h3 className="text-base sm:text-lg font-semibold text-gray-900">Select Job Description</h3>
+            <div className="flex items-center space-x-1 sm:space-x-2 text-xs sm:text-sm text-gray-600">
+              <Users className="w-3 h-3 sm:w-4 sm:h-4" />
               <span>{jobDescriptions.length} job descriptions available</span>
             </div>
           </div>
           
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1 sm:mb-2">
                 Job Description
               </label>
               <select
                 value={selectedJobDescription}
                 onChange={(e) => setSelectedJobDescription(e.target.value)}
-                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full p-2 sm:p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
               >
                 <option value="">Select a job description...</option>
                 {jobDescriptions.map(job => (
@@ -326,13 +327,13 @@ const QuestionAssignmentPage: React.FC = () => {
             </div>
             
             {selectedJob && (
-              <div className="flex items-center space-x-4 p-4 bg-blue-50 rounded-lg">
-                <div className="p-2 bg-blue-100 rounded-lg">
-                  <FileText className="w-6 h-6 text-blue-600" />
+              <div className="flex items-center space-x-2 sm:space-x-4 p-3 sm:p-4 bg-blue-50 rounded-lg">
+                <div className="p-1.5 sm:p-2 bg-blue-100 rounded-lg">
+                  <FileText className="w-4 w-4 sm:w-6 sm:h-6 text-blue-600" />
                 </div>
                 <div>
-                  <h4 className="font-medium text-gray-900">{selectedJob.title}</h4>
-                  <p className="text-sm text-gray-600">{selectedJob.department}</p>
+                  <h4 className="text-sm sm:text-base font-medium text-gray-900">{selectedJob.title}</h4>
+                  <p className="text-xs sm:text-sm text-gray-600">{selectedJob.department}</p>
                 </div>
               </div>
             )}
@@ -341,68 +342,70 @@ const QuestionAssignmentPage: React.FC = () => {
 
         {/* Job Statistics */}
         {selectedJobDescription && jobStats && (
-          <div className="grid grid-cols-1 md:grid-cols-5 gap-6 mb-6">
-            <div className="bg-white rounded-lg shadow-sm border p-6">
-              <div className="text-2xl font-bold text-gray-900">{jobStats.totalQuestions}</div>
-              <div className="text-sm text-gray-600">Total Questions</div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 sm:gap-4 lg:gap-6 mb-4 sm:mb-6">
+            <div className="bg-white rounded-lg shadow-sm border p-3 sm:p-4 lg:p-6">
+              <div className="text-xl sm:text-2xl font-bold text-gray-900">{jobStats.totalQuestions}</div>
+              <div className="text-xs sm:text-sm text-gray-600">Total Questions</div>
             </div>
-            <div className="bg-white rounded-lg shadow-sm border p-6">
-              <div className="text-2xl font-bold text-green-600">{jobStats.approvedQuestions}</div>
-              <div className="text-sm text-gray-600">Approved</div>
+            <div className="bg-white rounded-lg shadow-sm border p-3 sm:p-4 lg:p-6">
+              <div className="text-xl sm:text-2xl font-bold text-green-600">{jobStats.approvedQuestions}</div>
+              <div className="text-xs sm:text-sm text-gray-600">Approved</div>
             </div>
-            <div className="bg-white rounded-lg shadow-sm border p-6">
-              <div className="text-2xl font-bold text-blue-600">{jobStats.byCategory.technical}</div>
-              <div className="text-sm text-gray-600">Technical</div>
+            <div className="bg-white rounded-lg shadow-sm border p-3 sm:p-4 lg:p-6">
+              <div className="text-xl sm:text-2xl font-bold text-blue-600">{jobStats.byCategory.technical}</div>
+              <div className="text-xs sm:text-sm text-gray-600">Technical</div>
             </div>
-            <div className="bg-white rounded-lg shadow-sm border p-6">
-              <div className="text-2xl font-bold text-purple-600">{jobStats.byCategory.aptitude}</div>
-              <div className="text-sm text-gray-600">Aptitude</div>
+            <div className="bg-white rounded-lg shadow-sm border p-3 sm:p-4 lg:p-6">
+              <div className="text-xl sm:text-2xl font-bold text-purple-600">{jobStats.byCategory.aptitude}</div>
+              <div className="text-xs sm:text-sm text-gray-600">Aptitude</div>
             </div>
-            <div className="bg-white rounded-lg shadow-sm border p-6">
-              <div className="text-2xl font-bold text-yellow-600">
+            <div className="bg-white rounded-lg shadow-sm border p-3 sm:p-4 lg:p-6">
+              <div className="text-xl sm:text-2xl font-bold text-yellow-600">
                 {jobStats.byDifficulty.easy + jobStats.byDifficulty.medium + jobStats.byDifficulty.hard}
               </div>
-              <div className="text-sm text-gray-600">All Difficulties</div>
+              <div className="text-xs sm:text-sm text-gray-600">All Difficulties</div>
             </div>
           </div>
         )}
 
         {/* Filters and Search */}
         {selectedJobDescription && (
-          <div className="bg-white rounded-lg shadow-sm border p-6 mb-6">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold text-gray-900">Question Filters</h3>
+          <div className="bg-white rounded-lg shadow-sm border p-3 sm:p-4 lg:p-6 mb-4 sm:mb-6">
+            <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-3 md:mb-4 space-y-3 md:space-y-0">
+              <h3 className="text-base sm:text-lg font-semibold text-gray-900">Question Filters</h3>
               <div className="flex items-center space-x-2">
                 <button
                   onClick={() => handleBulkAssign(true)}
                   disabled={saving}
-                  className="flex items-center space-x-1 px-3 py-1 bg-green-600 text-white rounded text-sm hover:bg-green-700 disabled:opacity-50"
+                  className="flex items-center space-x-1 px-2 sm:px-3 py-1 bg-green-600 text-white rounded text-xs sm:text-sm hover:bg-green-700 disabled:opacity-50"
                 >
                   <Plus className="w-3 h-3" />
-                  <span>Assign All</span>
+                  <span className="hidden sm:inline">Assign All</span>
+                  <span className="sm:hidden">All</span>
                 </button>
                 <button
                   onClick={() => handleBulkAssign(false)}
                   disabled={saving}
-                  className="flex items-center space-x-1 px-3 py-1 bg-red-600 text-white rounded text-sm hover:bg-red-700 disabled:opacity-50"
+                  className="flex items-center space-x-1 px-2 sm:px-3 py-1 bg-red-600 text-white rounded text-xs sm:text-sm hover:bg-red-700 disabled:opacity-50"
                 >
                   <Minus className="w-3 h-3" />
-                  <span>Remove All</span>
+                  <span className="hidden sm:inline">Remove All</span>
+                  <span className="sm:hidden">None</span>
                 </button>
               </div>
             </div>
             
-            <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 sm:gap-4">
               {/* Search */}
-              <div className="md:col-span-2">
+              <div className="sm:col-span-2 lg:col-span-2">
                 <div className="relative">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                  <Search className="absolute left-2 sm:left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-3 h-3 sm:w-4 sm:h-4" />
                   <input
                     type="text"
                     placeholder="Search questions..."
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
-                    className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="w-full pl-8 sm:pl-10 pr-3 sm:pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
                   />
                 </div>
               </div>
@@ -412,7 +415,7 @@ const QuestionAssignmentPage: React.FC = () => {
                 <select
                   value={categoryFilter}
                   onChange={(e) => setCategoryFilter(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full px-2 sm:px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
                 >
                   <option value="">All Categories</option>
                   <option value="technical">Technical</option>
@@ -425,7 +428,7 @@ const QuestionAssignmentPage: React.FC = () => {
                 <select
                   value={difficultyFilter}
                   onChange={(e) => setDifficultyFilter(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full px-2 sm:px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
                 >
                   <option value="">All Difficulties</option>
                   <option value="easy">Easy</option>
@@ -439,7 +442,7 @@ const QuestionAssignmentPage: React.FC = () => {
                 <select
                   value={statusFilter}
                   onChange={(e) => setStatusFilter(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full px-2 sm:px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
                 >
                   <option value="">All Status</option>
                   <option value="draft">Draft</option>

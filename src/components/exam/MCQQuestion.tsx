@@ -27,9 +27,7 @@ export const MCQQuestion: React.FC<MCQQuestionProps> = ({
               {question.points} point{question.points !== 1 ? 's' : ''}
             </span>
           </div>
-          <div className="text-xs sm:text-sm text-gray-500 bg-gray-50 px-2 sm:px-3 py-1 sm:py-1.5 rounded-lg">
-            Time limit: {question.time_limit_seconds}s
-          </div>
+          {/* Time limit hidden per mobile UX request */}
         </div>
         
         <h3 className="text-lg sm:text-xl font-semibold text-gray-900 leading-relaxed">

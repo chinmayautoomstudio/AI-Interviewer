@@ -189,17 +189,18 @@ const ExamSessionsPage: React.FC = () => {
   }
 
   return (
-    <div className="p-3 sm:p-4 lg:p-6">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-4 sm:mb-6 space-y-3 sm:space-y-0">
-        <div className="min-w-0 flex-1">
-          <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Exam Sessions</h1>
-          <p className="text-sm sm:text-base text-gray-600 mt-1">Monitor and manage exam sessions</p>
+    <div className="min-h-screen bg-gray-50 overflow-x-hidden">
+      <div className="w-full max-w-full md:max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 overflow-x-hidden">
+        {/* Header */}
+        <div className="flex flex-col md:flex-row md:justify-between md:items-center mb-4 md:mb-6 space-y-3 md:space-y-0">
+          <div className="min-w-0 flex-1">
+            <h1 className="text-lg sm:text-xl md:text-2xl font-bold text-gray-900">Exam Sessions</h1>
+            <p className="text-sm sm:text-base text-gray-600 mt-1">Monitor and manage exam sessions</p>
+          </div>
         </div>
-      </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 lg:gap-6 mb-4 sm:mb-6">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4 mb-6">
         <div className="bg-white p-4 sm:p-6 rounded-lg shadow-sm border">
           <div className="flex items-center justify-between">
             <div className="min-w-0 flex-1">
@@ -256,28 +257,28 @@ const ExamSessionsPage: React.FC = () => {
       </div>
 
       {/* Filters */}
-      <div className="bg-white p-6 rounded-lg shadow-sm border mb-6">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="bg-white p-3 sm:p-4 lg:p-6 rounded-lg shadow-sm border mb-4 sm:mb-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Search</label>
+            <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-2">Search</label>
             <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+              <Search className="absolute left-2 sm:left-3 top-1/2 transform -translate-y-1/2 h-3 w-3 sm:h-4 sm:w-4 text-gray-400" />
               <input
                 type="text"
                 placeholder="Search candidates..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10 w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-ai-teal focus:border-transparent"
+                className="pl-8 sm:pl-10 w-full px-2 sm:px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-ai-teal focus:border-transparent text-sm"
               />
             </div>
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Status</label>
+            <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-2">Status</label>
             <select
               value={selectedStatus}
               onChange={(e) => setSelectedStatus(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-ai-teal focus:border-transparent"
+              className="w-full px-2 sm:px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-ai-teal focus:border-transparent text-sm"
             >
               <option value="all">All Status</option>
               <option value="pending">Pending</option>
@@ -306,99 +307,172 @@ const ExamSessionsPage: React.FC = () => {
 
       {/* Sessions List */}
       <div className="bg-white rounded-lg shadow-sm border">
-        <div className="p-6 border-b border-gray-200">
-          <h2 className="text-lg font-semibold text-gray-900">Exam Sessions</h2>
+        <div className="p-4 sm:p-6 border-b border-gray-200">
+          <h2 className="text-base sm:text-lg font-semibold text-gray-900">Exam Sessions</h2>
         </div>
         
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead className="bg-gray-50">
-              <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Candidate
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Job Title
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Status
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Progress
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Time Remaining
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Score
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Actions
-                </th>
-              </tr>
-            </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
-              {filteredSessions.map((session) => (
-                <tr key={session.id} className="hover:bg-gray-50">
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div>
-                      <div className="text-sm font-medium text-gray-900">
-                        {session.candidate?.name || 'Unknown'}
+        {/* Desktop Table View */}
+        <div className="hidden md:block overflow-x-auto">
+          <div className="inline-block min-w-full align-middle">
+            <table className="min-w-full divide-y divide-gray-200">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="px-3 sm:px-6 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+                    Candidate
+                  </th>
+                  <th className="px-3 sm:px-6 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+                    Job Title
+                  </th>
+                  <th className="px-3 sm:px-6 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+                    Status
+                  </th>
+                  <th className="px-3 sm:px-6 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+                    Progress
+                  </th>
+                  <th className="px-3 sm:px-6 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+                    Time Remaining
+                  </th>
+                  <th className="px-3 sm:px-6 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+                    Score
+                  </th>
+                  <th className="px-3 sm:px-6 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+                    Actions
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {filteredSessions.map((session) => (
+                  <tr key={session.id} className="hover:bg-gray-50">
+                    <td className="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap">
+                      <div>
+                        <div className="text-sm font-medium text-gray-900">
+                          {session.candidate?.name || 'Unknown'}
+                        </div>
+                        <div className="text-sm text-gray-500">
+                          {session.candidate?.email || ''}
+                        </div>
+                      </div>
+                    </td>
+                    <td className="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap">
+                      <div className="text-sm text-gray-900">{session.job_description?.title || 'Unknown'}</div>
+                    </td>
+                    <td className="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap">
+                      <div className="flex items-center space-x-2">
+                        {getStatusIcon(session.status)}
+                        <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(session.status)}`}>
+                          {getStatusText(session.status)}
+                        </span>
+                      </div>
+                    </td>
+                    <td className="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap">
+                      <div className="text-sm text-gray-900">
+                        {session.total_questions} questions
                       </div>
                       <div className="text-sm text-gray-500">
-                        {session.candidate?.email || ''}
+                        {session.duration_minutes} minutes
                       </div>
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm text-gray-900">{session.job_description?.title || 'Unknown'}</div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="flex items-center space-x-2">
-                      {getStatusIcon(session.status)}
-                      <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(session.status)}`}>
-                        {getStatusText(session.status)}
-                      </span>
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm text-gray-900">
-                      {session.total_questions} questions
-                    </div>
-                    <div className="text-sm text-gray-500">
-                      {session.duration_minutes} minutes
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    {session.status === 'in_progress' ? getTimeRemaining(session.expires_at) : '-'}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    {session.score ? `${session.score}/${session.total_questions} (${session.percentage}%)` : '-'}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                    <div className="flex space-x-2">
-                      <button 
-                        onClick={() => handleViewSession(session.id)}
-                        className="text-ai-teal hover:text-ai-teal/80"
-                        title="View Session"
-                      >
-                        <Eye className="h-4 w-4" />
-                      </button>
-                      {session.status === 'in_progress' && (
+                    </td>
+                    <td className="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap text-sm text-gray-900">
+                      {session.status === 'in_progress' ? getTimeRemaining(session.expires_at) : '-'}
+                    </td>
+                    <td className="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap text-sm text-gray-900">
+                      {session.score ? `${session.score}/${session.total_questions} (${session.percentage}%)` : '-'}
+                    </td>
+                    <td className="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap text-sm font-medium">
+                      <div className="flex space-x-2">
                         <button 
-                          onClick={() => handleTerminateSession(session.id)}
-                          className="text-red-600 hover:text-red-800"
-                          title="Terminate Session"
+                          onClick={() => handleViewSession(session.id)}
+                          className="text-ai-teal hover:text-ai-teal/80"
+                          title="View Session"
                         >
-                          <XCircle className="h-4 w-4" />
+                          <Eye className="h-4 w-4" />
                         </button>
-                      )}
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+                        {session.status === 'in_progress' && (
+                          <button 
+                            onClick={() => handleTerminateSession(session.id)}
+                            className="text-red-600 hover:text-red-800"
+                            title="Terminate Session"
+                          >
+                            <XCircle className="h-4 w-4" />
+                          </button>
+                        )}
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        {/* Mobile Card View */}
+        <div className="md:hidden space-y-3 p-3 sm:p-4">
+          {filteredSessions.map((session) => (
+            <div key={session.id} className="bg-white border border-gray-200 rounded-lg p-3 sm:p-4 shadow-sm max-w-full overflow-hidden">
+              {/* Header with Candidate Info and Status */}
+              <div className="flex items-start justify-between mb-3 gap-2">
+                <div className="min-w-0 flex-1">
+                  <h3 className="text-sm font-medium text-gray-900 break-words leading-tight">
+                    {session.candidate?.name || 'Unknown'}
+                  </h3>
+                  <p className="text-xs text-gray-600 break-words leading-relaxed mt-1">
+                    {session.candidate?.email || ''}
+                  </p>
+                  <p className="text-xs text-gray-500 break-words leading-relaxed mt-1">
+                    {session.job_description?.title || 'Unknown'}
+                  </p>
+                </div>
+                <div className="flex items-center space-x-1 flex-shrink-0">
+                  {getStatusIcon(session.status)}
+                  <span className={`inline-flex px-1.5 py-0.5 text-xs font-semibold rounded-full ${getStatusColor(session.status)} whitespace-nowrap`}>
+                    {getStatusText(session.status)}
+                  </span>
+                </div>
+              </div>
+              
+              {/* Session Details Grid */}
+              <div className="grid grid-cols-2 gap-2 sm:gap-3 text-xs mb-3">
+                <div className="min-w-0">
+                  <span className="text-gray-500">Questions:</span>
+                  <span className="ml-1 font-medium text-gray-900">{session.total_questions}</span>
+                </div>
+                <div className="min-w-0">
+                  <span className="text-gray-500">Duration:</span>
+                  <span className="ml-1 font-medium text-gray-900">{session.duration_minutes}m</span>
+                </div>
+                <div className="min-w-0">
+                  <span className="text-gray-500">Time Left:</span>
+                  <span className="ml-1 font-medium text-gray-900">
+                    {session.status === 'in_progress' ? getTimeRemaining(session.expires_at) : '-'}
+                  </span>
+                </div>
+                <div className="min-w-0">
+                  <span className="text-gray-500">Score:</span>
+                  <span className="ml-1 font-medium text-gray-900 break-words">
+                    {session.score ? `${session.score}/${session.total_questions} (${session.percentage}%)` : '-'}
+                  </span>
+                </div>
+              </div>
+              
+              {/* Actions */}
+              <div className="flex items-center justify-end space-x-2 sm:space-x-3 pt-3 border-t border-gray-100">
+                <button 
+                  onClick={() => handleViewSession(session.id)}
+                  className="text-ai-teal hover:text-ai-teal/80 text-xs font-medium whitespace-nowrap"
+                >
+                  View Details →
+                </button>
+                {session.status === 'in_progress' && (
+                  <button 
+                    onClick={() => handleTerminateSession(session.id)}
+                    className="text-red-600 hover:text-red-800 text-xs font-medium whitespace-nowrap"
+                  >
+                    Terminate
+                  </button>
+                )}
+              </div>
+            </div>
+          ))}
         </div>
       </div>
 
@@ -416,6 +490,7 @@ const ExamSessionsPage: React.FC = () => {
         onClose={handleCloseDetailsModal}
         sessionId={selectedSessionId || ''}
       />
+      </div>
     </div>
   );
 };

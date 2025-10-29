@@ -81,23 +81,23 @@ export const ExamTimer: React.FC<ExamTimerProps> = ({
   const progressPercentage = ((duration_minutes * 60 - timeRemaining) / (duration_minutes * 60)) * 100;
 
   return (
-    <div className={`flex items-center space-x-3 sm:space-x-4 p-4 sm:p-6 rounded-lg sm:rounded-xl border-2 ${getTimerBgColor()} shadow-sm`}>
-      <Clock className={`w-6 h-6 sm:w-8 sm:h-8 ${getTimerColor()}`} />
+    <div className={`flex items-center space-x-2 sm:space-x-4 p-3 sm:p-6 rounded-lg sm:rounded-xl border-2 ${getTimerBgColor()} shadow-sm`}>
+      <Clock className={`w-5 h-5 sm:w-8 sm:h-8 ${getTimerColor()}`} />
       
-      <div className="flex-1">
-        <div className="flex items-center justify-between mb-2 sm:mb-3">
-          <span className={`text-xl sm:text-2xl font-bold ${getTimerColor()}`}>
+      <div className="flex-1 min-w-0">
+        <div className="flex items-center justify-between mb-1 sm:mb-3">
+          <span className={`text-lg sm:text-2xl font-bold ${getTimerColor()} font-mono`}>
             {formatTime(timeRemaining)}
           </span>
-          <span className="text-xs sm:text-sm text-gray-600 font-medium">
+          <span className="text-xs sm:text-sm text-gray-600 font-medium hidden sm:inline">
             {isActive ? 'Time Remaining' : 'Timer Paused'}
           </span>
         </div>
         
         {/* Progress bar */}
-        <div className="w-full bg-gray-200 rounded-full h-2 sm:h-3 shadow-inner">
+        <div className="w-full bg-gray-200 rounded-full h-1.5 sm:h-3 shadow-inner">
           <div
-            className={`h-2 sm:h-3 rounded-full transition-all duration-1000 shadow-sm ${
+            className={`h-1.5 sm:h-3 rounded-full transition-all duration-1000 shadow-sm ${
               isCritical ? 'bg-red-500' : isWarning ? 'bg-yellow-500' : 'bg-blue-500'
             }`}
             style={{ width: `${progressPercentage}%` }}
@@ -108,9 +108,9 @@ export const ExamTimer: React.FC<ExamTimerProps> = ({
       {/* Warning indicators */}
       {isWarning && (
         <div className="flex items-center space-x-1 sm:space-x-2 text-yellow-600 bg-yellow-50 px-2 sm:px-4 py-1 sm:py-2 rounded-lg border border-yellow-200">
-          <AlertTriangle className="w-4 h-4 sm:w-6 sm:h-6" />
+          <AlertTriangle className="w-3 h-3 sm:w-6 sm:h-6" />
           <span className="text-xs sm:text-sm font-semibold">
-            {timeRemaining <= 60 ? '1 min left!' : '5 min left!'}
+            {timeRemaining <= 60 ? '1 min!' : '5 min!'}
           </span>
         </div>
       )}

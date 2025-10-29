@@ -336,8 +336,8 @@ export class NotificationService {
   /**
    * Helper methods for creating specific notification types
    */
-  async notifyExamStarted(examData: ExamNotificationData): Promise<void> {
-    await this.createNotification({
+  async notifyExamStarted(examData: ExamNotificationData): Promise<{ success: boolean; data?: Notification; error?: string }> {
+    return await this.createNotification({
       type: 'exam_started',
       title: 'Exam Started',
       message: `${examData.candidateName} has started the exam for ${examData.jobTitle}`,
@@ -345,8 +345,8 @@ export class NotificationService {
     });
   }
 
-  async notifyExamCompleted(examData: ExamNotificationData): Promise<void> {
-    await this.createNotification({
+  async notifyExamCompleted(examData: ExamNotificationData): Promise<{ success: boolean; data?: Notification; error?: string }> {
+    return await this.createNotification({
       type: 'exam_completed',
       title: 'Exam Completed',
       message: `${examData.candidateName} has completed the exam for ${examData.jobTitle} with ${examData.percentage}% score`,
@@ -354,8 +354,8 @@ export class NotificationService {
     });
   }
 
-  async notifyExamExpired(examData: ExamNotificationData): Promise<void> {
-    await this.createNotification({
+  async notifyExamExpired(examData: ExamNotificationData): Promise<{ success: boolean; data?: Notification; error?: string }> {
+    return await this.createNotification({
       type: 'exam_expired',
       title: 'Exam Expired',
       message: `Exam for ${examData.candidateName} (${examData.jobTitle}) has expired`,
@@ -363,8 +363,8 @@ export class NotificationService {
     });
   }
 
-  async notifyExamTerminated(examData: ExamNotificationData): Promise<void> {
-    await this.createNotification({
+  async notifyExamTerminated(examData: ExamNotificationData): Promise<{ success: boolean; data?: Notification; error?: string }> {
+    return await this.createNotification({
       type: 'exam_terminated',
       title: 'Exam Terminated',
       message: `Exam for ${examData.candidateName} (${examData.jobTitle}) has been terminated`,
@@ -372,8 +372,8 @@ export class NotificationService {
     });
   }
 
-  async notifyCandidateRegistered(candidateData: CandidateNotificationData): Promise<void> {
-    await this.createNotification({
+  async notifyCandidateRegistered(candidateData: CandidateNotificationData): Promise<{ success: boolean; data?: Notification; error?: string }> {
+    return await this.createNotification({
       type: 'candidate_registered',
       title: 'New Candidate Registered',
       message: `${candidateData.candidateName} has registered for ${candidateData.jobTitle}`,
@@ -381,8 +381,8 @@ export class NotificationService {
     });
   }
 
-  async notifySystemAlert(alertData: SystemNotificationData, title: string, message: string): Promise<void> {
-    await this.createNotification({
+  async notifySystemAlert(alertData: SystemNotificationData, title: string, message: string): Promise<{ success: boolean; data?: Notification; error?: string }> {
+    return await this.createNotification({
       type: 'system_alert',
       title,
       message,

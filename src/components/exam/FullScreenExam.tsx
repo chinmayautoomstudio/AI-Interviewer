@@ -24,6 +24,7 @@ const FullScreenExam: React.FC<FullScreenExamProps> = ({
   const [isSecurityActive, setIsSecurityActive] = useState(false);
   const [showConsentModal, setShowConsentModal] = useState(true);
   const [violationCount, setViolationCount] = useState(0);
+  const [showViolationPopup, setShowViolationPopup] = useState(false);
   const examContainerRef = useRef<HTMLDivElement>(null);
 
   // Cleanup effect - stop security monitoring when component unmounts
@@ -60,6 +61,13 @@ const FullScreenExam: React.FC<FullScreenExamProps> = ({
 
   const handleViolation = (violation: SecurityViolation) => {
     setViolationCount(prev => prev + 1);
+    setShowViolationPopup(true);
+    
+    // Auto-dismiss violation popup after 5 seconds
+    setTimeout(() => {
+      setShowViolationPopup(false);
+    }, 5000);
+    
     if (onViolation) {
       onViolation(violation);
     }
@@ -177,20 +185,32 @@ const FullScreenExam: React.FC<FullScreenExamProps> = ({
   }
 
   return (
-    <div 
-      ref={examContainerRef}
-      className={`exam-container ${isFullscreen ? 'fullscreen' : ''}`}
-      style={{
-        width: isFullscreen ? '100vw' : '100%',
-        height: isFullscreen ? '100vh' : '100%',
-        position: isFullscreen ? 'fixed' : 'relative',
-        top: isFullscreen ? 0 : 'auto',
-        left: isFullscreen ? 0 : 'auto',
-        zIndex: isFullscreen ? 9999 : 'auto',
-        backgroundColor: isFullscreen ? '#ffffff' : 'transparent',
-        overflow: isFullscreen ? 'hidden' : 'auto'
-      }}
-    >
+    <>
+      {/* Add CSS for animation */}
+      <style>{`
+        @keyframes fade-in {
+          from { opacity: 0; transform: translateY(-10px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-fade-in {
+          animation: fade-in 0.3s ease-out;
+        }
+      `}</style>
+      
+      <div 
+        ref={examContainerRef}
+        className={`exam-container ${isFullscreen ? 'fullscreen' : ''}`}
+        style={{
+          width: isFullscreen ? '100vw' : '100%',
+          height: isFullscreen ? '100vh' : '100%',
+          position: isFullscreen ? 'fixed' : 'relative',
+          top: isFullscreen ? 0 : 'auto',
+          left: isFullscreen ? 0 : 'auto',
+          zIndex: isFullscreen ? 9999 : 'auto',
+          backgroundColor: isFullscreen ? '#ffffff' : 'transparent',
+          overflow: isFullscreen ? 'hidden' : 'auto'
+        }}
+      >
       {/* Security Status Bar */}
       {isSecurityActive && (
         <div className="bg-red-600 text-white px-4 py-2 text-sm font-medium flex items-center justify-between">
@@ -231,8 +251,8 @@ const FullScreenExam: React.FC<FullScreenExamProps> = ({
       </div>
 
       {/* Violation Warning */}
-      {violationCount > 0 && (
-        <div className="fixed top-16 right-4 bg-yellow-100 border border-yellow-400 text-yellow-700 px-4 py-3 rounded-lg shadow-lg z-50">
+      {showViolationPopup && (
+        <div className="fixed top-16 right-4 bg-yellow-100 border border-yellow-400 text-yellow-700 px-4 py-3 rounded-lg shadow-lg z-50 animate-fade-in">
           <div className="flex items-center space-x-2">
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.732-.833-2.5 0L4.268 19.5c-.77.833.192 2.5 1.732 2.5z" />
@@ -245,9 +265,18 @@ const FullScreenExam: React.FC<FullScreenExamProps> = ({
               : `You have ${violationCount} violations. Continued violations may result in exam termination.`
             }
           </p>
+          <button
+            onClick={() => setShowViolationPopup(false)}
+            className="absolute top-1 right-1 text-yellow-600 hover:text-yellow-800"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
         </div>
       )}
-    </div>
+      </div>
+    </>
   );
 };
 

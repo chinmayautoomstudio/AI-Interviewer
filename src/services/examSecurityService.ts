@@ -31,15 +31,16 @@ export class ExamSecurityService {
       disableKeys: [
         'F1', 'F2', 'F3', 'F4', 'F5', 'F6', 'F7', 'F8', 'F9', 'F10', 'F11', 'F12',
         'Tab', 'Alt', 'Ctrl', 'Meta', 'Shift',
-        'PrintScreen', 'ScrollLock', 'Pause',
+        // 'PrintScreen', // TEMPORARILY DISABLED FOR DEBUGGING - ALLOWS SCREENSHOTS
+        'ScrollLock', 'Pause',
         'Insert', 'Delete', 'Home', 'End', 'PageUp', 'PageDown',
-        'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight',
-        'Escape'
+        'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'
+        // Note: ESC is handled separately to prevent fullscreen exit
       ],
       preventTabSwitch: true,
-      preventWindowResize: true,
-      preventContextMenu: true,
-      preventDevTools: true,
+      preventWindowResize: false, // TEMPORARILY DISABLED FOR MOBILE SCREENSHOTS
+      preventContextMenu: false, // TEMPORARILY DISABLED FOR MOBILE SCREENSHOTS
+      preventDevTools: false, // TEMPORARILY DISABLED FOR MOBILE SCREENSHOTS
       logViolations: true,
       maxViolations: 10,
       ...config
@@ -69,6 +70,9 @@ export class ExamSecurityService {
 
     // Disable keyboard shortcuts
     this.disableKeyboardShortcuts();
+    
+    // Add specific ESC key handler to prevent fullscreen exit
+    this.preventEscKey();
 
     // Prevent context menu
     if (this.config.preventContextMenu) {
@@ -150,12 +154,8 @@ export class ExamSecurityService {
       return true;
     } catch (error) {
       console.error('❌ Failed to enter fullscreen:', error);
-      this.logViolation({
-        type: 'window_resize',
-        timestamp: new Date().toISOString(),
-        details: 'Failed to enter fullscreen mode',
-        severity: 'medium'
-      });
+      // Don't log this as a violation - it's expected behavior when user denies permission
+      console.warn('⚠️ Fullscreen permission denied or not supported');
       return false;
     }
   }
@@ -275,6 +275,69 @@ export class ExamSecurityService {
   }
 
   /**
+   * TEMPORARY: Re-enable screenshot blocking (for after debugging)
+   * Call this method to restore PrintScreen key blocking
+   */
+  enableScreenshotBlocking(): void {
+    if (!this.config.disableKeys.includes('PrintScreen')) {
+      this.config.disableKeys.push('PrintScreen');
+      console.log('🔒 Screenshot blocking re-enabled');
+    }
+  }
+
+  /**
+   * TEMPORARY: Disable screenshot blocking (for debugging)
+   * Call this method to allow screenshots during debugging
+   */
+  disableScreenshotBlocking(): void {
+    const index = this.config.disableKeys.indexOf('PrintScreen');
+    if (index > -1) {
+      this.config.disableKeys.splice(index, 1);
+      console.log('📸 Screenshot blocking disabled for debugging');
+    }
+  }
+
+  /**
+   * TEMPORARY: Disable all security measures for mobile debugging
+   * This allows screenshots and other debugging tools on mobile devices
+   */
+  disableAllSecurityForDebugging(): void {
+    // Disable all key blocking
+    this.config.disableKeys = [];
+    
+    // Disable all prevention measures
+    this.config.preventTabSwitch = false;
+    this.config.preventWindowResize = false;
+    this.config.preventContextMenu = false;
+    this.config.preventDevTools = false;
+    
+    console.log('🔓 All security measures disabled for mobile debugging');
+  }
+
+  /**
+   * TEMPORARY: Re-enable all security measures after debugging
+   * This restores the original security configuration
+   */
+  enableAllSecurityAfterDebugging(): void {
+    // Re-enable key blocking
+    this.config.disableKeys = [
+      'F1', 'F2', 'F3', 'F4', 'F5', 'F6', 'F7', 'F8', 'F9', 'F10', 'F11', 'F12',
+      'Tab', 'Alt', 'Ctrl', 'Meta', 'Shift',
+      'PrintScreen', 'ScrollLock', 'Pause',
+      'Insert', 'Delete', 'Home', 'End', 'PageUp', 'PageDown',
+      'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'
+    ];
+    
+    // Re-enable all prevention measures
+    this.config.preventTabSwitch = true;
+    this.config.preventWindowResize = true;
+    this.config.preventContextMenu = true;
+    this.config.preventDevTools = true;
+    
+    console.log('🔒 All security measures re-enabled after debugging');
+  }
+
+  /**
    * Get remaining exam time (if auto-stop is configured)
    */
   getRemainingTime(): number | null {
@@ -285,6 +348,53 @@ export class ExamSecurityService {
     // This is a simplified implementation
     // In a real scenario, you'd track the start time more precisely
     return this.examDuration;
+  }
+
+  /**
+   * Prevent ESC key from exiting fullscreen mode
+   * 
+   * This method uses multiple strategies to prevent ESC key from exiting fullscreen:
+   * 1. Intercepts both keydown and keyup events
+   * 2. Uses capture phase (true) to intercept before other handlers
+   * 3. Prevents event propagation and immediate propagation
+   * 4. Handles both document and window level events
+   * 5. Does NOT log as violation since it's expected behavior
+   */
+  private preventEscKey(): void {
+    const keydownHandler = (event: Event) => {
+      const keyboardEvent = event as KeyboardEvent;
+      if (keyboardEvent.key === 'Escape' || keyboardEvent.code === 'Escape') {
+        keyboardEvent.preventDefault();
+        keyboardEvent.stopPropagation();
+        keyboardEvent.stopImmediatePropagation();
+        console.warn('🚫 ESC key blocked to prevent fullscreen exit');
+        return false;
+      }
+    };
+
+    const keyupHandler = (event: Event) => {
+      const keyboardEvent = event as KeyboardEvent;
+      if (keyboardEvent.key === 'Escape' || keyboardEvent.code === 'Escape') {
+        keyboardEvent.preventDefault();
+        keyboardEvent.stopPropagation();
+        keyboardEvent.stopImmediatePropagation();
+        return false;
+      }
+    };
+
+    // Use capture phase to intercept ESC key early on both keydown and keyup
+    document.addEventListener('keydown', keydownHandler, true);
+    document.addEventListener('keyup', keyupHandler, true);
+    
+    this.eventListeners.push({ event: 'keydown', handler: keydownHandler });
+    this.eventListeners.push({ event: 'keyup', handler: keyupHandler });
+    
+    // Also prevent ESC on window level
+    window.addEventListener('keydown', keydownHandler, true);
+    window.addEventListener('keyup', keyupHandler, true);
+    
+    this.eventListeners.push({ event: 'keydown', handler: keydownHandler });
+    this.eventListeners.push({ event: 'keyup', handler: keyupHandler });
   }
 
   /**

@@ -59,7 +59,7 @@ const IPDetectionTest: React.FC = () => {
   };
 
   return (
-    <div className="max-w-2xl mx-auto p-6">
+    <div className="max-w-full sm:max-w-md md:max-w-2xl mx-auto p-4 sm:p-6">
       <Card className="p-6">
         <h2 className="text-2xl font-bold text-gray-900 mb-6">
           IP Detection Test

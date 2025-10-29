@@ -19,6 +19,7 @@ import { JobDescriptionsService } from '../../services/jobDescriptions';
 import { JobDescription } from '../../types';
 import CreateQuestionModal from '../../components/exam/CreateQuestionModal';
 import GenerateQuestionModal from '../../components/exam/GenerateQuestionModal';
+import { getButtonClass, getIconClass } from '../../styles/buttonStyles';
 
 interface QuestionStats {
   total: number;
@@ -227,36 +228,38 @@ const QuestionBankPage: React.FC = () => {
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
       <div className="bg-white border-b border-gray-200">
-        <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-8">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between h-auto sm:h-16 py-4 sm:py-0 space-y-3 sm:space-y-0">
+        <div className="w-full max-w-full md:max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between h-auto md:h-16 py-4 md:py-0 space-y-3 md:space-y-0">
             <div className="min-w-0 flex-1">
-              <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Question Bank</h1>
-              <p className="text-xs sm:text-sm text-gray-600">Manage and organize exam questions</p>
+              <h1 className="text-lg sm:text-xl md:text-2xl font-bold text-gray-900">Question Bank</h1>
+              <p className="text-sm sm:text-base text-gray-600">Manage and organize exam questions</p>
             </div>
-            <div className="flex flex-col sm:flex-row items-stretch sm:items-center space-y-2 sm:space-y-0 sm:space-x-3">
+            <div className="flex flex-wrap gap-2 sm:gap-3">
               <button
                 onClick={() => setShowGenerateModal(true)}
-                className="flex items-center justify-center space-x-1 sm:space-x-2 px-3 sm:px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm"
+                className={getButtonClass('success')}
               >
-                <Zap className="w-3 h-3 sm:w-4 sm:h-4" />
-                <span>Generate with AI</span>
+                <Zap className={getIconClass('success')} />
+                <span className="hidden sm:inline">Generate with AI</span>
+                <span className="sm:hidden">Generate</span>
               </button>
               <button
                 onClick={() => setShowCreateModal(true)}
-                className="flex items-center justify-center space-x-1 sm:space-x-2 px-3 sm:px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm"
+                className={getButtonClass('primary')}
               >
-                <Plus className="w-3 h-3 sm:w-4 sm:h-4" />
-                <span>Add Question</span>
+                <Plus className={getIconClass('primary')} />
+                <span className="hidden sm:inline">Add Question</span>
+                <span className="sm:hidden">Add</span>
               </button>
             </div>
           </div>
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-8 py-4 sm:py-6 lg:py-8">
+      <div className="w-full max-w-full md:max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
         {/* Statistics Cards */}
         {stats && (
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4 lg:gap-6 mb-6 sm:mb-8">
+          <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5 mb-6">
             <div className="bg-white rounded-lg shadow-sm border p-3 sm:p-4 lg:p-6">
               <div className="text-lg sm:text-xl lg:text-2xl font-bold text-gray-900">{stats.total}</div>
               <div className="text-xs sm:text-sm text-gray-600">Total Questions</div>
@@ -379,23 +382,23 @@ const QuestionBankPage: React.FC = () => {
                 <div className="flex flex-wrap items-center gap-2">
                   <button
                     onClick={() => handleBulkAction('approve')}
-                    className="flex items-center space-x-1 px-2 sm:px-3 py-1 bg-green-600 text-white rounded text-xs sm:text-sm hover:bg-green-700"
+                    className={`${getButtonClass('small')} bg-green-600 text-white hover:bg-green-700`}
                   >
-                    <CheckCircle className="w-3 h-3" />
+                    <CheckCircle className={getIconClass('small')} />
                     <span>Approve</span>
                   </button>
                   <button
                     onClick={() => handleBulkAction('reject')}
-                    className="flex items-center space-x-1 px-2 sm:px-3 py-1 bg-red-600 text-white rounded text-xs sm:text-sm hover:bg-red-700"
+                    className={`${getButtonClass('small')} bg-red-600 text-white hover:bg-red-700`}
                   >
-                    <XCircle className="w-3 h-3" />
+                    <XCircle className={getIconClass('small')} />
                     <span>Reject</span>
                   </button>
                   <button
                     onClick={() => handleBulkAction('delete')}
-                    className="flex items-center space-x-1 px-2 sm:px-3 py-1 bg-gray-600 text-white rounded text-xs sm:text-sm hover:bg-gray-700"
+                    className={`${getButtonClass('small')} bg-gray-600 text-white hover:bg-gray-700`}
                   >
-                    <Trash2 className="w-3 h-3" />
+                    <Trash2 className={getIconClass('small')} />
                     <span>Delete</span>
                   </button>
                 </div>
@@ -415,114 +418,230 @@ const QuestionBankPage: React.FC = () => {
 
         {/* Questions Table */}
         <div className="bg-white rounded-lg shadow-sm border">
-          <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th className="px-3 sm:px-6 py-2 sm:py-3 text-left">
-                    <input
-                      type="checkbox"
-                      checked={selectedQuestions.size === questions.length && questions.length > 0}
-                      onChange={(e) => handleSelectAll(e.target.checked)}
-                      className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                    />
-                  </th>
-                  <th className="px-3 sm:px-6 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Question
-                  </th>
-                  <th className="px-3 sm:px-6 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Category
-                  </th>
-                  <th className="px-3 sm:px-6 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Difficulty
-                  </th>
-                  <th className="px-3 sm:px-6 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Status
-                  </th>
-                  <th className="px-3 sm:px-6 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Creator
-                  </th>
-                  <th className="px-3 sm:px-6 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Points
-                  </th>
-                  <th className="px-3 sm:px-6 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Actions
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
-                {questions.map((question) => (
-                  <tr key={question.id} className="hover:bg-gray-50">
-                    <td className="px-3 sm:px-6 py-3 sm:py-4">
+          {/* Desktop Table View */}
+          <div className="hidden md:block overflow-x-auto">
+            <div className="inline-block min-w-full align-middle">
+              <table className="min-w-full divide-y divide-gray-200">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th className="px-3 sm:px-6 py-2 sm:py-3 text-left whitespace-nowrap">
                       <input
                         type="checkbox"
-                        checked={selectedQuestions.has(question.id)}
-                        onChange={(e) => handleQuestionSelect(question.id, e.target.checked)}
+                        checked={selectedQuestions.size === questions.length && questions.length > 0}
+                        onChange={(e) => handleSelectAll(e.target.checked)}
                         className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                       />
-                    </td>
-                    <td className="px-3 sm:px-6 py-3 sm:py-4">
-                      <div className="max-w-xs">
-                        <button
-                          onClick={() => handleViewQuestionDetails(question)}
-                          className="text-left w-full hover:bg-gray-50 rounded p-1 -m-1"
-                        >
-                          <div className="text-xs sm:text-sm font-medium text-gray-900 truncate">
-                            {question.question_text}
-                          </div>
-                          <div className="text-xs text-gray-500">
-                            {question.question_type.toUpperCase()} • {question.time_limit_seconds}s
-                          </div>
-                        </button>
-                      </div>
-                    </td>
-                    <td className="px-3 sm:px-6 py-3 sm:py-4">
-                      <span className={`inline-flex px-1.5 sm:px-2 py-0.5 sm:py-1 text-xs font-semibold rounded-full ${getCategoryColor(question.question_category)}`}>
-                        {question.question_category}
-                      </span>
-                    </td>
-                    <td className="px-3 sm:px-6 py-3 sm:py-4">
-                      <span className={`inline-flex px-1.5 sm:px-2 py-0.5 sm:py-1 text-xs font-semibold rounded-full ${getDifficultyColor(question.difficulty_level)}`}>
-                        {question.difficulty_level}
-                      </span>
-                    </td>
-                    <td className="px-3 sm:px-6 py-3 sm:py-4">
-                      <span className={`inline-flex px-1.5 sm:px-2 py-0.5 sm:py-1 text-xs font-semibold rounded-full ${getStatusColor(question.status)}`}>
-                        {question.status}
-                      </span>
-                    </td>
-                    <td className="px-3 sm:px-6 py-3 sm:py-4">
-                      <span className="text-xs sm:text-sm text-gray-900">
-                        {question.created_by === 'ai' ? 'AI' : 'HR'}
-                      </span>
-                    </td>
-                    <td className="px-3 sm:px-6 py-3 sm:py-4">
-                      <span className="text-xs sm:text-sm font-medium text-gray-900">
-                        {question.points}
-                      </span>
-                    </td>
-                    <td className="px-3 sm:px-6 py-3 sm:py-4">
-                      <div className="flex items-center space-x-1 sm:space-x-2">
-                        <button
-                          onClick={() => handleViewQuestionDetails(question)}
-                          className="text-blue-600 hover:text-blue-900 p-1"
-                          title="View Details"
-                        >
-                          <Eye className="w-3 h-3 sm:w-4 sm:h-4" />
-                        </button>
-                        <button
-                          onClick={() => handleDeleteQuestion(question.id)}
-                          className="text-red-600 hover:text-red-900 p-1"
-                          title="Delete"
-                        >
-                          <Trash2 className="w-3 h-3 sm:w-4 sm:h-4" />
-                        </button>
-                      </div>
-                    </td>
+                    </th>
+                    <th className="px-3 sm:px-6 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+                      Question
+                    </th>
+                    <th className="px-3 sm:px-6 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+                      Category
+                    </th>
+                    <th className="px-3 sm:px-6 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+                      Difficulty
+                    </th>
+                    <th className="px-3 sm:px-6 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+                      Status
+                    </th>
+                    <th className="px-3 sm:px-6 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+                      Creator
+                    </th>
+                    <th className="px-3 sm:px-6 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+                      Points
+                    </th>
+                    <th className="px-3 sm:px-6 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+                      Actions
+                    </th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-200">
+                  {questions.map((question) => (
+                    <tr key={question.id} className="hover:bg-gray-50">
+                      <td className="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap">
+                        <input
+                          type="checkbox"
+                          checked={selectedQuestions.has(question.id)}
+                          onChange={(e) => handleQuestionSelect(question.id, e.target.checked)}
+                          className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                        />
+                      </td>
+                      <td className="px-3 sm:px-6 py-3 sm:py-4">
+                        <div className="max-w-xs">
+                          <button
+                            onClick={() => handleViewQuestionDetails(question)}
+                            className="text-left w-full hover:bg-gray-50 rounded p-1 -m-1"
+                          >
+                            <div className="text-xs sm:text-sm font-medium text-gray-900 truncate">
+                              {question.question_text}
+                            </div>
+                            <div className="text-xs text-gray-500">
+                              {question.question_type.toUpperCase()} • {question.time_limit_seconds}s
+                            </div>
+                          </button>
+                        </div>
+                      </td>
+                      <td className="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap">
+                        <span className={`inline-flex px-1.5 sm:px-2 py-0.5 sm:py-1 text-xs font-semibold rounded-full ${getCategoryColor(question.question_category)}`}>
+                          {question.question_category}
+                        </span>
+                      </td>
+                      <td className="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap">
+                        <span className={`inline-flex px-1.5 sm:px-2 py-0.5 sm:py-1 text-xs font-semibold rounded-full ${getDifficultyColor(question.difficulty_level)}`}>
+                          {question.difficulty_level}
+                        </span>
+                      </td>
+                      <td className="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap">
+                        <span className={`inline-flex px-1.5 sm:px-2 py-0.5 sm:py-1 text-xs font-semibold rounded-full ${getStatusColor(question.status)}`}>
+                          {question.status}
+                        </span>
+                      </td>
+                      <td className="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap">
+                        <span className="text-xs sm:text-sm text-gray-900">
+                          {question.created_by === 'ai' ? 'AI' : 'HR'}
+                        </span>
+                      </td>
+                      <td className="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap">
+                        <span className="text-xs sm:text-sm font-medium text-gray-900">
+                          {question.points}
+                        </span>
+                      </td>
+                      <td className="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap">
+                        <div className="flex items-center space-x-1 sm:space-x-2">
+                          <button
+                            onClick={() => handleViewQuestionDetails(question)}
+                            className="text-blue-600 hover:text-blue-900 p-1"
+                            title="View Details"
+                          >
+                            <Eye className="w-3 h-3 sm:w-4 sm:h-4" />
+                          </button>
+                          <button
+                            onClick={() => handleDeleteQuestion(question.id)}
+                            className="text-red-600 hover:text-red-900 p-1"
+                            title="Delete"
+                          >
+                            <Trash2 className="w-3 h-3 sm:w-4 sm:h-4" />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          {/* Mobile Card View */}
+          <div className="md:hidden space-y-3 p-3 sm:p-4">
+            {/* Mobile Select All */}
+            <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+              <div className="flex items-center space-x-2">
+                <input
+                  type="checkbox"
+                  checked={selectedQuestions.size === questions.length && questions.length > 0}
+                  onChange={(e) => handleSelectAll(e.target.checked)}
+                  className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                />
+                <span className="text-sm font-medium text-gray-700">
+                  Select All ({questions.length})
+                </span>
+              </div>
+              {showBulkActions && (
+                <button
+                  onClick={() => {
+                    setSelectedQuestions(new Set());
+                    setShowBulkActions(false);
+                  }}
+                  className="text-blue-600 hover:text-blue-800 text-sm"
+                >
+                  Clear
+                </button>
+              )}
+            </div>
+
+            {questions.map((question) => (
+              <div key={question.id} className="bg-white border border-gray-200 rounded-lg p-3 sm:p-4 shadow-sm max-w-full overflow-hidden">
+                {/* Header with Checkbox and Actions */}
+                <div className="flex items-start justify-between mb-3 gap-2">
+                  <div className="flex items-start space-x-2 min-w-0 flex-1">
+                    <input
+                      type="checkbox"
+                      checked={selectedQuestions.has(question.id)}
+                      onChange={(e) => handleQuestionSelect(question.id, e.target.checked)}
+                      className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 mt-1 flex-shrink-0"
+                    />
+                    <div className="min-w-0 flex-1">
+                      <button
+                        onClick={() => handleViewQuestionDetails(question)}
+                        className="text-left w-full hover:bg-gray-50 rounded p-1 -m-1"
+                      >
+                        <h3 className="text-sm font-medium text-gray-900 break-words leading-tight">
+                          {question.question_text}
+                        </h3>
+                        <div className="text-xs text-gray-500 mt-1">
+                          {question.question_type.toUpperCase()} • {question.time_limit_seconds}s
+                        </div>
+                      </button>
+                    </div>
+                  </div>
+                  <div className="flex items-center space-x-1 flex-shrink-0">
+                    <button
+                      onClick={() => handleViewQuestionDetails(question)}
+                      className="text-blue-600 hover:text-blue-900 p-1"
+                      title="View Details"
+                    >
+                      <Eye className="w-4 h-4" />
+                    </button>
+                    <button
+                      onClick={() => handleDeleteQuestion(question.id)}
+                      className="text-red-600 hover:text-red-900 p-1"
+                      title="Delete"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
+                
+                {/* Question Details Grid */}
+                <div className="grid grid-cols-2 gap-2 sm:gap-3 text-xs mb-3">
+                  <div className="min-w-0">
+                    <span className="text-gray-500">Category:</span>
+                    <span className={`ml-1 inline-flex px-1.5 py-0.5 text-xs font-semibold rounded-full ${getCategoryColor(question.question_category)}`}>
+                      {question.question_category}
+                    </span>
+                  </div>
+                  <div className="min-w-0">
+                    <span className="text-gray-500">Difficulty:</span>
+                    <span className={`ml-1 inline-flex px-1.5 py-0.5 text-xs font-semibold rounded-full ${getDifficultyColor(question.difficulty_level)}`}>
+                      {question.difficulty_level}
+                    </span>
+                  </div>
+                  <div className="min-w-0">
+                    <span className="text-gray-500">Status:</span>
+                    <span className={`ml-1 inline-flex px-1.5 py-0.5 text-xs font-semibold rounded-full ${getStatusColor(question.status)}`}>
+                      {question.status}
+                    </span>
+                  </div>
+                  <div className="min-w-0">
+                    <span className="text-gray-500">Points:</span>
+                    <span className="ml-1 font-medium text-gray-900">{question.points}</span>
+                  </div>
+                </div>
+                
+                {/* Creator and Additional Info */}
+                <div className="flex items-center justify-between pt-3 border-t border-gray-100">
+                  <div className="text-xs text-gray-500">
+                    Created by: <span className="font-medium text-gray-900">{question.created_by === 'ai' ? 'AI' : 'HR'}</span>
+                  </div>
+                  <button 
+                    onClick={() => handleViewQuestionDetails(question)}
+                    className="text-blue-600 hover:text-blue-800 text-xs font-medium whitespace-nowrap"
+                  >
+                    View Details →
+                  </button>
+                </div>
+              </div>
+            ))}
           </div>
 
           {/* Empty State */}
@@ -594,7 +713,7 @@ const QuestionBankPage: React.FC = () => {
                   <button
                     onClick={() => setCurrentPage(1)}
                     disabled={currentPage === 1}
-                    className="px-2 py-1 text-xs sm:text-sm border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                    className={`${getButtonClass('pagination')} ${currentPage === 1 ? 'opacity-50 cursor-not-allowed' : 'hover:bg-gray-50'}`}
                     title="First page"
                   >
                     ««
@@ -604,7 +723,7 @@ const QuestionBankPage: React.FC = () => {
                   <button
                     onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
                     disabled={currentPage === 1}
-                    className="px-2 sm:px-3 py-1 text-xs sm:text-sm border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                    className={`${getButtonClass('pagination')} ${currentPage === 1 ? 'opacity-50 cursor-not-allowed' : 'hover:bg-gray-50'}`}
                   >
                     Previous
                   </button>
@@ -627,10 +746,10 @@ const QuestionBankPage: React.FC = () => {
                         <button
                           key={pageNum}
                           onClick={() => setCurrentPage(pageNum)}
-                          className={`px-2 py-1 text-xs sm:text-sm border rounded-md ${
+                          className={`${getButtonClass('pagination')} ${
                             currentPage === pageNum
                               ? 'bg-blue-600 text-white border-blue-600'
-                              : 'border-gray-300 hover:bg-gray-50'
+                              : 'hover:bg-gray-50'
                           }`}
                         >
                           {pageNum}
@@ -643,16 +762,16 @@ const QuestionBankPage: React.FC = () => {
                   <button
                     onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
                     disabled={currentPage === totalPages}
-                    className="px-2 sm:px-3 py-1 text-xs sm:text-sm border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                    className={`${getButtonClass('pagination')} ${currentPage === totalPages ? 'opacity-50 cursor-not-allowed' : 'hover:bg-gray-50'}`}
                   >
                     Next
                   </button>
-                  
+
                   {/* Last Page */}
                   <button
                     onClick={() => setCurrentPage(totalPages)}
                     disabled={currentPage === totalPages}
-                    className="px-2 py-1 text-xs sm:text-sm border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                    className={`${getButtonClass('pagination')} ${currentPage === totalPages ? 'opacity-50 cursor-not-allowed' : 'hover:bg-gray-50'}`}
                     title="Last page"
                   >
                     »»
