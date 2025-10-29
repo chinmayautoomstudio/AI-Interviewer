@@ -76,7 +76,7 @@ const LoginPage: React.FC = () => {
       {/* Abstract Background Image */}
       <div 
         className="absolute inset-0 bg-cover bg-center bg-no-repeat"
-        style={{ backgroundImage: `url('/background-login.jpeg')` }}
+        style={{ backgroundImage: `url(${process.env.PUBLIC_URL || ''}/background-login.jpeg)` }}
       >
         {/* Subtle overlay for better text readability */}
         <div className="absolute inset-0 bg-black/20"></div>
@@ -94,7 +94,7 @@ const LoginPage: React.FC = () => {
                 {/* Logo */}
                 <div className="flex items-center space-x-2 sm:space-x-3 mb-6 sm:mb-8">
                   <img 
-                    src="/AI-Interviewer-logo.png" 
+                    src={`${process.env.PUBLIC_URL || ''}/AI-Interviewer-logo.png`}
                     alt="AI HR Saathi" 
                     className="h-6 sm:h-8 w-auto"
                   />
