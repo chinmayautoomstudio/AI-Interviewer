@@ -9,6 +9,13 @@ export interface ExamResultWithDetails extends ExamResult {
   jobDescription: JobDescription;
   examSession: ExamSession;
   aiEvaluation?: any;
+  securityViolations?: Array<{
+    id: string;
+    violation_type: string;
+    violation_details: string;
+    severity: 'low' | 'medium' | 'high';
+    timestamp: string;
+  }>;
 }
 
 export interface ExamResultsFilter {
@@ -138,25 +145,44 @@ export class ExamResultsService {
       }
 
       // Transform the data to match our interface
-      const transformedData: ExamResultWithDetails[] = (data || []).map(result => ({
-        id: result.id,
-        examSessionId: result.exam_session_id,
-        candidateId: result.candidate_id,
-        totalScore: result.total_score,
-        maxScore: result.max_score,
-        percentage: result.percentage,
-        correctAnswers: result.correct_answers,
-        wrongAnswers: result.wrong_answers,
-        skippedQuestions: result.skipped_questions,
-        technicalScore: result.technical_score,
-        aptitudeScore: result.aptitude_score,
-        timeTakenMinutes: result.time_taken_minutes,
-        evaluationStatus: result.evaluation_status,
-        aiEvaluation: result.ai_evaluation,
-        createdAt: result.created_at,
-        candidate: result.exam_session?.candidate,
-        jobDescription: result.exam_session?.job_description,
-        examSession: result.exam_session
+      const transformedData: ExamResultWithDetails[] = await Promise.all((data || []).map(async (result) => {
+        // Fetch security violations for this session
+        let securityViolations: any[] = [];
+        if (result.exam_session_id) {
+          try {
+            const { data: violations } = await supabase
+              .from('exam_security_violations')
+              .select('*')
+              .eq('exam_session_id', result.exam_session_id)
+              .order('timestamp', { ascending: false });
+            
+            securityViolations = violations || [];
+          } catch (err) {
+            console.warn('Failed to fetch security violations:', err);
+          }
+        }
+
+        return {
+          id: result.id,
+          examSessionId: result.exam_session_id,
+          candidateId: result.candidate_id,
+          totalScore: result.total_score,
+          maxScore: result.max_score,
+          percentage: result.percentage,
+          correctAnswers: result.correct_answers,
+          wrongAnswers: result.wrong_answers,
+          skippedQuestions: result.skipped_questions,
+          technicalScore: result.technical_score,
+          aptitudeScore: result.aptitude_score,
+          timeTakenMinutes: result.time_taken_minutes,
+          evaluationStatus: result.evaluation_status,
+          aiEvaluation: result.ai_evaluation,
+          createdAt: result.created_at,
+          candidate: result.exam_session?.candidate,
+          jobDescription: result.exam_session?.job_description,
+          examSession: result.exam_session,
+          securityViolations: securityViolations
+        };
       }));
 
       // Apply search filter after transformation
@@ -229,6 +255,22 @@ export class ExamResultsService {
         return { success: false, error: error.message };
       }
 
+      // Fetch security violations for this session
+      let securityViolations: any[] = [];
+      if (data.exam_session_id) {
+        try {
+          const { data: violations } = await supabase
+            .from('exam_security_violations')
+            .select('*')
+            .eq('exam_session_id', data.exam_session_id)
+            .order('timestamp', { ascending: false });
+          
+          securityViolations = violations || [];
+        } catch (err) {
+          console.warn('Failed to fetch security violations:', err);
+        }
+      }
+
       const transformedData: ExamResultWithDetails = {
         id: data.id,
         examSessionId: data.exam_session_id,
@@ -247,7 +289,8 @@ export class ExamResultsService {
         createdAt: data.created_at,
         candidate: data.exam_session?.candidate,
         jobDescription: data.exam_session?.job_description,
-        examSession: data.exam_session
+        examSession: data.exam_session,
+        securityViolations: securityViolations
       };
 
       return { success: true, data: transformedData };

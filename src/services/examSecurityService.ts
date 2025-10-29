@@ -31,16 +31,15 @@ export class ExamSecurityService {
       disableKeys: [
         'F1', 'F2', 'F3', 'F4', 'F5', 'F6', 'F7', 'F8', 'F9', 'F10', 'F11', 'F12',
         'Tab', 'Alt', 'Ctrl', 'Meta', 'Shift',
-        // 'PrintScreen', // TEMPORARILY DISABLED FOR DEBUGGING - ALLOWS SCREENSHOTS
-        'ScrollLock', 'Pause',
+        'PrintScreen', 'ScrollLock', 'Pause',
         'Insert', 'Delete', 'Home', 'End', 'PageUp', 'PageDown',
         'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'
         // Note: ESC is handled separately to prevent fullscreen exit
       ],
       preventTabSwitch: true,
-      preventWindowResize: false, // TEMPORARILY DISABLED FOR MOBILE SCREENSHOTS
-      preventContextMenu: false, // TEMPORARILY DISABLED FOR MOBILE SCREENSHOTS
-      preventDevTools: false, // TEMPORARILY DISABLED FOR MOBILE SCREENSHOTS
+      preventWindowResize: true,
+      preventContextMenu: true,
+      preventDevTools: true,
       logViolations: true,
       maxViolations: 10,
       ...config
@@ -141,12 +140,25 @@ export class ExamSecurityService {
     try {
       const element = document.documentElement;
       
+      // Standard API (Chrome, Edge, Opera)
       if (element.requestFullscreen) {
         await element.requestFullscreen();
-      } else if ((element as any).webkitRequestFullscreen) {
+      } 
+      // Firefox-specific API (mozRequestFullScreen with capital S)
+      else if ((element as any).mozRequestFullScreen) {
+        await (element as any).mozRequestFullScreen();
+      }
+      // Webkit API (Safari, older Chrome)
+      else if ((element as any).webkitRequestFullscreen) {
         await (element as any).webkitRequestFullscreen();
-      } else if ((element as any).msRequestFullscreen) {
+      }
+      // MS API (IE/Edge legacy)
+      else if ((element as any).msRequestFullscreen) {
         await (element as any).msRequestFullscreen();
+      }
+      else {
+        console.warn('⚠️ Fullscreen API not supported in this browser');
+        return false;
       }
 
       this.isFullscreen = true;
@@ -165,11 +177,20 @@ export class ExamSecurityService {
    */
   async exitFullscreen(): Promise<boolean> {
     try {
+      // Standard API
       if (document.exitFullscreen) {
         await document.exitFullscreen();
-      } else if ((document as any).webkitExitFullscreen) {
+      }
+      // Firefox-specific API (mozCancelFullScreen with capital S)
+      else if ((document as any).mozCancelFullScreen) {
+        await (document as any).mozCancelFullScreen();
+      }
+      // Webkit API
+      else if ((document as any).webkitExitFullscreen) {
         await (document as any).webkitExitFullscreen();
-      } else if ((document as any).msExitFullscreen) {
+      }
+      // MS API
+      else if ((document as any).msExitFullscreen) {
         await (document as any).msExitFullscreen();
       }
 
@@ -188,6 +209,7 @@ export class ExamSecurityService {
   isInFullscreen(): boolean {
     return !!(
       document.fullscreenElement ||
+      (document as any).mozFullScreenElement ||
       (document as any).webkitFullscreenElement ||
       (document as any).msFullscreenElement
     );
@@ -412,6 +434,7 @@ export class ExamSecurityService {
         
         keyboardEvent.preventDefault();
         keyboardEvent.stopPropagation();
+        keyboardEvent.stopImmediatePropagation();
         
         this.logViolation({
           type: 'key_press',
@@ -430,6 +453,7 @@ export class ExamSecurityService {
         if (['c', 'v', 'x', 'a', 'z', 'y', 's', 'p', 'f', 'g', 'h', 'r', 't', 'w', 'n', 'o'].includes(key.toLowerCase())) {
           keyboardEvent.preventDefault();
           keyboardEvent.stopPropagation();
+          keyboardEvent.stopImmediatePropagation();
           
           this.logViolation({
             type: 'key_press',
@@ -447,6 +471,7 @@ export class ExamSecurityService {
       if (keyboardEvent.altKey && key === 'Tab') {
         keyboardEvent.preventDefault();
         keyboardEvent.stopPropagation();
+        keyboardEvent.stopImmediatePropagation();
         
         this.logViolation({
           type: 'key_press',
@@ -460,8 +485,19 @@ export class ExamSecurityService {
       }
     };
 
+    // Use capture phase (true) to intercept events early, before other handlers
+    // This is critical for Firefox compatibility
     document.addEventListener('keydown', handler, true);
+    window.addEventListener('keydown', handler, true);
+    
+    // Also add keyup handler for better coverage
+    document.addEventListener('keyup', handler, true);
+    window.addEventListener('keyup', handler, true);
+    
     this.eventListeners.push({ event: 'keydown', handler });
+    this.eventListeners.push({ event: 'keydown', handler }); // Window listener
+    this.eventListeners.push({ event: 'keyup', handler });
+    this.eventListeners.push({ event: 'keyup', handler }); // Window listener
   }
 
   /**

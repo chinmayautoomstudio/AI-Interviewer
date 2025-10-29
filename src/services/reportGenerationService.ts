@@ -109,7 +109,7 @@ export class ReportGenerationService {
       // Analyze performance
       const mcqResults = this.analyzeMCQPerformance(responses);
       const textResults = this.analyzeTextPerformance(responses);
-      const questionAnalysis = this.analyzeQuestions(responses);
+      const questionAnalysis = await this.analyzeQuestions(responses, sessionId, session.job_description_id);
       const skillGaps = this.identifySkillGaps(questionAnalysis, jobDescription);
       const { strengths, weaknesses, recommendations } = this.generateInsights(questionAnalysis, skillGaps);
       
@@ -361,8 +361,8 @@ export class ReportGenerationService {
   /**
    * Analyze individual questions
    */
-  private analyzeQuestions(responses: ExamResponse[]): QuestionAnalysis[] {
-    return responses.map(response => {
+  private async analyzeQuestions(responses: ExamResponse[], sessionId: string, jobDescriptionId: string | null): Promise<QuestionAnalysis[]> {
+    const answeredQuestions: QuestionAnalysis[] = responses.map(response => {
       const question = response.question;
       const evaluationDetails = response.evaluation_details;
       
@@ -382,6 +382,82 @@ export class ReportGenerationService {
         feedback: evaluationDetails?.ai_evaluation?.feedback
       };
     });
+
+    // Get unanswered MCQ questions
+    const unansweredQuestions = await this.getUnansweredMCQs(sessionId, jobDescriptionId, responses);
+    
+    return [...answeredQuestions, ...unansweredQuestions];
+  }
+
+  /**
+   * Get unanswered MCQ questions for the session
+   */
+  private async getUnansweredMCQs(sessionId: string, jobDescriptionId: string | null, responses: ExamResponse[]): Promise<QuestionAnalysis[]> {
+    if (!jobDescriptionId) return [];
+
+    try {
+      // Get categories from answered questions to limit scope
+      const answeredCategories = new Set(
+        responses
+          .filter(r => r.question?.question_type === 'mcq')
+          .map(r => r.question?.question_category || 'general')
+      );
+
+      // If no MCQ responses, return empty (can't determine which questions were shown)
+      if (answeredCategories.size === 0) {
+        return [];
+      }
+
+      // Get MCQ questions for this job description in the same categories
+      const categoriesArray = Array.from(answeredCategories);
+      const { data: allMCQs, error } = await supabase
+        .from('exam_questions')
+        .select('*')
+        .eq('job_description_id', jobDescriptionId)
+        .eq('question_type', 'mcq')
+        .eq('status', 'approved')
+        .eq('is_active', true)
+        .in('question_category', categoriesArray);
+
+      if (error || !allMCQs) {
+        console.error('Error fetching MCQ questions:', error);
+        return [];
+      }
+
+      // Get question IDs that have responses
+      const answeredQuestionIds = new Set(responses.map(r => r.question_id));
+
+      // Find unanswered MCQ questions
+      const unansweredMCQs = allMCQs.filter(q => !answeredQuestionIds.has(q.id));
+
+      // Limit to maximum 50 unanswered questions to avoid overwhelming the report
+      const limitedUnansweredMCQs = unansweredMCQs.slice(0, 50);
+
+      // Convert to QuestionAnalysis format
+      return limitedUnansweredMCQs.map(question => ({
+        questionId: question.id,
+        questionText: question.question_text || '',
+        questionType: 'mcq' as const,
+        category: question.question_category || 'general',
+        difficulty: question.difficulty_level || 'medium',
+        points: question.points || 1,
+        candidateAnswer: '', // No answer provided
+        correctAnswer: question.correct_answer,
+        pointsEarned: 0, // No points earned
+        isCorrect: false, // Not answered
+        timeTaken: undefined,
+        evaluationDetails: undefined,
+        feedback: {
+          overall: 'This question was not answered by the candidate.',
+          strengths: [],
+          weaknesses: ['Question was skipped or not attempted'],
+          suggestions: ['Review the question and practice similar concepts']
+        }
+      }));
+    } catch (error) {
+      console.error('Error getting unanswered MCQs:', error);
+      return [];
+    }
   }
 
   /**

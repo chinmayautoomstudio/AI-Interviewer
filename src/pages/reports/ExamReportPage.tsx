@@ -425,21 +425,40 @@ const SinglePageReport: React.FC<{ reportData: ReportData }> = ({ reportData }) 
                     <span className="text-xs text-gray-500 bg-gray-50 px-2 py-1 rounded">{question.category}</span>
                     <span className="text-xs text-gray-500 bg-gray-50 px-2 py-1 rounded">{question.difficulty}</span>
                   </div>
-                  <p className="text-sm text-gray-800 mb-2 font-medium">{question.questionText}</p>
-                  <p className="text-sm text-gray-600">
-                    <span className="font-medium">Answer:</span> {question.candidateAnswer}
-                  </p>
-                  {question.correctAnswer && (
-                    <p className="text-sm text-gray-600 mt-1">
-                      <span className="font-medium">Correct Answer:</span> {question.correctAnswer}
-                    </p>
+              <p className="text-sm text-gray-600 mb-2 font-medium">{question.questionText}</p>
+                  {question.candidateAnswer ? (
+                    <>
+                      <p className="text-sm text-gray-600">
+                        <span className="font-medium">Answer:</span> {question.candidateAnswer}
+                      </p>
+                      {question.correctAnswer && (
+                        <p className="text-sm text-gray-600 mt-1">
+                          <span className="font-medium">Correct Answer:</span> {question.correctAnswer}
+                        </p>
+                      )}
+                    </>
+                  ) : (
+                    <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3 mt-2">
+                      <p className="text-sm text-yellow-800 font-medium">
+                        ⚠️ Not Answered
+                      </p>
+                      {question.correctAnswer && (
+                        <p className="text-sm text-gray-600 mt-1">
+                          <span className="font-medium">Correct Answer:</span> {question.correctAnswer}
+                        </p>
+                      )}
+                    </div>
                   )}
                 </div>
                 <div className="flex items-center space-x-3 ml-4">
-                  {question.isCorrect ? (
-                    <CheckCircle className="h-6 w-6 text-green-500" />
+                  {question.candidateAnswer ? (
+                    question.isCorrect ? (
+                      <CheckCircle className="h-6 w-6 text-green-500" />
+                    ) : (
+                      <XCircle className="h-6 w-6 text-red-500" />
+                    )
                   ) : (
-                    <XCircle className="h-6 w-6 text-red-500" />
+                    <AlertCircle className="h-6 w-6 text-yellow-500" />
                   )}
                   <div className="text-right">
                     <div className="text-lg font-bold">{question.pointsEarned}/{question.points}</div>
@@ -1113,7 +1132,7 @@ const ComprehensiveReportView: React.FC<{
               
               <div className="mt-3 p-3 bg-gray-50 rounded-lg">
                 <p className="text-sm text-gray-700 mb-2 font-medium">{question.feedback}</p>
-                {question.strengths.length > 0 && (
+                {question.strengths && question.strengths.length > 0 && (
                   <div className="mb-2">
                     <p className="text-xs font-medium text-green-600 mb-1">Strengths:</p>
                     <ul className="text-xs text-green-700 list-disc list-inside space-y-1">
@@ -1123,7 +1142,7 @@ const ComprehensiveReportView: React.FC<{
                     </ul>
                   </div>
                 )}
-                {question.improvements.length > 0 && (
+                {question.improvements && question.improvements.length > 0 && (
                   <div>
                     <p className="text-xs font-medium text-red-600 mb-1">Improvements:</p>
                     <ul className="text-xs text-red-700 list-disc list-inside space-y-1">

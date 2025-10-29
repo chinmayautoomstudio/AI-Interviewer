@@ -27,7 +27,9 @@ import {
   CheckCircle, 
   AlertTriangle,
   Loader2,
-  Clock
+  Clock,
+  User,
+  Mail
 } from 'lucide-react';
 
 export const CandidateExamPage: React.FC = () => {
@@ -62,10 +64,16 @@ export const CandidateExamPage: React.FC = () => {
   }, [session]);
 
   // Exam start handler
-  const handleExamStart = useCallback(() => {
+  const handleExamStart = useCallback(async () => {
     setExamStarted(true);
     console.log('🎯 Exam started with full security monitoring');
-  }, []);
+    
+    // Ensure security monitoring is active
+    if (!examSecurityService.isSecurityActive()) {
+      console.log('⚠️ Security monitoring not active, starting it now...');
+      examSecurityService.startMonitoring(handleSecurityViolation, session?.duration_minutes);
+    }
+  }, [session, handleSecurityViolation]);
 
   // Exam end handler
   const handleExamEnd = useCallback(() => {
@@ -183,9 +191,11 @@ export const CandidateExamPage: React.FC = () => {
         if (examSession.status === 'in_progress') {
           console.log('✅ Exam already in progress - skipping instructions');
           setShowInstructions(false);
-          setExamStarted(true);
+          // Don't set examStarted to true here - let FullScreenExam handle it after security is confirmed active
+          // This ensures the security warning modal still shows
         } else {
           setShowInstructions(true);
+          setExamStarted(false); // Ensure warning shows for new sessions
         }
 
         // Start exam if not already started
@@ -387,10 +397,21 @@ export const CandidateExamPage: React.FC = () => {
     return () => clearInterval(interval);
   }, [session, timeRemaining, handleTimeUp, examStarted]);
 
-  // Start timer when exam begins
+  // Start timer when exam begins - ONLY after user consent is given
   useEffect(() => {
+    // Only start timer if:
+    // 1. Instructions are closed
+    // 2. Questions are loaded
+    // 3. Exam hasn't started yet (timer-wise)
+    // 4. Security monitoring is active (meaning user gave consent)
     if (!showInstructions && questions.length > 0 && !examStarted) {
-      startExamTimer();
+      // Check if security is active - this confirms user gave consent
+      if (examSecurityService.isSecurityActive()) {
+        console.log('✅ Security active - starting exam timer after user consent');
+        startExamTimer();
+      } else {
+        console.log('⏸️ Waiting for user consent before starting exam timer');
+      }
     }
   }, [showInstructions, questions.length, examStarted, startExamTimer]);
 
@@ -618,6 +639,8 @@ export const CandidateExamPage: React.FC = () => {
           questionTypes: ['Multiple Choice', 'Text Questions'],
           passingScore: 60
         }}
+        candidate={session.candidate}
+        jobDescription={session.job_description}
       />
     );
   }
@@ -641,7 +664,7 @@ export const CandidateExamPage: React.FC = () => {
           <div className="flex items-center justify-between h-14 sm:h-16">
             {/* Mobile Header */}
             <div className="flex items-center space-x-2 sm:space-x-4 flex-1 min-w-0">
-              <div className="flex items-center space-x-2 sm:space-x-3">
+              <div className="flex items-center space-x-2 sm:space-x-3 flex-1 min-w-0">
                 <div className="w-6 h-6 sm:w-8 sm:h-8 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-lg flex items-center justify-center flex-shrink-0">
                   <span className="text-white font-bold text-xs sm:text-sm">E</span>
                 </div>
@@ -649,10 +672,25 @@ export const CandidateExamPage: React.FC = () => {
                   <h1 className="text-sm sm:text-lg font-semibold text-gray-900 truncate">
                     {session?.job_description?.title || 'Online Exam'}
                   </h1>
-                  <div className="flex items-center space-x-1 sm:space-x-2 text-xs sm:text-sm text-gray-600">
+                  <div className="flex items-center space-x-1 sm:space-x-2 text-xs sm:text-sm text-gray-600 flex-wrap">
                     <span>Q{currentQuestionIndex + 1}/{questions.length}</span>
                     <span className="hidden sm:inline">•</span>
                     <span className="hidden sm:inline">{answeredQuestions.size} answered</span>
+                    {/* Candidate Information */}
+                    {session?.candidate && (
+                      <>
+                        <span className="hidden md:inline">•</span>
+                        <div className="hidden md:flex items-center space-x-1">
+                          <User className="w-3 h-3 text-gray-500" />
+                          <span className="truncate max-w-[120px]">{session.candidate.name}</span>
+                        </div>
+                        <span className="hidden lg:inline">•</span>
+                        <div className="hidden lg:flex items-center space-x-1">
+                          <Mail className="w-3 h-3 text-gray-500" />
+                          <span className="truncate max-w-[150px]">{session.candidate.email}</span>
+                        </div>
+                      </>
+                    )}
                   </div>
                 </div>
               </div>
@@ -728,6 +766,26 @@ export const CandidateExamPage: React.FC = () => {
         <div className="grid grid-cols-1 xl:grid-cols-4 gap-4 sm:gap-6 h-full">
           {/* Main content */}
           <div className="xl:col-span-3 flex flex-col space-y-4 sm:space-y-6">
+            {/* Candidate Information Card - Mobile */}
+            {session?.candidate && (
+              <div className="md:hidden bg-white/80 backdrop-blur-sm rounded-lg sm:rounded-xl border border-gray-200/50 shadow-sm p-3 sm:p-4">
+                <div className="flex items-center space-x-3">
+                  <div className="w-10 h-10 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-full flex items-center justify-center flex-shrink-0">
+                    <User className="w-5 h-5 text-white" />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <div className="text-sm font-semibold text-gray-900 truncate">
+                      {session.candidate.name}
+                    </div>
+                    <div className="flex items-center space-x-1 text-xs text-gray-600 truncate">
+                      <Mail className="w-3 h-3 flex-shrink-0" />
+                      <span className="truncate">{session.candidate.email}</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
             {/* Custom Timer with Working Progress Bar */}
             <div className="bg-white/80 backdrop-blur-sm rounded-lg sm:rounded-xl border border-gray-200/50 shadow-sm p-3 sm:p-4">
               <div className="flex items-center space-x-2 sm:space-x-4">

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { examSecurityService, SecurityViolation } from '../../services/examSecurityService';
 
 interface FullScreenExamProps {
@@ -38,28 +38,38 @@ const FullScreenExam: React.FC<FullScreenExamProps> = ({
   }, []);
 
   useEffect(() => {
-    // Check if already in fullscreen
+    // Check if already in fullscreen on mount
     setIsFullscreen(examSecurityService.isInFullscreen());
 
-    // Listen for fullscreen changes
+    // Listen for fullscreen changes - Firefox uses different event names
     const handleFullscreenChange = () => {
-      setIsFullscreen(examSecurityService.isInFullscreen());
+      const isFullscreenNow = examSecurityService.isInFullscreen();
+      setIsFullscreen(isFullscreenNow);
+      
+      // If we exited fullscreen unexpectedly, show warning
+      if (!isFullscreenNow && isSecurityActive) {
+        console.warn('⚠️ Fullscreen exited unexpectedly');
+      }
     };
 
+    // Standard API (Chrome, Edge, Opera)
     document.addEventListener('fullscreenchange', handleFullscreenChange);
-    document.addEventListener('webkitfullscreenchange', handleFullscreenChange);
+    // Firefox-specific events
     document.addEventListener('mozfullscreenchange', handleFullscreenChange);
+    // Webkit API (Safari, older Chrome)
+    document.addEventListener('webkitfullscreenchange', handleFullscreenChange);
+    // MS API (IE/Edge legacy)
     document.addEventListener('MSFullscreenChange', handleFullscreenChange);
 
     return () => {
       document.removeEventListener('fullscreenchange', handleFullscreenChange);
-      document.removeEventListener('webkitfullscreenchange', handleFullscreenChange);
       document.removeEventListener('mozfullscreenchange', handleFullscreenChange);
+      document.removeEventListener('webkitfullscreenchange', handleFullscreenChange);
       document.removeEventListener('MSFullscreenChange', handleFullscreenChange);
     };
-  }, []);
+  }, [isSecurityActive]);
 
-  const handleViolation = (violation: SecurityViolation) => {
+  const handleViolation = useCallback((violation: SecurityViolation) => {
     setViolationCount(prev => prev + 1);
     setShowViolationPopup(true);
     
@@ -71,31 +81,68 @@ const FullScreenExam: React.FC<FullScreenExamProps> = ({
     if (onViolation) {
       onViolation(violation);
     }
-  };
+  }, [onViolation]);
 
   const startExam = async () => {
     try {
+      console.log('🚀 User clicked "Accept & Start Exam" - entering fullscreen...');
+      
       // Enter fullscreen first
       const fullscreenSuccess = await examSecurityService.enterFullscreen();
       
       if (!fullscreenSuccess) {
-        alert('Please allow fullscreen mode to start the exam. This is required for security purposes.');
+        // Check if it's Firefox and provide specific instructions
+        const isFirefox = navigator.userAgent.toLowerCase().indexOf('firefox') > -1;
+        const errorMessage = isFirefox 
+          ? 'Please allow fullscreen mode to start the exam. In Firefox, you may need to press F11 or click the fullscreen button. This is required for security purposes.'
+          : 'Please allow fullscreen mode to start the exam. This is required for security purposes.';
+        alert(errorMessage);
+        console.error('❌ Fullscreen failed');
+        // Keep the modal open so user can try again
         return;
       }
+
+      // Wait a moment for fullscreen to fully activate
+      await new Promise(resolve => setTimeout(resolve, 300));
+
+      // Verify fullscreen is actually active
+      const isActuallyFullscreen = examSecurityService.isInFullscreen();
+      console.log('🔍 Fullscreen check:', { isActuallyFullscreen });
+      
+      if (!isActuallyFullscreen) {
+        const isFirefox = navigator.userAgent.toLowerCase().indexOf('firefox') > -1;
+        const errorMessage = isFirefox 
+          ? 'Fullscreen mode was not activated. Please try again or use F11 to enter fullscreen manually, then refresh the page.'
+          : 'Fullscreen mode was not activated. Please try again or use F11 to enter fullscreen manually.';
+        alert(errorMessage);
+        console.error('❌ Fullscreen verification failed');
+        // Keep the modal open so user can try again
+        return;
+      }
+
+      console.log('✅ Fullscreen activated, starting security monitoring...');
 
       // Start security monitoring with exam duration
       examSecurityService.startMonitoring(handleViolation, examDurationMinutes);
       setIsSecurityActive(true);
-      setShowConsentModal(false);
+      setShowConsentModal(false); // Only hide modal after everything is confirmed active
+      setIsFullscreen(true);
+
+      console.log('✅ Security monitoring started:', {
+        isActive: examSecurityService.isSecurityActive(),
+        isFullscreen: examSecurityService.isInFullscreen()
+      });
 
       if (onExamStart) {
         onExamStart();
       }
 
-      console.log('✅ Exam started with full security monitoring');
+      console.log('✅ Exam started with full security monitoring - user consent confirmed');
     } catch (error) {
       console.error('❌ Failed to start exam:', error);
-      alert('Failed to start exam. Please try again.');
+      alert(`Failed to start exam: ${error instanceof Error ? error.message : 'Unknown error'}. Please try again.`);
+      // Keep the modal open if there was an error
+      setShowConsentModal(true);
     }
   };
 
@@ -126,7 +173,9 @@ const FullScreenExam: React.FC<FullScreenExamProps> = ({
     alert('You must accept the exam terms to proceed. The exam cannot be started without fullscreen mode and security monitoring.');
   };
 
-  // Show consent modal if exam hasn't started
+  // NEVER auto-start the exam - it must only start when user clicks "Accept & Start Exam"
+  // The consent modal must always be shown and cannot be bypassed
+
   if (showConsentModal && showWarning) {
     return (
       <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">

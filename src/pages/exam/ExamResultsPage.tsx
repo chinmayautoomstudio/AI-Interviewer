@@ -12,7 +12,9 @@ import {
   RefreshCw,
   Brain,
   Loader2,
-  FileText
+  FileText,
+  Shield,
+  Globe
 } from 'lucide-react';
 import { examResultsService, ExamResultWithDetails, ExamResultsFilter, ExamResultsStats } from '../../services/examResultsService';
 import ExamResultDetailsModal from '../../components/exam/ExamResultDetailsModal';
@@ -194,6 +196,15 @@ const ExamResultsPage: React.FC = () => {
     if (percentage >= 70) return 'text-blue-600';
     if (percentage >= 50) return 'text-yellow-600';
     return 'text-red-600';
+  };
+
+  const getSeverityColor = (severity: string) => {
+    switch (severity) {
+      case 'high': return 'text-red-600 bg-red-100';
+      case 'medium': return 'text-yellow-600 bg-yellow-100';
+      case 'low': return 'text-blue-600 bg-blue-100';
+      default: return 'text-gray-600 bg-gray-100';
+    }
   };
 
   const formatDate = (dateString: string) => {
@@ -380,7 +391,8 @@ const ExamResultsPage: React.FC = () => {
         </div>
         
         <div className="overflow-x-auto -mx-3 sm:-mx-4 lg:-mx-8">
-          <table className="w-full">
+          <div className="inline-block min-w-full align-middle">
+            <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-gray-50">
               <tr>
                 <th className="px-3 sm:px-6 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -404,7 +416,10 @@ const ExamResultsPage: React.FC = () => {
                 <th className="px-3 sm:px-6 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Completed
                 </th>
-                <th className="px-3 sm:px-6 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-3 sm:px-6 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[150px]">
+                  Security & IP
+                </th>
+                <th className="px-3 sm:px-6 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider sticky right-0 bg-gray-50 z-10 min-w-[140px] border-l border-gray-200">
                   Actions
                 </th>
               </tr>
@@ -456,44 +471,101 @@ const ExamResultsPage: React.FC = () => {
                   <td className="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap text-xs sm:text-sm text-gray-500">
                     {formatDate(result.createdAt)}
                   </td>
-                  <td className="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap text-xs sm:text-sm font-medium">
+                  <td className="px-3 sm:px-6 py-3 sm:py-4">
+                    <div className="space-y-1 text-xs sm:text-sm">
+                      {/* IP Address */}
+                      {result.examSession?.ip_address && (
+                        <div className="flex items-center space-x-1 text-gray-700">
+                          <Globe className="w-3 h-3 sm:w-4 sm:h-4 text-gray-500 flex-shrink-0" />
+                          <span className="font-mono truncate max-w-[120px] sm:max-w-none" title={result.examSession.ip_address}>
+                            {result.examSession.ip_address}
+                          </span>
+                        </div>
+                      )}
+                      
+                      {/* User Agent */}
+                      {result.examSession?.user_agent && (
+                        <div className="text-gray-600 truncate max-w-[150px] sm:max-w-[200px]" title={result.examSession.user_agent}>
+                          {result.examSession.user_agent.length > 40 
+                            ? result.examSession.user_agent.substring(0, 40) + '...'
+                            : result.examSession.user_agent}
+                        </div>
+                      )}
+                      
+                      {/* Security Violations */}
+                      {result.securityViolations && result.securityViolations.length > 0 && (
+                        <div className="flex items-center space-x-2 flex-wrap gap-1">
+                          <Shield className="w-3 h-3 sm:w-4 sm:h-4 text-orange-600 flex-shrink-0" />
+                          <span className="text-gray-700 font-medium">
+                            {result.securityViolations.length} violation{result.securityViolations.length > 1 ? 's' : ''}
+                          </span>
+                          <div className="flex items-center space-x-1">
+                            {result.securityViolations.filter((v: any) => v.severity === 'high').length > 0 && (
+                              <span className={`px-1.5 py-0.5 rounded text-xs font-semibold ${getSeverityColor('high')}`}>
+                                {result.securityViolations.filter((v: any) => v.severity === 'high').length} High
+                              </span>
+                            )}
+                            {result.securityViolations.filter((v: any) => v.severity === 'medium').length > 0 && (
+                              <span className={`px-1.5 py-0.5 rounded text-xs font-semibold ${getSeverityColor('medium')}`}>
+                                {result.securityViolations.filter((v: any) => v.severity === 'medium').length} Med
+                              </span>
+                            )}
+                            {result.securityViolations.filter((v: any) => v.severity === 'low').length > 0 && (
+                              <span className={`px-1.5 py-0.5 rounded text-xs font-semibold ${getSeverityColor('low')}`}>
+                                {result.securityViolations.filter((v: any) => v.severity === 'low').length} Low
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      )}
+                      
+                      {/* No violations */}
+                      {(!result.securityViolations || result.securityViolations.length === 0) && (
+                        <div className="flex items-center space-x-1 text-green-600">
+                          <CheckCircle className="w-3 h-3 sm:w-4 sm:h-4" />
+                          <span>No violations</span>
+                        </div>
+                      )}
+                    </div>
+                  </td>
+                  <td className="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap text-xs sm:text-sm font-medium sticky right-0 bg-white z-10 hover:bg-gray-50 border-l border-gray-200">
                     <div className="flex items-center space-x-1 sm:space-x-2">
                       <button 
                         onClick={() => handleViewDetails(result.id)}
-                        className="text-ai-teal hover:text-ai-teal/80"
+                        className="text-ai-teal hover:text-ai-teal/80 p-1 rounded hover:bg-gray-100 transition-colors"
                         title="View Details"
                       >
                         <Eye className="h-3 w-3 sm:h-4 sm:w-4" />
                       </button>
                       <button 
                         onClick={() => handleGenerateReport(result.examSessionId)}
-                        className="text-green-600 hover:text-green-800"
+                        className="text-green-600 hover:text-green-800 p-1 rounded hover:bg-gray-100 transition-colors"
                         title="Generate Report"
                       >
                         <FileText className="h-3 w-3 sm:h-4 sm:w-4" />
                       </button>
                       <button 
                         onClick={() => handleGenerateComprehensiveReport(result.examSessionId)}
-                        className="text-purple-600 hover:text-purple-800"
+                        className="text-purple-600 hover:text-purple-800 p-1 rounded hover:bg-gray-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                         title="Generate Comprehensive Report"
                         disabled={generatingReports.has(result.examSessionId)}
                       >
                         {generatingReports.has(result.examSessionId) ? (
-                          <Loader2 className="h-4 w-4 animate-spin" />
+                          <Loader2 className="h-3 w-3 sm:h-4 sm:w-4 animate-spin" />
                         ) : (
-                          <Brain className="h-4 w-4" />
+                          <Brain className="h-3 w-3 sm:h-4 sm:w-4" />
                         )}
                       </button>
                       <button 
                         onClick={() => handleTriggerTextEvaluation(result.examSessionId)}
                         disabled={evaluatingSessions.has(result.examSessionId)}
-                        className="text-blue-600 hover:text-blue-800 disabled:text-gray-400 disabled:cursor-not-allowed"
+                        className="text-blue-600 hover:text-blue-800 p-1 rounded hover:bg-gray-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                         title="Trigger Text Evaluation"
                       >
                         {evaluatingSessions.has(result.examSessionId) ? (
-                          <Loader2 className="h-4 w-4 animate-spin" />
+                          <Loader2 className="h-3 w-3 sm:h-4 sm:w-4 animate-spin" />
                         ) : (
-                          <Brain className="h-4 w-4" />
+                          <Brain className="h-3 w-3 sm:h-4 sm:w-4" />
                         )}
                       </button>
                     </div>
@@ -502,6 +574,7 @@ const ExamResultsPage: React.FC = () => {
               ))}
             </tbody>
           </table>
+          </div>
         </div>
       </div>
 

@@ -8,9 +8,11 @@ CREATE TABLE IF NOT EXISTS exam_email_logs (
     job_title VARCHAR(255) NOT NULL,
     exam_token VARCHAR(255) NOT NULL,
     email_type VARCHAR(50) NOT NULL DEFAULT 'exam_invitation',
+    email_content TEXT,
+    text_content TEXT,
     sent_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     message_id VARCHAR(255),
-    status VARCHAR(20) DEFAULT 'sent' CHECK (status IN ('sent', 'failed', 'delivered', 'bounced')),
+    status VARCHAR(50) DEFAULT 'sent' CHECK (status IN ('sent', 'failed', 'delivered', 'bounced', 'stored_in_db')),
     error_message TEXT,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );

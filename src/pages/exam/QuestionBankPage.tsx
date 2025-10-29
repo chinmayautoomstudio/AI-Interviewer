@@ -234,22 +234,20 @@ const QuestionBankPage: React.FC = () => {
               <h1 className="text-lg sm:text-xl md:text-2xl font-bold text-gray-900">Question Bank</h1>
               <p className="text-sm sm:text-base text-gray-600">Manage and organize exam questions</p>
             </div>
-            <div className="flex flex-wrap gap-2 sm:gap-3">
+            <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
               <button
                 onClick={() => setShowGenerateModal(true)}
-                className={getButtonClass('success')}
+                className="flex items-center justify-center space-x-2 px-4 py-2.5 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white rounded-lg font-semibold text-sm sm:text-base transition-all duration-200 shadow-md hover:shadow-lg min-w-[140px] sm:min-w-[160px]"
               >
-                <Zap className={getIconClass('success')} />
-                <span className="hidden sm:inline">Generate with AI</span>
-                <span className="sm:hidden">Generate</span>
+                <Zap className="w-4 h-4 sm:w-5 sm:h-5" />
+                <span className="whitespace-nowrap">Generate with AI</span>
               </button>
               <button
                 onClick={() => setShowCreateModal(true)}
-                className={getButtonClass('primary')}
+                className="flex items-center justify-center space-x-2 px-4 py-2.5 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white rounded-lg font-semibold text-sm sm:text-base transition-all duration-200 shadow-md hover:shadow-lg min-w-[140px] sm:min-w-[160px]"
               >
-                <Plus className={getIconClass('primary')} />
-                <span className="hidden sm:inline">Add Question</span>
-                <span className="sm:hidden">Add</span>
+                <Plus className="w-4 h-4 sm:w-5 sm:h-5" />
+                <span className="whitespace-nowrap">Add Question</span>
               </button>
             </div>
           </div>
@@ -421,113 +419,113 @@ const QuestionBankPage: React.FC = () => {
           {/* Desktop Table View */}
           <div className="hidden md:block overflow-x-auto">
             <div className="inline-block min-w-full align-middle">
-              <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50">
-                  <tr>
+            <table className="min-w-full divide-y divide-gray-200">
+              <thead className="bg-gray-50">
+                <tr>
                     <th className="px-3 sm:px-6 py-2 sm:py-3 text-left whitespace-nowrap">
+                    <input
+                      type="checkbox"
+                      checked={selectedQuestions.size === questions.length && questions.length > 0}
+                      onChange={(e) => handleSelectAll(e.target.checked)}
+                      className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                    />
+                  </th>
+                    <th className="px-3 sm:px-6 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+                    Question
+                  </th>
+                    <th className="px-3 sm:px-6 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+                    Category
+                  </th>
+                    <th className="px-3 sm:px-6 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+                    Difficulty
+                  </th>
+                    <th className="px-3 sm:px-6 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+                    Status
+                  </th>
+                    <th className="px-3 sm:px-6 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+                    Creator
+                  </th>
+                    <th className="px-3 sm:px-6 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+                    Points
+                  </th>
+                    <th className="px-3 sm:px-6 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+                    Actions
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {questions.map((question) => (
+                  <tr key={question.id} className="hover:bg-gray-50">
+                      <td className="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap">
                       <input
                         type="checkbox"
-                        checked={selectedQuestions.size === questions.length && questions.length > 0}
-                        onChange={(e) => handleSelectAll(e.target.checked)}
+                        checked={selectedQuestions.has(question.id)}
+                        onChange={(e) => handleQuestionSelect(question.id, e.target.checked)}
                         className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                       />
-                    </th>
-                    <th className="px-3 sm:px-6 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
-                      Question
-                    </th>
-                    <th className="px-3 sm:px-6 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
-                      Category
-                    </th>
-                    <th className="px-3 sm:px-6 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
-                      Difficulty
-                    </th>
-                    <th className="px-3 sm:px-6 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
-                      Status
-                    </th>
-                    <th className="px-3 sm:px-6 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
-                      Creator
-                    </th>
-                    <th className="px-3 sm:px-6 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
-                      Points
-                    </th>
-                    <th className="px-3 sm:px-6 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
-                      Actions
-                    </th>
+                    </td>
+                    <td className="px-3 sm:px-6 py-3 sm:py-4">
+                      <div className="max-w-xs">
+                        <button
+                          onClick={() => handleViewQuestionDetails(question)}
+                          className="text-left w-full hover:bg-gray-50 rounded p-1 -m-1"
+                        >
+                          <div className="text-xs sm:text-sm font-medium text-gray-900 truncate">
+                            {question.question_text}
+                          </div>
+                          <div className="text-xs text-gray-500">
+                            {question.question_type.toUpperCase()} • {question.time_limit_seconds}s
+                          </div>
+                        </button>
+                      </div>
+                    </td>
+                      <td className="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap">
+                      <span className={`inline-flex px-1.5 sm:px-2 py-0.5 sm:py-1 text-xs font-semibold rounded-full ${getCategoryColor(question.question_category)}`}>
+                        {question.question_category}
+                      </span>
+                    </td>
+                      <td className="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap">
+                      <span className={`inline-flex px-1.5 sm:px-2 py-0.5 sm:py-1 text-xs font-semibold rounded-full ${getDifficultyColor(question.difficulty_level)}`}>
+                        {question.difficulty_level}
+                      </span>
+                    </td>
+                      <td className="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap">
+                      <span className={`inline-flex px-1.5 sm:px-2 py-0.5 sm:py-1 text-xs font-semibold rounded-full ${getStatusColor(question.status)}`}>
+                        {question.status}
+                      </span>
+                    </td>
+                      <td className="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap">
+                      <span className="text-xs sm:text-sm text-gray-900">
+                        {question.created_by === 'ai' ? 'AI' : 'HR'}
+                      </span>
+                    </td>
+                      <td className="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap">
+                      <span className="text-xs sm:text-sm font-medium text-gray-900">
+                        {question.points}
+                      </span>
+                    </td>
+                      <td className="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap">
+                      <div className="flex items-center space-x-1 sm:space-x-2">
+                        <button
+                          onClick={() => handleViewQuestionDetails(question)}
+                          className="text-blue-600 hover:text-blue-900 p-1"
+                          title="View Details"
+                        >
+                          <Eye className="w-3 h-3 sm:w-4 sm:h-4" />
+                        </button>
+                        <button
+                          onClick={() => handleDeleteQuestion(question.id)}
+                          className="text-red-600 hover:text-red-900 p-1"
+                          title="Delete"
+                        >
+                          <Trash2 className="w-3 h-3 sm:w-4 sm:h-4" />
+                        </button>
+                      </div>
+                    </td>
                   </tr>
-                </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
-                  {questions.map((question) => (
-                    <tr key={question.id} className="hover:bg-gray-50">
-                      <td className="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap">
-                        <input
-                          type="checkbox"
-                          checked={selectedQuestions.has(question.id)}
-                          onChange={(e) => handleQuestionSelect(question.id, e.target.checked)}
-                          className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                        />
-                      </td>
-                      <td className="px-3 sm:px-6 py-3 sm:py-4">
-                        <div className="max-w-xs">
-                          <button
-                            onClick={() => handleViewQuestionDetails(question)}
-                            className="text-left w-full hover:bg-gray-50 rounded p-1 -m-1"
-                          >
-                            <div className="text-xs sm:text-sm font-medium text-gray-900 truncate">
-                              {question.question_text}
-                            </div>
-                            <div className="text-xs text-gray-500">
-                              {question.question_type.toUpperCase()} • {question.time_limit_seconds}s
-                            </div>
-                          </button>
-                        </div>
-                      </td>
-                      <td className="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap">
-                        <span className={`inline-flex px-1.5 sm:px-2 py-0.5 sm:py-1 text-xs font-semibold rounded-full ${getCategoryColor(question.question_category)}`}>
-                          {question.question_category}
-                        </span>
-                      </td>
-                      <td className="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap">
-                        <span className={`inline-flex px-1.5 sm:px-2 py-0.5 sm:py-1 text-xs font-semibold rounded-full ${getDifficultyColor(question.difficulty_level)}`}>
-                          {question.difficulty_level}
-                        </span>
-                      </td>
-                      <td className="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap">
-                        <span className={`inline-flex px-1.5 sm:px-2 py-0.5 sm:py-1 text-xs font-semibold rounded-full ${getStatusColor(question.status)}`}>
-                          {question.status}
-                        </span>
-                      </td>
-                      <td className="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap">
-                        <span className="text-xs sm:text-sm text-gray-900">
-                          {question.created_by === 'ai' ? 'AI' : 'HR'}
-                        </span>
-                      </td>
-                      <td className="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap">
-                        <span className="text-xs sm:text-sm font-medium text-gray-900">
-                          {question.points}
-                        </span>
-                      </td>
-                      <td className="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap">
-                        <div className="flex items-center space-x-1 sm:space-x-2">
-                          <button
-                            onClick={() => handleViewQuestionDetails(question)}
-                            className="text-blue-600 hover:text-blue-900 p-1"
-                            title="View Details"
-                          >
-                            <Eye className="w-3 h-3 sm:w-4 sm:h-4" />
-                          </button>
-                          <button
-                            onClick={() => handleDeleteQuestion(question.id)}
-                            className="text-red-600 hover:text-red-900 p-1"
-                            title="Delete"
-                          >
-                            <Trash2 className="w-3 h-3 sm:w-4 sm:h-4" />
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+                ))}
+              </tbody>
+            </table>
             </div>
           </div>
 

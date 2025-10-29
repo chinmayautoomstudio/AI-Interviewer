@@ -17,10 +17,7 @@ import {
 import { ExamSession } from '../../types';
 import CreateExamModal from '../../components/exam/CreateExamModal';
 import EmailInvitationModal from '../../components/exam/EmailInvitationModal';
-import IPDetectionTest from '../../components/test/IPDetectionTest';
 import { supabase } from '../../services/supabase';
-import { getButtonClass, getIconClass, getButtonTextClass } from '../../styles/buttonStyles';
-import { examSecurityService } from '../../services/examSecurityService';
 
 interface ExamStats {
   totalQuestions: number;
@@ -55,7 +52,6 @@ const ExamDashboardPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [isCreateExamModalOpen, setIsCreateExamModalOpen] = useState(false);
   const [isEmailInvitationModalOpen, setIsEmailInvitationModalOpen] = useState(false);
-  const [isIPTestModalOpen, setIsIPTestModalOpen] = useState(false);
   const [createdExamToken, setCreatedExamToken] = useState<string | null>(null);
   const [selectedExamSessions, setSelectedExamSessions] = useState<ExamSession[]>([]);
 
@@ -270,16 +266,16 @@ const ExamDashboardPage: React.FC = () => {
               <div className="flex flex-col sm:flex-row items-stretch sm:items-center space-y-2 sm:space-y-0 sm:space-x-2">
                 <button
                   onClick={copyExamLink}
-                  className={getButtonClass('success')}
+                  className="flex items-center justify-center space-x-2 px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg font-semibold text-sm transition-all duration-200 shadow-md hover:shadow-lg"
                 >
-                  <Copy className={getIconClass('success')} />
+                  <Copy className="w-4 h-4" />
                   <span>Copy Link</span>
                 </button>
                 <button
                   onClick={openExamLink}
-                  className={getButtonClass('primary')}
+                  className="flex items-center justify-center space-x-2 px-4 py-2 bg-ai-teal hover:bg-ai-teal-dark text-white rounded-lg font-semibold text-sm transition-all duration-200 shadow-md hover:shadow-lg"
                 >
-                  <ExternalLink className={getIconClass('primary')} />
+                  <ExternalLink className="w-4 h-4" />
                   <span>Open Exam</span>
                 </button>
               </div>
@@ -295,61 +291,36 @@ const ExamDashboardPage: React.FC = () => {
         
         {/* Header */}
         <div className="mb-4 sm:mb-6">
-          <div className="mb-3 sm:mb-4">
-            <h1 className="text-lg sm:text-xl md:text-2xl font-bold text-gray-900">Exam Dashboard</h1>
-            <p className="text-sm sm:text-base text-gray-600 mt-1">Overview of your exam system</p>
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-4 md:mb-6 space-y-4 md:space-y-0">
+            <div className="min-w-0 flex-1">
+              <h1 className="text-lg sm:text-xl md:text-2xl font-bold text-gray-900">Exam Dashboard</h1>
+              <p className="text-sm sm:text-base text-gray-600 mt-1">Overview of your exam system</p>
+            </div>
+            <div className="flex items-center gap-3 flex-shrink-0">
+              <button 
+                onClick={loadDashboardData}
+                className="flex items-center justify-center space-x-2 px-4 py-2.5 bg-gray-600 hover:bg-gray-700 text-white rounded-lg font-semibold text-sm sm:text-base transition-all duration-200 shadow-md hover:shadow-lg min-w-[100px]"
+              >
+                <RefreshCw className="w-4 h-4 sm:w-5 sm:h-5" />
+                <span className="whitespace-nowrap">Refresh</span>
+              </button>
+              <button 
+                onClick={() => navigate('/exams/create')}
+                className="flex items-center justify-center space-x-2 px-4 py-2.5 bg-gradient-to-r from-ai-teal to-ai-teal-light hover:from-ai-teal-dark hover:to-ai-teal text-white rounded-lg font-semibold text-sm sm:text-base transition-all duration-200 shadow-md hover:shadow-lg min-w-[140px] sm:min-w-[160px]"
+              >
+                <Plus className="w-4 h-4 sm:w-5 sm:h-5" />
+                <span className="whitespace-nowrap">Create Exam</span>
+              </button>
+              <button 
+                onClick={() => setIsCreateExamModalOpen(true)}
+                className="flex items-center justify-center space-x-2 px-4 py-2.5 bg-ai-orange hover:bg-ai-orange-dark text-white rounded-lg font-semibold text-sm sm:text-base transition-all duration-200 shadow-md hover:shadow-lg min-w-[140px] sm:min-w-[160px]"
+              >
+                <Calendar className="w-4 h-4 sm:w-5 sm:h-5" />
+                <span className="whitespace-nowrap">Quick Create</span>
+              </button>
+            </div>
           </div>
-          <div className="flex flex-wrap gap-2 sm:gap-3 w-full">
-          <button 
-            onClick={loadDashboardData}
-            className={getButtonClass('secondary')}
-          >
-            <RefreshCw className={getIconClass('secondary')} />
-            <span className={getButtonTextClass()}>Refresh</span>
-          </button>
-          <button 
-            onClick={() => navigate('/exams/create')}
-            className={getButtonClass('primary')}
-          >
-            <Plus className={getIconClass('primary')} />
-            <span className={getButtonTextClass()}>
-              <span className="hidden sm:inline">Create Exam</span>
-              <span className="sm:hidden">Create</span>
-            </span>
-          </button>
-          <button 
-            onClick={() => setIsCreateExamModalOpen(true)}
-            className={getButtonClass('secondary')}
-          >
-            <Calendar className={getIconClass('secondary')} />
-            <span className={getButtonTextClass()}>
-              <span className="hidden sm:inline">Quick Create</span>
-              <span className="sm:hidden">Quick</span>
-            </span>
-          </button>
-          <button 
-            onClick={() => setIsIPTestModalOpen(true)}
-            className={getButtonClass('success')}
-          >
-            <CheckCircle className={getIconClass('success')} />
-            <span className={getButtonTextClass()}>
-              <span className="hidden sm:inline">Test IP</span>
-              <span className="sm:hidden">IP</span>
-            </span>
-          </button>
-          <button 
-            onClick={() => {
-              examSecurityService.disableAllSecurityForDebugging();
-              alert('🔓 All security measures disabled for mobile debugging!\n\nYou can now take screenshots on mobile devices.\n\nRemember to re-enable security after debugging.');
-            }}
-            className="bg-orange-500 text-white px-3 py-2 rounded-lg hover:bg-orange-600 transition-colors flex items-center space-x-1 sm:space-x-2 text-sm min-h-[44px] sm:min-h-0 flex-shrink-0"
-          >
-            <RefreshCw className="w-4 h-4" />
-            <span className="hidden sm:inline">Debug Mode</span>
-            <span className="sm:hidden">Debug</span>
-          </button>
         </div>
-      </div>
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4 mb-6">
@@ -592,7 +563,7 @@ const ExamDashboardPage: React.FC = () => {
             </div>
             <button
               onClick={() => navigate('/exams/create')}
-              className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors text-sm"
+              className="bg-ai-teal text-white px-4 py-2 rounded-lg hover:bg-ai-teal-dark transition-colors text-sm"
             >
               Create Exam Session
             </button>
@@ -665,26 +636,6 @@ const ExamDashboardPage: React.FC = () => {
         examSessions={selectedExamSessions}
         onSuccess={handleEmailInvitationSuccess}
       />
-
-      {/* IP Detection Test Modal */}
-      {isIPTestModalOpen && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50 overflow-y-auto">
-          <div className="bg-white rounded-lg w-full max-w-md sm:max-w-lg md:max-w-xl lg:max-w-4xl max-h-[90vh] overflow-y-auto">
-            <div className="p-4 border-b border-gray-200 flex justify-between items-center">
-              <h2 className="text-xl font-semibold text-gray-900">IP Detection Test</h2>
-              <button
-                onClick={() => setIsIPTestModalOpen(false)}
-                className="text-gray-400 hover:text-gray-600 text-2xl"
-              >
-                ×
-              </button>
-            </div>
-            <div className="p-6">
-              <IPDetectionTest />
-            </div>
-          </div>
-        </div>
-      )}
       </div>
     </div>
   );

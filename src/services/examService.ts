@@ -865,22 +865,37 @@ export class ExamService {
     try {
       console.log('🔄 Recalculating exam results for session:', sessionId);
 
+      // Get session to get total_questions
+      const session = await this.getSessionById(sessionId);
+      if (!session) {
+        console.error('❌ Session not found:', sessionId);
+        return;
+      }
+
       // Get all responses for this session
       const responses = await this.getSessionResponses(sessionId);
       
-      // Calculate totals
-      const totalQuestions = responses.length;
+      // Calculate totals - account for ALL questions, not just answered ones
+      const totalQuestionsInSession = session.total_questions || 0;
+      const answeredQuestions = responses.length;
       const correctAnswers = responses.filter(r => r.is_correct).length;
+      const wrongAnswers = responses.filter(r => !r.is_correct).length;
+      const skippedQuestions = totalQuestionsInSession - answeredQuestions;
+      
+      // Calculate points - only from answered questions
       const totalPoints = responses.reduce((sum, r) => sum + (r.points_earned || 0), 0);
-      const maxPoints = responses.reduce((sum, r) => sum + (r.question?.points || 1), 0);
+      const maxPointsFromAnswered = responses.reduce((sum, r) => sum + (r.question?.points || 1), 0);
+      
+      // For percentage calculation, we need max_points from ALL questions
+      // Get all questions assigned to this session's job description
+      // For now, calculate percentage based on answered questions only
+      // This will be updated when we have question assignment tracking
+      const maxPoints = maxPointsFromAnswered;
       const percentage = maxPoints > 0 ? Math.round((totalPoints / maxPoints) * 100) : 0;
       
       // Determine evaluation status based on percentage (assuming 60% is passing)
       const evaluationStatus = percentage >= 60 ? 'passed' : 'failed';
 
-      // Get the session to get candidate_id
-      const session = await this.getSessionById(sessionId);
-      
       // Check if exam result already exists
       const { data: existingResult } = await supabase
         .from('exam_results')
@@ -899,8 +914,8 @@ export class ExamService {
             max_score: maxPoints,
             percentage: percentage,
             correct_answers: correctAnswers,
-            wrong_answers: totalQuestions - correctAnswers,
-            skipped_questions: 0,
+            wrong_answers: wrongAnswers,
+            skipped_questions: skippedQuestions,
             evaluation_status: evaluationStatus
           })
           .eq('exam_session_id', sessionId);
@@ -916,8 +931,8 @@ export class ExamService {
             max_score: maxPoints,
             percentage: percentage,
             correct_answers: correctAnswers,
-            wrong_answers: totalQuestions - correctAnswers,
-            skipped_questions: 0,
+            wrong_answers: wrongAnswers,
+            skipped_questions: skippedQuestions,
             evaluation_status: evaluationStatus
           }]);
         error = insertError;
@@ -927,8 +942,11 @@ export class ExamService {
         console.error('❌ Error updating exam results:', error);
       } else {
         console.log('✅ Exam results recalculated:', {
-          totalQuestions,
+          totalQuestionsInSession,
+          answeredQuestions,
           correctAnswers,
+          wrongAnswers,
+          skippedQuestions,
           totalPoints,
           maxPoints,
           percentage
@@ -1119,14 +1137,33 @@ export class ExamService {
     // Get all responses
     const responses = await this.getSessionResponses(sessionId);
     
-    // Calculate scores
-    const total_score = responses.reduce((sum, r) => sum + r.points_earned, 0);
-    const max_score = responses.reduce((sum, r) => sum + (r.question?.points || 0), 0);
-    const percentage = max_score > 0 ? (total_score / max_score) * 100 : 0;
-    
+    // Calculate scores - account for ALL questions in the session
+    const totalQuestionsInSession = session.total_questions || 0;
+    const answeredQuestions = responses.length;
     const correct_answers = responses.filter(r => r.is_correct).length;
     const wrong_answers = responses.filter(r => !r.is_correct).length;
-    const skipped_questions = session.total_questions - responses.length;
+    const skipped_questions = Math.max(0, totalQuestionsInSession - answeredQuestions);
+    
+    // Calculate points from answered questions
+    const total_score = responses.reduce((sum, r) => sum + (r.points_earned || 0), 0);
+    const max_score_from_answered = responses.reduce((sum, r) => sum + (r.question?.points || 1), 0);
+    
+    // Note: max_score is calculated from answered questions only
+    // To include unattempted questions, we would need to fetch all questions assigned to the session
+    // For now, percentage is calculated based on answered questions only
+    const max_score = max_score_from_answered;
+    const percentage = max_score > 0 ? Math.round((total_score / max_score) * 100) : 0;
+    
+    console.log('📊 Exam completion calculation:', {
+      totalQuestionsInSession,
+      answeredQuestions,
+      correct_answers,
+      wrong_answers,
+      skipped_questions,
+      total_score,
+      max_score,
+      percentage
+    });
     
     // Calculate time taken
     const startTime = new Date(session.started_at!);

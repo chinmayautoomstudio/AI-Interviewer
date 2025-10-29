@@ -11,8 +11,13 @@ import {
   Monitor,
   Wifi,
   FileText,
-  Users
+  Users,
+  User,
+  Mail,
+  Phone,
+  Briefcase
 } from 'lucide-react';
+import { Candidate, JobDescription } from '../../types';
 
 interface ExamInstructionsProps {
   isOpen: boolean;
@@ -25,13 +30,17 @@ interface ExamInstructionsProps {
     questionTypes: string[];
     passingScore: number;
   };
+  candidate?: Candidate;
+  jobDescription?: JobDescription;
 }
 
 export const ExamInstructions: React.FC<ExamInstructionsProps> = ({
   isOpen,
   onClose,
   onStartExam,
-  examDetails
+  examDetails,
+  candidate,
+  jobDescription
 }) => {
   if (!isOpen) return null;
 
@@ -112,6 +121,108 @@ export const ExamInstructions: React.FC<ExamInstructionsProps> = ({
 
         {/* Exam Details */}
         <div className="p-6 border-b border-gray-200">
+          {/* Candidate Information */}
+          {candidate && (
+            <div className="mb-6">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">Candidate Information</h3>
+              <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg p-4 border border-blue-200">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="flex items-center space-x-3">
+                    <div className="w-10 h-10 bg-blue-600 rounded-full flex items-center justify-center flex-shrink-0">
+                      <User className="w-5 h-5 text-white" />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-xs text-gray-600 uppercase tracking-wide font-medium">Name</p>
+                      <p className="text-sm font-semibold text-gray-900 truncate">{candidate.name}</p>
+                    </div>
+                  </div>
+                  
+                  <div className="flex items-center space-x-3">
+                    <div className="w-10 h-10 bg-green-600 rounded-full flex items-center justify-center flex-shrink-0">
+                      <Mail className="w-5 h-5 text-white" />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-xs text-gray-600 uppercase tracking-wide font-medium">Email</p>
+                      <p className="text-sm font-semibold text-gray-900 truncate">{candidate.email}</p>
+                    </div>
+                  </div>
+                  
+                  {(candidate.phone || candidate.contact_number) && (
+                    <div className="flex items-center space-x-3">
+                      <div className="w-10 h-10 bg-purple-600 rounded-full flex items-center justify-center flex-shrink-0">
+                        <Phone className="w-5 h-5 text-white" />
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <p className="text-xs text-gray-600 uppercase tracking-wide font-medium">Contact</p>
+                        <p className="text-sm font-semibold text-gray-900 truncate">
+                          {candidate.phone || candidate.contact_number || 'N/A'}
+                        </p>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Job Description Information */}
+          {jobDescription && (
+            <div className="mb-6">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">Job Description Details</h3>
+              <div className="bg-gradient-to-r from-teal-50 to-cyan-50 rounded-lg p-4 border border-teal-200">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="flex items-center space-x-3">
+                    <div className="w-10 h-10 bg-teal-600 rounded-full flex items-center justify-center flex-shrink-0">
+                      <Briefcase className="w-5 h-5 text-white" />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-xs text-gray-600 uppercase tracking-wide font-medium">Position</p>
+                      <p className="text-sm font-semibold text-gray-900 truncate">{jobDescription.title}</p>
+                    </div>
+                  </div>
+                  
+                  {jobDescription.department && (
+                    <div className="flex items-center space-x-3">
+                      <div className="w-10 h-10 bg-indigo-600 rounded-full flex items-center justify-center flex-shrink-0">
+                        <Users className="w-5 h-5 text-white" />
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <p className="text-xs text-gray-600 uppercase tracking-wide font-medium">Department</p>
+                        <p className="text-sm font-semibold text-gray-900 truncate">{jobDescription.department}</p>
+                      </div>
+                    </div>
+                  )}
+                  
+                  {jobDescription.location && (
+                    <div className="flex items-center space-x-3">
+                      <div className="w-10 h-10 bg-amber-600 rounded-full flex items-center justify-center flex-shrink-0">
+                        <Monitor className="w-5 h-5 text-white" />
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <p className="text-xs text-gray-600 uppercase tracking-wide font-medium">Location</p>
+                        <p className="text-sm font-semibold text-gray-900 truncate">{jobDescription.location}</p>
+                      </div>
+                    </div>
+                  )}
+                  
+                  {jobDescription.employmentType && (
+                    <div className="flex items-center space-x-3">
+                      <div className="w-10 h-10 bg-pink-600 rounded-full flex items-center justify-center flex-shrink-0">
+                        <FileText className="w-5 h-5 text-white" />
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <p className="text-xs text-gray-600 uppercase tracking-wide font-medium">Employment Type</p>
+                        <p className="text-sm font-semibold text-gray-900 truncate capitalize">
+                          {jobDescription.employmentType.replace('-', ' ')}
+                        </p>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+
           <h3 className="text-lg font-semibold text-gray-900 mb-4">Exam Details</h3>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             <div className="bg-blue-50 rounded-lg p-4">

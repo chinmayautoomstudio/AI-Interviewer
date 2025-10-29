@@ -49,8 +49,12 @@ exports.handler = async (event, context) => {
       };
     }
 
+    // Get API key from environment variables (Netlify functions use RESEND_API_KEY)
+    // Also check for REACT_APP_RESEND_API_KEY for local development compatibility
+    const resendApiKey = process.env.RESEND_API_KEY || process.env.REACT_APP_RESEND_API_KEY;
+    
     // Check if API key is available
-    if (!process.env.REACT_APP_RESEND_API_KEY) {
+    if (!resendApiKey) {
       console.error('Resend API key not found in environment variables');
       console.error('Available env vars:', Object.keys(process.env).filter(key => key.includes('RESEND') || key.includes('EMAIL')));
       return {
@@ -60,13 +64,13 @@ exports.handler = async (event, context) => {
         },
         body: JSON.stringify({ 
           success: false, 
-          error: 'Resend API key not configured. Please add REACT_APP_RESEND_API_KEY to your .env file and restart netlify dev.' 
+          error: 'Resend API key not configured. Please add RESEND_API_KEY to your Netlify environment variables in Site settings > Environment variables.' 
         }),
       };
     }
 
     // Initialize Resend
-    const resend = new Resend(process.env.REACT_APP_RESEND_API_KEY);
+    const resend = new Resend(resendApiKey);
     console.log('Resend initialized successfully');
 
     // Send email
