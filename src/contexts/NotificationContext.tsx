@@ -1,7 +1,7 @@
 // Notification Context
 // Real-time notification system for admin dashboard
 
-import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
 import { notificationService } from '../services/notificationService';
 import { Notification } from '../types/notifications';
 
@@ -24,7 +24,10 @@ interface NotificationProviderProps {
 export const NotificationProvider: React.FC<NotificationProviderProps> = ({ children }) => {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [isConnected, setIsConnected] = useState(false);
-  const [subscriptionId, setSubscriptionId] = useState<string | null>(null);
+  const subscriptionRef = useRef<string | null>(null);
+  
+  // Admin user UUID for user-scoped notifications; falls back to global-only if missing/invalid
+  const ADMIN_USER_ID = '09cca328-e054-4eae-ac08-59ef364de163';
 
   // Calculate unread count
   const unreadCount = notifications.filter(n => !n.isRead).length;
@@ -52,7 +55,7 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
     );
     
     // Update in database
-    await notificationService.markAsRead(notificationId, 'admin');
+    await notificationService.markAsRead(notificationId, ADMIN_USER_ID);
   }, []);
 
   // Mark all notifications as read
@@ -62,7 +65,7 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
     );
     
     // Update in database
-    await notificationService.markAllAsRead('admin');
+    await notificationService.markAllAsRead(ADMIN_USER_ID);
   }, []);
 
   // Clear all notifications
@@ -73,16 +76,16 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
   // Setup real-time subscription
   useEffect(() => {
     console.log('🔔 Setting up notification subscription...');
-    
     try {
-      const subId = notificationService.subscribeToNotifications('admin', (notification) => {
-        console.log('📨 Received notification:', notification);
-        addNotification(notification);
-      });
-      
-      setSubscriptionId(subId);
-      setIsConnected(true);
-      console.log('✅ Notification subscription established');
+      if (!subscriptionRef.current) {
+        const subId = notificationService.subscribeToNotifications(ADMIN_USER_ID, (notification) => {
+          console.log('📨 Received notification:', notification);
+          addNotification(notification);
+        });
+        subscriptionRef.current = subId;
+        setIsConnected(true);
+        console.log('✅ Notification subscription established');
+      }
     } catch (error) {
       console.error('❌ Failed to setup notification subscription:', error);
       setIsConnected(false);
@@ -90,18 +93,19 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
 
     // Cleanup subscription on unmount
     return () => {
-      if (subscriptionId) {
-        notificationService.unsubscribeFromNotifications(subscriptionId);
+      if (subscriptionRef.current) {
+        notificationService.unsubscribeFromNotifications(subscriptionRef.current);
+        subscriptionRef.current = null;
         console.log('🔔 Notification subscription cleaned up');
       }
     };
-  }, [addNotification, subscriptionId]);
+  }, [addNotification]);
 
   // Load initial notifications
   useEffect(() => {
     const loadInitialNotifications = async () => {
       try {
-        const result = await notificationService.getNotifications('admin', { limit: 20 });
+        const result = await notificationService.getNotifications(ADMIN_USER_ID, { limit: 20 });
         if (result.success && result.data) {
           setNotifications(result.data);
         }

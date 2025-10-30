@@ -657,7 +657,7 @@ export const CandidateExamPage: React.FC = () => {
       warningMessage="This exam is monitored for security purposes. Fullscreen mode and security monitoring are required. Please ensure you follow all exam rules and do not attempt to use restricted keys or switch tabs."
       examDurationMinutes={session?.duration_minutes}
     >
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50 fixed inset-0 overflow-auto">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50 fixed inset-0 overflow-auto">
       {/* Header */}
       <div className="bg-white/95 backdrop-blur-sm border-b border-gray-200/50 sticky top-0 z-10 shadow-sm">
         <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-8">
@@ -683,7 +683,7 @@ export const CandidateExamPage: React.FC = () => {
                         <div className="hidden md:flex items-center space-x-1">
                           <User className="w-3 h-3 text-gray-500" />
                           <span className="truncate max-w-[120px]">{session.candidate.name}</span>
-                        </div>
+                  </div>
                         <span className="hidden lg:inline">•</span>
                         <div className="hidden lg:flex items-center space-x-1">
                           <Mail className="w-3 h-3 text-gray-500" />
@@ -808,9 +808,9 @@ export const CandidateExamPage: React.FC = () => {
                       style={{ 
                         width: `${Math.max(0, Math.min(100, ((session?.duration_minutes || 30) - timeRemaining) / (session?.duration_minutes || 30) * 100))}%` 
                       }}
-                    />
+                />
                   </div>
-                </div>
+            </div>
 
                 {/* Warning indicators */}
                 {timeRemaining <= 1 && (
@@ -881,23 +881,23 @@ export const CandidateExamPage: React.FC = () => {
                     </div>
                   </div>
                   
-                  {currentQuestion.question_type === 'mcq' ? (
-                    <MCQQuestion
-                      question={currentQuestion}
-                      selectedAnswer={currentAnswer}
-                      onAnswerSelect={(answer) => handleAnswerSelect(currentQuestion.id, answer)}
-                      disabled={session?.status !== 'in_progress'}
-                    />
-                  ) : (
-                    <TextQuestion
-                      question={currentQuestion}
-                      answer={currentAnswer}
-                      onAnswerChange={(answer) => handleAnswerSelect(currentQuestion.id, answer)}
-                      disabled={session?.status !== 'in_progress'}
-                      maxLength={1000}
-                    />
-                  )}
-                </div>
+                {currentQuestion.question_type === 'mcq' ? (
+                  <MCQQuestion
+                    question={currentQuestion}
+                    selectedAnswer={currentAnswer}
+                    onAnswerSelect={(answer) => handleAnswerSelect(currentQuestion.id, answer)}
+                    disabled={session?.status !== 'in_progress'}
+                  />
+                ) : (
+                  <TextQuestion
+                    question={currentQuestion}
+                    answer={currentAnswer}
+                    onAnswerChange={(answer) => handleAnswerSelect(currentQuestion.id, answer)}
+                    disabled={session?.status !== 'in_progress'}
+                    maxLength={1000}
+                  />
+                )}
+              </div>
 
                 {/* Save Response Button - Hidden on mobile, visible on desktop */}
                 {session?.status === 'in_progress' && (
@@ -928,7 +928,7 @@ export const CandidateExamPage: React.FC = () => {
                         </>
                       )}
                     </button>
-                  </div>
+                </div>
                 )}
               </div>
             ) : (

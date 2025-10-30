@@ -1,0 +1,2003 @@
+[
+  {
+    "question_text": "What will be logged by: console.log(typeof NaN);",
+    "mcq_options": [
+      {
+        "option": "A",
+        "text": "'number'"
+      },
+      {
+        "option": "B",
+        "text": "'NaN'"
+      },
+      {
+        "option": "C",
+        "text": "'undefined'"
+      },
+      {
+        "option": "D",
+        "text": "'object'"
+      }
+    ],
+    "correct_answer": "A",
+    "answer_explanation": "typeof NaN is 'number' because NaN is a numeric value representing Not-a-Number."
+  },
+  {
+    "question_text": "What is the output of: console.log(1 + '2' + 3);",
+    "mcq_options": [
+      {
+        "option": "A",
+        "text": "'6'"
+      },
+      {
+        "option": "B",
+        "text": "'123'"
+      },
+      {
+        "option": "C",
+        "text": "6"
+      },
+      {
+        "option": "D",
+        "text": "'1 2 3'"
+      }
+    ],
+    "correct_answer": "B",
+    "answer_explanation": "String concatenation: 1+'2' => '12', then '12'+3 => '123'."
+  },
+  {
+    "question_text": "What will this print?\n\nconsole.log([] + {});",
+    "mcq_options": [
+      {
+        "option": "A",
+        "text": "'[object Object]'"
+      },
+      {
+        "option": "B",
+        "text": "'[object Object]'"
+      },
+      {
+        "option": "C",
+        "text": "'[object Object]' (string)"
+      },
+      {
+        "option": "D",
+        "text": "'[object Object]' (all equivalent)"
+      }
+    ],
+    "correct_answer": "C",
+    "answer_explanation": "[]+{} coerces to '' + '[object Object]' producing the string '[object Object]'."
+  },
+  {
+    "question_text": "What does this output?\n\nconsole.log('5' - 2);",
+    "mcq_options": [
+      {
+        "option": "A",
+        "text": "'3'"
+      },
+      {
+        "option": "B",
+        "text": "3"
+      },
+      {
+        "option": "C",
+        "text": "NaN"
+      },
+      {
+        "option": "D",
+        "text": "'52'"
+      }
+    ],
+    "correct_answer": "B",
+    "answer_explanation": "'-' triggers numeric coercion, so '5' becomes 5 and 5-2 = 3."
+  },
+  {
+    "question_text": "What will be logged by:\n\nlet a = [1,2]; let b = a; b.push(3); console.log(a);",
+    "mcq_options": [
+      {
+        "option": "A",
+        "text": "[1,2]"
+      },
+      {
+        "option": "B",
+        "text": "[1,2,3]"
+      },
+      {
+        "option": "C",
+        "text": "[3]"
+      },
+      {
+        "option": "D",
+        "text": "Error"
+      }
+    ],
+    "correct_answer": "B",
+    "answer_explanation": "Arrays are assigned by reference; pushing on b changes a as well."
+  },
+  {
+    "question_text": "What is printed by:\n\nconsole.log(0 == '');",
+    "mcq_options": [
+      {
+        "option": "A",
+        "text": "true"
+      },
+      {
+        "option": "B",
+        "text": "false"
+      },
+      {
+        "option": "C",
+        "text": "TypeError"
+      },
+      {
+        "option": "D",
+        "text": "undefined"
+      }
+    ],
+    "correct_answer": "A",
+    "answer_explanation": "'' coerces to 0 in abstract equality, so 0 == '' is true."
+  },
+  {
+    "question_text": "What will this output?\n\nconsole.log([] == 0);",
+    "mcq_options": [
+      {
+        "option": "A",
+        "text": "true"
+      },
+      {
+        "option": "B",
+        "text": "false"
+      },
+      {
+        "option": "C",
+        "text": "NaN"
+      },
+      {
+        "option": "D",
+        "text": "TypeError"
+      }
+    ],
+    "correct_answer": "A",
+    "answer_explanation": "[] coerces to '' then to 0, so [] == 0 is true."
+  },
+  {
+    "question_text": "What does this print?\n\nconsole.log(typeof function(){});",
+    "mcq_options": [
+      {
+        "option": "A",
+        "text": "'function'"
+      },
+      {
+        "option": "B",
+        "text": "'object'"
+      },
+      {
+        "option": "C",
+        "text": "'undefined'"
+      },
+      {
+        "option": "D",
+        "text": "'callable'"
+      }
+    ],
+    "correct_answer": "A",
+    "answer_explanation": "In JS, typeof a function returns 'function'."
+  },
+  {
+    "question_text": "What will be logged?\n\nconsole.log(!!'0');",
+    "mcq_options": [
+      {
+        "option": "A",
+        "text": "false"
+      },
+      {
+        "option": "B",
+        "text": "true"
+      },
+      {
+        "option": "C",
+        "text": "'0'"
+      },
+      {
+        "option": "D",
+        "text": "0"
+      }
+    ],
+    "correct_answer": "B",
+    "answer_explanation": "'0' is a non-empty string and truthy, so !!'0' is true."
+  },
+  {
+    "question_text": "What is the output of:\n\nconsole.log([] === []);",
+    "mcq_options": [
+      {
+        "option": "A",
+        "text": "true"
+      },
+      {
+        "option": "B",
+        "text": "false"
+      },
+      {
+        "option": "C",
+        "text": "TypeError"
+      },
+      {
+        "option": "D",
+        "text": "Depends on engine"
+      }
+    ],
+    "correct_answer": "B",
+    "answer_explanation": "Different array literals are different references; strict equality returns false."
+  },
+  {
+    "question_text": "What will this code print?\n\nfor (var i=0;i<3;i++){ setTimeout(()=>console.log(i),0); }",
+    "mcq_options": [
+      {
+        "option": "A",
+        "text": "0 1 2"
+      },
+      {
+        "option": "B",
+        "text": "3 3 3"
+      },
+      {
+        "option": "C",
+        "text": "Undefined behavior"
+      },
+      {
+        "option": "D",
+        "text": "0 0 0"
+      }
+    ],
+    "correct_answer": "B",
+    "answer_explanation": "var is function-scoped; callbacks run after loop so i is 3 in each callback."
+  },
+  {
+    "question_text": "What will be printed?\n\nfor (let i=0;i<3;i++){ setTimeout(()=>console.log(i),0); }",
+    "mcq_options": [
+      {
+        "option": "A",
+        "text": "0 1 2"
+      },
+      {
+        "option": "B",
+        "text": "3 3 3"
+      },
+      {
+        "option": "C",
+        "text": "Undefined"
+      },
+      {
+        "option": "D",
+        "text": "0 0 0"
+      }
+    ],
+    "correct_answer": "A",
+    "answer_explanation": "let creates block-scoped i, so each callback logs its own i."
+  },
+  {
+    "question_text": "What does this output?\n\nconsole.log(typeof undefined);",
+    "mcq_options": [
+      {
+        "option": "A",
+        "text": "'undefined'"
+      },
+      {
+        "option": "B",
+        "text": "'null'"
+      },
+      {
+        "option": "C",
+        "text": "'object'"
+      },
+      {
+        "option": "D",
+        "text": "'void'"
+      }
+    ],
+    "correct_answer": "A",
+    "answer_explanation": "typeof undefined returns 'undefined'."
+  },
+  {
+    "question_text": "What is the output of:\n\nconsole.log(!!undefined);",
+    "mcq_options": [
+      {
+        "option": "A",
+        "text": "true"
+      },
+      {
+        "option": "B",
+        "text": "false"
+      },
+      {
+        "option": "C",
+        "text": "undefined"
+      },
+      {
+        "option": "D",
+        "text": "TypeError"
+      }
+    ],
+    "correct_answer": "B",
+    "answer_explanation": "undefined is falsy, so !!undefined is false."
+  },
+  {
+    "question_text": "What does this code print?\n\nconsole.log([...'abc'].length);",
+    "mcq_options": [
+      {
+        "option": "A",
+        "text": "2"
+      },
+      {
+        "option": "B",
+        "text": "3"
+      },
+      {
+        "option": "C",
+        "text": "Undefined"
+      },
+      {
+        "option": "D",
+        "text": "NaN"
+      }
+    ],
+    "correct_answer": "B",
+    "answer_explanation": "Spread splits string into ['a','b','c'], length is 3."
+  },
+  {
+    "question_text": "What will be logged?\n\nconsole.log(typeof Symbol());",
+    "mcq_options": [
+      {
+        "option": "A",
+        "text": "'symbol'"
+      },
+      {
+        "option": "B",
+        "text": "'string'"
+      },
+      {
+        "option": "C",
+        "text": "'object'"
+      },
+      {
+        "option": "D",
+        "text": "'unique'"
+      }
+    ],
+    "correct_answer": "A",
+    "answer_explanation": "typeof returns 'symbol' for Symbol values."
+  },
+  {
+    "question_text": "What is printed by:\n\nconsole.log([1,2] === '1,2');",
+    "mcq_options": [
+      {
+        "option": "A",
+        "text": "true"
+      },
+      {
+        "option": "B",
+        "text": "false"
+      },
+      {
+        "option": "C",
+        "text": "TypeError"
+      },
+      {
+        "option": "D",
+        "text": "Depends on engine"
+      }
+    ],
+    "correct_answer": "B",
+    "answer_explanation": "Strict equality does not coerce; array !== string."
+  },
+  {
+    "question_text": "What does this output?\n\nconsole.log(+'');",
+    "mcq_options": [
+      {
+        "option": "A",
+        "text": "0"
+      },
+      {
+        "option": "B",
+        "text": "NaN"
+      },
+      {
+        "option": "C",
+        "text": "' '"
+      },
+      {
+        "option": "D",
+        "text": "'0'"
+      }
+    ],
+    "correct_answer": "A",
+    "answer_explanation": "Unary + coerces empty string to 0."
+  },
+  {
+    "question_text": "What will be result of:\n\nconsole.log(null == undefined);",
+    "mcq_options": [
+      {
+        "option": "A",
+        "text": "true"
+      },
+      {
+        "option": "B",
+        "text": "false"
+      },
+      {
+        "option": "C",
+        "text": "TypeError"
+      },
+      {
+        "option": "D",
+        "text": "Depends"
+      }
+    ],
+    "correct_answer": "A",
+    "answer_explanation": "null and undefined are equal with == but not ===."
+  },
+  {
+    "question_text": "What is output of:\n\nconsole.log(typeof []);",
+    "mcq_options": [
+      {
+        "option": "A",
+        "text": "'array'"
+      },
+      {
+        "option": "B",
+        "text": "'object'"
+      },
+      {
+        "option": "C",
+        "text": "'list'"
+      },
+      {
+        "option": "D",
+        "text": "'object[]'"
+      }
+    ],
+    "correct_answer": "B",
+    "answer_explanation": "Arrays are objects; typeof returns 'object'."
+  },
+  {
+    "question_text": "What does the following print?\n\nconsole.log('b' + 'a' + + 'a' + 'a');",
+    "mcq_options": [
+      {
+        "option": "A",
+        "text": "'baNaNa'"
+      },
+      {
+        "option": "B",
+        "text": "'baNaNa' (famous JS trick)"
+      },
+      {
+        "option": "C",
+        "text": "'baaNa'"
+      },
+      {
+        "option": "D",
+        "text": "'bana'"
+      }
+    ],
+    "correct_answer": "A",
+    "answer_explanation": "+'a' is NaN, so 'b'+'a'+NaN+'a' => 'baNaNa'."
+  },
+  {
+    "question_text": "What will this output?\n\nconsole.log({} + []);",
+    "mcq_options": [
+      {
+        "option": "A",
+        "text": "'[object Object]'"
+      },
+      {
+        "option": "B",
+        "text": "'0'"
+      },
+      {
+        "option": "C",
+        "text": "'[object Object]'"
+      },
+      {
+        "option": "D",
+        "text": "'[object Object]' string"
+      }
+    ],
+    "correct_answer": "A",
+    "answer_explanation": "Object plus array coerces to '[object Object]'."
+  },
+  {
+    "question_text": "What does this print?\n\nconsole.log(typeof (function*(){}));",
+    "mcq_options": [
+      {
+        "option": "A",
+        "text": "'function'"
+      },
+      {
+        "option": "B",
+        "text": "'generator'"
+      },
+      {
+        "option": "C",
+        "text": "'object'"
+      },
+      {
+        "option": "D",
+        "text": "'undefined'"
+      }
+    ],
+    "correct_answer": "A",
+    "answer_explanation": "Generators are functions; typeof returns 'function'."
+  },
+  {
+    "question_text": "What will be logged by:\n\nconsole.log(!!{});",
+    "mcq_options": [
+      {
+        "option": "A",
+        "text": "true"
+      },
+      {
+        "option": "B",
+        "text": "false"
+      },
+      {
+        "option": "C",
+        "text": "undefined"
+      },
+      {
+        "option": "D",
+        "text": "Error"
+      }
+    ],
+    "correct_answer": "A",
+    "answer_explanation": "Objects are truthy, so !!{} is true."
+  },
+  {
+    "question_text": "What is the result of:\n\nconsole.log('5' > 3);",
+    "mcq_options": [
+      {
+        "option": "A",
+        "text": "true"
+      },
+      {
+        "option": "B",
+        "text": "false"
+      },
+      {
+        "option": "C",
+        "text": "TypeError"
+      },
+      {
+        "option": "D",
+        "text": "Depends"
+      }
+    ],
+    "correct_answer": "A",
+    "answer_explanation": "String '5' coerces to number 5, so 5 > 3 is true."
+  },
+  {
+    "question_text": "What does this code output?\n\nconsole.log((function(){ return typeof arguments; })());",
+    "mcq_options": [
+      {
+        "option": "A",
+        "text": "'object'"
+      },
+      {
+        "option": "B",
+        "text": "'array'"
+      },
+      {
+        "option": "C",
+        "text": "'arguments'"
+      },
+      {
+        "option": "D",
+        "text": "'undefined'"
+      }
+    ],
+    "correct_answer": "A",
+    "answer_explanation": "typeof arguments returns 'object' (Arguments object is not an array)."
+  },
+  {
+    "question_text": "What will be logged by:\n\nconsole.log(typeof NaN === 'number');",
+    "mcq_options": [
+      {
+        "option": "A",
+        "text": "true"
+      },
+      {
+        "option": "B",
+        "text": "false"
+      },
+      {
+        "option": "C",
+        "text": "TypeError"
+      },
+      {
+        "option": "D",
+        "text": "NaN"
+      }
+    ],
+    "correct_answer": "A",
+    "answer_explanation": "typeof NaN is 'number', so the comparison is true."
+  },
+  {
+    "question_text": "What will this print?\n\nconsole.log('' + 1 + 0);",
+    "mcq_options": [
+      {
+        "option": "A",
+        "text": "'10'"
+      },
+      {
+        "option": "B",
+        "text": "1"
+      },
+      {
+        "option": "C",
+        "text": "'01'"
+      },
+      {
+        "option": "D",
+        "text": "0"
+      }
+    ],
+    "correct_answer": "A",
+    "answer_explanation": "''+1 => '1', then '1'+0 => '10'."
+  },
+  {
+    "question_text": "What is the result of:\n\nconsole.log(true + false);",
+    "mcq_options": [
+      {
+        "option": "A",
+        "text": "1"
+      },
+      {
+        "option": "B",
+        "text": "0"
+      },
+      {
+        "option": "C",
+        "text": "'truefalse'"
+      },
+      {
+        "option": "D",
+        "text": "NaN"
+      }
+    ],
+    "correct_answer": "A",
+    "answer_explanation": "true coerces to 1 and false to 0, so sum is 1."
+  },
+  {
+    "question_text": "What does this output?\n\nconsole.log([] + null + 1);",
+    "mcq_options": [
+      {
+        "option": "A",
+        "text": "'null1'"
+      },
+      {
+        "option": "B",
+        "text": "'[object Object]1'"
+      },
+      {
+        "option": "C",
+        "text": "'null'"
+      },
+      {
+        "option": "D",
+        "text": "'0null1'"
+      }
+    ],
+    "correct_answer": "A",
+    "answer_explanation": "[] -> '' then '' + null -> 'null', +1 => 'null1'."
+  },
+  {
+    "question_text": "What will be logged?\n\nconsole.log(typeof Math);",
+    "mcq_options": [
+      {
+        "option": "A",
+        "text": "'object'"
+      },
+      {
+        "option": "B",
+        "text": "'function'"
+      },
+      {
+        "option": "C",
+        "text": "'math'"
+      },
+      {
+        "option": "D",
+        "text": "'module'"
+      }
+    ],
+    "correct_answer": "A",
+    "answer_explanation": "Math is a built-in object; typeof returns 'object'."
+  },
+  {
+    "question_text": "What is the output of:\n\nconsole.log(Number(''));",
+    "mcq_options": [
+      {
+        "option": "A",
+        "text": "0"
+      },
+      {
+        "option": "B",
+        "text": "NaN"
+      },
+      {
+        "option": "C",
+        "text": "''"
+      },
+      {
+        "option": "D",
+        "text": "undefined"
+      }
+    ],
+    "correct_answer": "A",
+    "answer_explanation": "Number('') converts empty string to 0."
+  },
+  {
+    "question_text": "What does this print?\n\nconsole.log(typeof (async function(){}));",
+    "mcq_options": [
+      {
+        "option": "A",
+        "text": "'function'"
+      },
+      {
+        "option": "B",
+        "text": "'async'"
+      },
+      {
+        "option": "C",
+        "text": "'object'"
+      },
+      {
+        "option": "D",
+        "text": "'promise'"
+      }
+    ],
+    "correct_answer": "A",
+    "answer_explanation": "Async functions are functions; typeof returns 'function'."
+  },
+  {
+    "question_text": "What will be logged by:\n\nconsole.log((0.1 + 0.2).toFixed(2));",
+    "mcq_options": [
+      {
+        "option": "A",
+        "text": "'0.30'"
+      },
+      {
+        "option": "B",
+        "text": "'0.3'"
+      },
+      {
+        "option": "C",
+        "text": "'0.33'"
+      },
+      {
+        "option": "D",
+        "text": "0.3"
+      }
+    ],
+    "correct_answer": "A",
+    "answer_explanation": "toFixed(2) formats number as string with two decimals '0.30'."
+  },
+  {
+    "question_text": "What is output of:\n\nconsole.log('10' - - '5');",
+    "mcq_options": [
+      {
+        "option": "A",
+        "text": "5"
+      },
+      {
+        "option": "B",
+        "text": "15"
+      },
+      {
+        "option": "C",
+        "text": "'105'"
+      },
+      {
+        "option": "D",
+        "text": "NaN"
+      }
+    ],
+    "correct_answer": "B",
+    "answer_explanation": "'10' - - '5' becomes 10 - -5 => 15."
+  },
+  {
+    "question_text": "What will this print?\n\nconsole.log(typeof null === 'object');",
+    "mcq_options": [
+      {
+        "option": "A",
+        "text": "true"
+      },
+      {
+        "option": "B",
+        "text": "false"
+      },
+      {
+        "option": "C",
+        "text": "TypeError"
+      },
+      {
+        "option": "D",
+        "text": "Depends"
+      }
+    ],
+    "correct_answer": "A",
+    "answer_explanation": "typeof null is 'object', so strict equality yields true."
+  },
+  {
+    "question_text": "What is the output of:\n\nconsole.log('abc' && 0 && true);",
+    "mcq_options": [
+      {
+        "option": "A",
+        "text": "'abc'"
+      },
+      {
+        "option": "B",
+        "text": "0"
+      },
+      {
+        "option": "C",
+        "text": "true"
+      },
+      {
+        "option": "D",
+        "text": "undefined"
+      }
+    ],
+    "correct_answer": "B",
+    "answer_explanation": "&& returns the first falsy operand; 0 is falsy so result is 0."
+  },
+  {
+    "question_text": "What will this code output?\n\nconsole.log(typeof /abc/);",
+    "mcq_options": [
+      {
+        "option": "A",
+        "text": "'object'"
+      },
+      {
+        "option": "B",
+        "text": "'regexp'"
+      },
+      {
+        "option": "C",
+        "text": "'function'"
+      },
+      {
+        "option": "D",
+        "text": "'object' (RegExp)"
+      }
+    ],
+    "correct_answer": "A",
+    "answer_explanation": "Regex literals are objects and typeof returns 'object'."
+  },
+  {
+    "question_text": "What does this print?\n\nconsole.log(!!'');",
+    "mcq_options": [
+      {
+        "option": "A",
+        "text": "false"
+      },
+      {
+        "option": "B",
+        "text": "true"
+      },
+      {
+        "option": "C",
+        "text": "''"
+      },
+      {
+        "option": "D",
+        "text": "0"
+      }
+    ],
+    "correct_answer": "A",
+    "answer_explanation": "Empty string is falsy; !!'' converts to false."
+  },
+  {
+    "question_text": "What will be logged by:\n\nconsole.log(['1','2'] + [3,4]);",
+    "mcq_options": [
+      {
+        "option": "A",
+        "text": "'1,23,4'"
+      },
+      {
+        "option": "B",
+        "text": "'1,23,4' as string"
+      },
+      {
+        "option": "C",
+        "text": "'1,2,3,4'"
+      },
+      {
+        "option": "D",
+        "text": "Error"
+      }
+    ],
+    "correct_answer": "B",
+    "answer_explanation": "Both arrays coerce to strings and concatenate producing '1,23,4'."
+  },
+  {
+    "question_text": "What is the output of:\n\nconsole.log(typeof Promise.resolve());",
+    "mcq_options": [
+      {
+        "option": "A",
+        "text": "'object'"
+      },
+      {
+        "option": "B",
+        "text": "'promise'"
+      },
+      {
+        "option": "C",
+        "text": "'function'"
+      },
+      {
+        "option": "D",
+        "text": "'thenable'"
+      }
+    ],
+    "correct_answer": "A",
+    "answer_explanation": "Promises are objects; typeof returns 'object'."
+  },
+  {
+    "question_text": "What does this log?\n\nconsole.log(!!0);",
+    "mcq_options": [
+      {
+        "option": "A",
+        "text": "false"
+      },
+      {
+        "option": "B",
+        "text": "true"
+      },
+      {
+        "option": "C",
+        "text": "0"
+      },
+      {
+        "option": "D",
+        "text": "'false'"
+      }
+    ],
+    "correct_answer": "A",
+    "answer_explanation": "0 is falsy so !!0 is false."
+  },
+  {
+    "question_text": "What will be output of:\n\nconsole.log(typeof (class {}));",
+    "mcq_options": [
+      {
+        "option": "A",
+        "text": "'function'"
+      },
+      {
+        "option": "B",
+        "text": "'class'"
+      },
+      {
+        "option": "C",
+        "text": "'object'"
+      },
+      {
+        "option": "D",
+        "text": "'undefined'"
+      }
+    ],
+    "correct_answer": "A",
+    "answer_explanation": "Classes are special functions; typeof returns 'function'."
+  },
+  {
+    "question_text": "What is the output of:\n\nconsole.log([1,2]+null);",
+    "mcq_options": [
+      {
+        "option": "A",
+        "text": "'1,2null'"
+      },
+      {
+        "option": "B",
+        "text": "NaN"
+      },
+      {
+        "option": "C",
+        "text": "'[1,2]null'"
+      },
+      {
+        "option": "D",
+        "text": "Error"
+      }
+    ],
+    "correct_answer": "A",
+    "answer_explanation": "Array coerces to '1,2' then concatenated with 'null' => '1,2null'."
+  },
+  {
+    "question_text": "What will this print?\n\nconsole.log(typeof (async ()=>{}));",
+    "mcq_options": [
+      {
+        "option": "A",
+        "text": "'function'"
+      },
+      {
+        "option": "B",
+        "text": "'asyncfunction'"
+      },
+      {
+        "option": "C",
+        "text": "'object'"
+      },
+      {
+        "option": "D",
+        "text": "'undefined'"
+      }
+    ],
+    "correct_answer": "A",
+    "answer_explanation": "Async arrow functions are functions; typeof returns 'function'."
+  },
+  {
+    "question_text": "What will be logged by:\n\nconsole.log([1] == 1);",
+    "mcq_options": [
+      {
+        "option": "A",
+        "text": "true"
+      },
+      {
+        "option": "B",
+        "text": "false"
+      },
+      {
+        "option": "C",
+        "text": "TypeError"
+      },
+      {
+        "option": "D",
+        "text": "Depends"
+      }
+    ],
+    "correct_answer": "A",
+    "answer_explanation": "Array coerces to '1' then to number 1; equality holds true."
+  },
+  {
+    "question_text": "What is result of:\n\nconsole.log('' + {});",
+    "mcq_options": [
+      {
+        "option": "A",
+        "text": "'[object Object]'"
+      },
+      {
+        "option": "B",
+        "text": "'[object Object]' string"
+      },
+      {
+        "option": "C",
+        "text": "NaN"
+      },
+      {
+        "option": "D",
+        "text": "Error"
+      }
+    ],
+    "correct_answer": "A",
+    "answer_explanation": "Object coerces to '[object Object]' when converted to string."
+  },
+  {
+    "question_text": "What does this code print?\n\nconsole.log(Number('0x11'));",
+    "mcq_options": [
+      {
+        "option": "A",
+        "text": "17"
+      },
+      {
+        "option": "B",
+        "text": "11"
+      },
+      {
+        "option": "C",
+        "text": "NaN"
+      },
+      {
+        "option": "D",
+        "text": "'0x11'"
+      }
+    ],
+    "correct_answer": "A",
+    "answer_explanation": "Number parses hex '0x11' as decimal 17."
+  },
+  {
+    "question_text": "What will be logged by:\n\nconsole.log(parseInt('08'));",
+    "mcq_options": [
+      {
+        "option": "A",
+        "text": "8"
+      },
+      {
+        "option": "B",
+        "text": "0"
+      },
+      {
+        "option": "C",
+        "text": "NaN"
+      },
+      {
+        "option": "D",
+        "text": "Depends on engine"
+      }
+    ],
+    "correct_answer": "A",
+    "answer_explanation": "parseInt with modern engines treats '08' as base 10 and returns 8."
+  },
+  {
+    "question_text": "Code-based JavaScript Question 50: What will this code output? (consider coercion or behavior)",
+    "mcq_options": [
+      {
+        "option": "A",
+        "text": "Option A"
+      },
+      {
+        "option": "B",
+        "text": "Option B"
+      },
+      {
+        "option": "C",
+        "text": "Option C"
+      },
+      {
+        "option": "D",
+        "text": "Option D"
+      }
+    ],
+    "correct_answer": "A",
+    "answer_explanation": "Conceptual explanation for JS behavior."
+  },
+  {
+    "question_text": "What is a closure in JavaScript?",
+    "mcq_options": [
+      {
+        "option": "A",
+        "text": "A function combined with its lexical environment"
+      },
+      {
+        "option": "B",
+        "text": "A function that always returns null"
+      },
+      {
+        "option": "C",
+        "text": "An immediately invoked function only"
+      },
+      {
+        "option": "D",
+        "text": "A private class method"
+      }
+    ],
+    "correct_answer": "A",
+    "answer_explanation": "A closure is a function that retains access to its lexical scope even when executed outside that scope."
+  },
+  {
+    "question_text": "What is the purpose of a Promise in JavaScript?",
+    "mcq_options": [
+      {
+        "option": "A",
+        "text": "To handle synchronous loops"
+      },
+      {
+        "option": "B",
+        "text": "To represent eventual completion or failure of an async operation"
+      },
+      {
+        "option": "C",
+        "text": "To serialize objects"
+      },
+      {
+        "option": "D",
+        "text": "To manipulate the DOM"
+      }
+    ],
+    "correct_answer": "B",
+    "answer_explanation": "A Promise models an asynchronous operation's eventual success or failure."
+  },
+  {
+    "question_text": "What is event bubbling?",
+    "mcq_options": [
+      {
+        "option": "A",
+        "text": "An event moves from the target up through ancestors"
+      },
+      {
+        "option": "B",
+        "text": "Event remains only on the target element"
+      },
+      {
+        "option": "C",
+        "text": "Events are only captured, not bubbled"
+      },
+      {
+        "option": "D",
+        "text": "Stopping default behavior of an event"
+      }
+    ],
+    "correct_answer": "A",
+    "answer_explanation": "Bubbling is the phase where events propagate from target element up to its ancestors."
+  },
+  {
+    "question_text": "What does 'use strict' do?",
+    "mcq_options": [
+      {
+        "option": "A",
+        "text": "Enables strict equality only"
+      },
+      {
+        "option": "B",
+        "text": "Enables strict mode which catches common mistakes and disables some features"
+      },
+      {
+        "option": "C",
+        "text": "Makes code run faster always"
+      },
+      {
+        "option": "D",
+        "text": "Removes hoisting behavior"
+      }
+    ],
+    "correct_answer": "B",
+    "answer_explanation": "Strict mode enforces stricter parsing and error handling in JavaScript."
+  },
+  {
+    "question_text": "What is the prototype chain?",
+    "mcq_options": [
+      {
+        "option": "A",
+        "text": "A linked set of objects used for property lookup inheritance"
+      },
+      {
+        "option": "B",
+        "text": "A way to clone objects"
+      },
+      {
+        "option": "C",
+        "text": "Synchronous call stack"
+      },
+      {
+        "option": "D",
+        "text": "An array of prototypes"
+      }
+    ],
+    "correct_answer": "A",
+    "answer_explanation": "The prototype chain links objects so property lookup falls back to prototypes."
+  },
+  {
+    "question_text": "What does hoisting refer to?",
+    "mcq_options": [
+      {
+        "option": "A",
+        "text": "Moving function and var declarations to top of scope during compile phase"
+      },
+      {
+        "option": "B",
+        "text": "Reordering array elements"
+      },
+      {
+        "option": "C",
+        "text": "Delaying execution of functions"
+      },
+      {
+        "option": "D",
+        "text": "Automatic garbage collection"
+      }
+    ],
+    "correct_answer": "A",
+    "answer_explanation": "Declarations are processed before code execution, making them accessible before definition."
+  },
+  {
+    "question_text": "What is the difference between null and undefined?",
+    "mcq_options": [
+      {
+        "option": "A",
+        "text": "null is absence of value, undefined means variable not assigned"
+      },
+      {
+        "option": "B",
+        "text": "They are identical in all contexts"
+      },
+      {
+        "option": "C",
+        "text": "undefined is object, null is primitive"
+      },
+      {
+        "option": "D",
+        "text": "null means zero"
+      }
+    ],
+    "correct_answer": "A",
+    "answer_explanation": "null represents intentional absence; undefined indicates uninitialized variable."
+  },
+  {
+    "question_text": "What is a microtask in the event loop?",
+    "mcq_options": [
+      {
+        "option": "A",
+        "text": "Tasks scheduled by setTimeout"
+      },
+      {
+        "option": "B",
+        "text": "High-priority jobs like Promise reactions processed after current task before next macrotask"
+      },
+      {
+        "option": "C",
+        "text": "Tasks that are never executed"
+      },
+      {
+        "option": "D",
+        "text": "UI rendering tasks only"
+      }
+    ],
+    "correct_answer": "B",
+    "answer_explanation": "Microtasks (Promises) run after current task and before the next macrotask."
+  },
+  {
+    "question_text": "What is the difference between call and apply?",
+    "mcq_options": [
+      {
+        "option": "A",
+        "text": "call accepts args as list, apply accepts args as array"
+      },
+      {
+        "option": "B",
+        "text": "apply is synchronous, call is asynchronous"
+      },
+      {
+        "option": "C",
+        "text": "call binds permanently, apply doesn't"
+      },
+      {
+        "option": "D",
+        "text": "No difference"
+      }
+    ],
+    "correct_answer": "A",
+    "answer_explanation": "Function.prototype.call takes arguments individually, apply takes an array of arguments."
+  },
+  {
+    "question_text": "What is a pure function?",
+    "mcq_options": [
+      {
+        "option": "A",
+        "text": "A function with no side effects and same output for same input"
+      },
+      {
+        "option": "B",
+        "text": "A function that uses only const variables"
+      },
+      {
+        "option": "C",
+        "text": "A function that returns undefined"
+      },
+      {
+        "option": "D",
+        "text": "A function declared with function*"
+      }
+    ],
+    "correct_answer": "A",
+    "answer_explanation": "Pure functions produce same output for same inputs and have no observable side effects."
+  },
+  {
+    "question_text": "What does 'this' refer to in an arrow function?",
+    "mcq_options": [
+      {
+        "option": "A",
+        "text": "The global object always"
+      },
+      {
+        "option": "B",
+        "text": "It is lexically inherited from the surrounding scope"
+      },
+      {
+        "option": "C",
+        "text": "The function itself"
+      },
+      {
+        "option": "D",
+        "text": "Undefined always"
+      }
+    ],
+    "correct_answer": "B",
+    "answer_explanation": "Arrow functions do not have their own 'this'; they inherit it lexically."
+  },
+  {
+    "question_text": "What is the difference between var and let?",
+    "mcq_options": [
+      {
+        "option": "A",
+        "text": "var is block-scoped, let is function-scoped"
+      },
+      {
+        "option": "B",
+        "text": "var is function-scoped and hoisted; let is block-scoped and not accessible before initialization"
+      },
+      {
+        "option": "C",
+        "text": "No difference"
+      },
+      {
+        "option": "D",
+        "text": "let is deprecated"
+      }
+    ],
+    "correct_answer": "B",
+    "answer_explanation": "var is function-scoped and hoisted; let has block scope and temporal dead zone."
+  },
+  {
+    "question_text": "What is memoization?",
+    "mcq_options": [
+      {
+        "option": "A",
+        "text": "Caching results of expensive function calls for reuse"
+      },
+      {
+        "option": "B",
+        "text": "Delaying function execution"
+      },
+      {
+        "option": "C",
+        "text": "Converting functions to promises"
+      },
+      {
+        "option": "D",
+        "text": "A garbage collection technique"
+      }
+    ],
+    "correct_answer": "A",
+    "answer_explanation": "Memoization stores computed results to avoid repeated expensive calculations."
+  },
+  {
+    "question_text": "What is event delegation?",
+    "mcq_options": [
+      {
+        "option": "A",
+        "text": "Attaching single event listener to parent to handle events on children"
+      },
+      {
+        "option": "B",
+        "text": "Delegating events to server"
+      },
+      {
+        "option": "C",
+        "text": "Using multiple listeners for same element"
+      },
+      {
+        "option": "D",
+        "text": "A CSS technique"
+      }
+    ],
+    "correct_answer": "A",
+    "answer_explanation": "Event delegation uses one handler on a parent to manage its descendants' events."
+  },
+  {
+    "question_text": "What is the purpose of WeakMap?",
+    "mcq_options": [
+      {
+        "option": "A",
+        "text": "To store primitive keys only"
+      },
+      {
+        "option": "B",
+        "text": "To hold object keys without preventing garbage collection"
+      },
+      {
+        "option": "C",
+        "text": "A Map with guaranteed order"
+      },
+      {
+        "option": "D",
+        "text": "Same as Map but faster"
+      }
+    ],
+    "correct_answer": "B",
+    "answer_explanation": "WeakMap keys are weakly referenced so they don't prevent GC of key objects."
+  },
+  {
+    "question_text": "What is tail call optimization?",
+    "mcq_options": [
+      {
+        "option": "A",
+        "text": "Rewriting calls to loops manually"
+      },
+      {
+        "option": "B",
+        "text": "Optimization that eliminates extra stack frames for tail calls"
+      },
+      {
+        "option": "C",
+        "text": "JS engine feature always enabled"
+      },
+      {
+        "option": "D",
+        "text": "A memory leak pattern"
+      }
+    ],
+    "correct_answer": "B",
+    "answer_explanation": "Tail call optimization reuses stack frame for tail-recursive calls, where supported."
+  },
+  {
+    "question_text": "What is the difference between synchronous and asynchronous functions?",
+    "mcq_options": [
+      {
+        "option": "A",
+        "text": "Synchronous block execution, asynchronous returns immediately and continues later"
+      },
+      {
+        "option": "B",
+        "text": "No difference"
+      },
+      {
+        "option": "C",
+        "text": "Synchronous uses promises only"
+      },
+      {
+        "option": "D",
+        "text": "Asynchronous cannot return values"
+      }
+    ],
+    "correct_answer": "A",
+    "answer_explanation": "Synchronous code runs to completion before next step; async code defers work (callbacks/promises)."
+  },
+  {
+    "question_text": "What is currying?",
+    "mcq_options": [
+      {
+        "option": "A",
+        "text": "Transforming a function with multiple args into nested unary functions"
+      },
+      {
+        "option": "B",
+        "text": "Combining arrays"
+      },
+      {
+        "option": "C",
+        "text": "Converting callbacks to promises"
+      },
+      {
+        "option": "D",
+        "text": "A type of loop"
+      }
+    ],
+    "correct_answer": "A",
+    "answer_explanation": "Currying produces functions that take one argument and return another function for remaining args."
+  },
+  {
+    "question_text": "What is the role of Object.create(null)?",
+    "mcq_options": [
+      {
+        "option": "A",
+        "text": "Creates object with no prototype (no inherited properties)"
+      },
+      {
+        "option": "B",
+        "text": "Creates new Array-like object"
+      },
+      {
+        "option": "C",
+        "text": "Creates frozen object"
+      },
+      {
+        "option": "D",
+        "text": "Deprecated API"
+      }
+    ],
+    "correct_answer": "A",
+    "answer_explanation": "Object.create(null) makes a plain dictionary without prototype chain."
+  },
+  {
+    "question_text": "When is JSON.parse useful?",
+    "mcq_options": [
+      {
+        "option": "A",
+        "text": "To parse arbitrary JavaScript code"
+      },
+      {
+        "option": "B",
+        "text": "To convert a JSON string into JavaScript value/object"
+      },
+      {
+        "option": "C",
+        "text": "To serialize functions"
+      },
+      {
+        "option": "D",
+        "text": "To fetch remote resources"
+      }
+    ],
+    "correct_answer": "B",
+    "answer_explanation": "JSON.parse converts JSON text into JS values/objects."
+  },
+  {
+    "question_text": "What are service workers used for?",
+    "mcq_options": [
+      {
+        "option": "A",
+        "text": "Running background JS for offline caching and intercepting network requests"
+      },
+      {
+        "option": "B",
+        "text": "Styling components"
+      },
+      {
+        "option": "C",
+        "text": "Manipulating the DOM directly"
+      },
+      {
+        "option": "D",
+        "text": "Server-side rendering only"
+      }
+    ],
+    "correct_answer": "A",
+    "answer_explanation": "Service workers enable offline apps, caching, and background sync by intercepting requests."
+  },
+  {
+    "question_text": "What does the spread operator (...) do for arrays?",
+    "mcq_options": [
+      {
+        "option": "A",
+        "text": "Merges arrays by value into elements or function args"
+      },
+      {
+        "option": "B",
+        "text": "Converts array to string"
+      },
+      {
+        "option": "C",
+        "text": "Deletes array elements"
+      },
+      {
+        "option": "D",
+        "text": "Creates iterator only"
+      }
+    ],
+    "correct_answer": "A",
+    "answer_explanation": "... expands an iterable into individual elements, useful in lists or function calls."
+  },
+  {
+    "question_text": "What is debouncing in JavaScript?",
+    "mcq_options": [
+      {
+        "option": "A",
+        "text": "Grouping multiple events into one immediate action"
+      },
+      {
+        "option": "B",
+        "text": "Delaying function execution until a pause in events to reduce calls"
+      },
+      {
+        "option": "C",
+        "text": "Throttling to constant rate"
+      },
+      {
+        "option": "D",
+        "text": "Caching DOM nodes"
+      }
+    ],
+    "correct_answer": "B",
+    "answer_explanation": "Debouncing postpones action until events stop firing for a set time."
+  },
+  {
+    "question_text": "What is the difference between Map and Object?",
+    "mcq_options": [
+      {
+        "option": "A",
+        "text": "Map keys can be any value; Object keys are strings or symbols"
+      },
+      {
+        "option": "B",
+        "text": "No difference"
+      },
+      {
+        "option": "C",
+        "text": "Map is slower always"
+      },
+      {
+        "option": "D",
+        "text": "Object cannot store functions"
+      }
+    ],
+    "correct_answer": "A",
+    "answer_explanation": "Map accepts arbitrary keys and preserves insertion order; objects use string/symbol keys."
+  },
+  {
+    "question_text": "What is function.prototype.bind used for?",
+    "mcq_options": [
+      {
+        "option": "A",
+        "text": "To permanently bind this and optionally preset arguments"
+      },
+      {
+        "option": "B",
+        "text": "To execute function immediately"
+      },
+      {
+        "option": "C",
+        "text": "To clone function code"
+      },
+      {
+        "option": "D",
+        "text": "To convert function to generator"
+      }
+    ],
+    "correct_answer": "A",
+    "answer_explanation": "bind returns a new function with bound this and optional leading args."
+  },
+  {
+    "question_text": "What does Object.freeze do?",
+    "mcq_options": [
+      {
+        "option": "A",
+        "text": "Prevents new properties, and makes existing properties non-writable and non-configurable"
+      },
+      {
+        "option": "B",
+        "text": "Deletes object"
+      },
+      {
+        "option": "C",
+        "text": "Makes object writable only"
+      },
+      {
+        "option": "D",
+        "text": "Converts to string"
+      }
+    ],
+    "correct_answer": "A",
+    "answer_explanation": "Object.freeze makes an object immutable by preventing modifications."
+  },
+  {
+    "question_text": "What is prototype pollution?",
+    "mcq_options": [
+      {
+        "option": "A",
+        "text": "Security vulnerability where attackers inject properties into Object.prototype"
+      },
+      {
+        "option": "B",
+        "text": "A memory leak pattern"
+      },
+      {
+        "option": "C",
+        "text": "List of prototypes in codebase"
+      },
+      {
+        "option": "D",
+        "text": "A debugging technique"
+      }
+    ],
+    "correct_answer": "A",
+    "answer_explanation": "Prototype pollution occurs when prototype is maliciously modified, affecting all objects."
+  },
+  {
+    "question_text": "What does '===' do besides comparing value?",
+    "mcq_options": [
+      {
+        "option": "A",
+        "text": "Also checks type equality (strict equality)"
+      },
+      {
+        "option": "B",
+        "text": "Performs type coercion then compare"
+      },
+      {
+        "option": "C",
+        "text": "Compares only prototypes"
+      },
+      {
+        "option": "D",
+        "text": "Checks reference identity only"
+      }
+    ],
+    "correct_answer": "A",
+    "answer_explanation": "Strict equality compares both type and value without coercion."
+  },
+  {
+    "question_text": "What does async/await simplify?",
+    "mcq_options": [
+      {
+        "option": "A",
+        "text": "Synchronous loops"
+      },
+      {
+        "option": "B",
+        "text": "Writing asynchronous code in a synchronous style using Promises"
+      },
+      {
+        "option": "C",
+        "text": "DOM manipulation"
+      },
+      {
+        "option": "D",
+        "text": "CSS rendering"
+      }
+    ],
+    "correct_answer": "B",
+    "answer_explanation": "async/await simplifies Promise-based code making it look synchronous."
+  },
+  {
+    "question_text": "What is the main purpose of modules (ES6 import/export)?",
+    "mcq_options": [
+      {
+        "option": "A",
+        "text": "Encapsulation and reuse of code with explicit dependencies"
+      },
+      {
+        "option": "B",
+        "text": "To speed up execution"
+      },
+      {
+        "option": "C",
+        "text": "To modify prototypes globally"
+      },
+      {
+        "option": "D",
+        "text": "To inline CSS"
+      }
+    ],
+    "correct_answer": "A",
+    "answer_explanation": "Modules provide scoped code, export/import mechanics, and dependency management."
+  },
+  {
+    "question_text": "What is the difference between localStorage and sessionStorage?",
+    "mcq_options": [
+      {
+        "option": "A",
+        "text": "localStorage persists across sessions; sessionStorage clears on tab close"
+      },
+      {
+        "option": "B",
+        "text": "sessionStorage persists forever"
+      },
+      {
+        "option": "C",
+        "text": "No difference"
+      },
+      {
+        "option": "D",
+        "text": "sessionStorage is server-side only"
+      }
+    ],
+    "correct_answer": "A",
+    "answer_explanation": "localStorage persists, sessionStorage scoped to the tab and cleared when closed."
+  },
+  {
+    "question_text": "What is JSON.stringify used for?",
+    "mcq_options": [
+      {
+        "option": "A",
+        "text": "Convert JS value/object to JSON string"
+      },
+      {
+        "option": "B",
+        "text": "Parse JSON string to object"
+      },
+      {
+        "option": "C",
+        "text": "Minify JS code"
+      },
+      {
+        "option": "D",
+        "text": "Encrypt data"
+      }
+    ],
+    "correct_answer": "A",
+    "answer_explanation": "JSON.stringify serializes objects into JSON text."
+  },
+  {
+    "question_text": "What is the significance of the event loop?",
+    "mcq_options": [
+      {
+        "option": "A",
+        "text": "It orchestrates execution of tasks, microtasks, and rendering in JS runtime"
+      },
+      {
+        "option": "B",
+        "text": "It compiles JS to machine code"
+      },
+      {
+        "option": "C",
+        "text": "It only runs in Node.js"
+      },
+      {
+        "option": "D",
+        "text": "It controls CSS animations only"
+      }
+    ],
+    "correct_answer": "A",
+    "answer_explanation": "Event loop manages task queues, handling asynchronous callbacks and rendering."
+  },
+  {
+    "question_text": "What is the difference between slice and splice?",
+    "mcq_options": [
+      {
+        "option": "A",
+        "text": "slice returns a shallow copy; splice mutates the array"
+      },
+      {
+        "option": "B",
+        "text": "Both mutate arrays"
+      },
+      {
+        "option": "C",
+        "text": "slice mutates; splice copies"
+      },
+      {
+        "option": "D",
+        "text": "They are identical"
+      }
+    ],
+    "correct_answer": "A",
+    "answer_explanation": "slice returns a new array; splice changes the original array."
+  },
+  {
+    "question_text": "What does 'optional chaining' (?.) provide?",
+    "mcq_options": [
+      {
+        "option": "A",
+        "text": "Safe navigation accessing nested properties without throwing if intermediate is null/undefined"
+      },
+      {
+        "option": "B",
+        "text": "Guarantee non-null values"
+      },
+      {
+        "option": "C",
+        "text": "Replace all nulls with empty string"
+      },
+      {
+        "option": "D",
+        "text": "A new operator for arrays"
+      }
+    ],
+    "correct_answer": "A",
+    "answer_explanation": "Optional chaining short-circuits and returns undefined if a property is missing."
+  },
+  {
+    "question_text": "What is the purpose of generators (function*)?",
+    "mcq_options": [
+      {
+        "option": "A",
+        "text": "To produce iterators and control execution by yielding values"
+      },
+      {
+        "option": "B",
+        "text": "To replace async/await always"
+      },
+      {
+        "option": "C",
+        "text": "To create classes"
+      },
+      {
+        "option": "D",
+        "text": "To manipulate prototypes"
+      }
+    ],
+    "correct_answer": "A",
+    "answer_explanation": "Generators can pause/resume execution and yield multiple values over time."
+  },
+  {
+    "question_text": "What is a thenable?",
+    "mcq_options": [
+      {
+        "option": "A",
+        "text": "An object implementing a then() method, acting like a Promise"
+      },
+      {
+        "option": "B",
+        "text": "A special array type"
+      },
+      {
+        "option": "C",
+        "text": "A function that always resolves"
+      },
+      {
+        "option": "D",
+        "text": "A deprecated API"
+      }
+    ],
+    "correct_answer": "A",
+    "answer_explanation": "Thenables are objects with then(...) that can interoperate with Promises."
+  }
+]

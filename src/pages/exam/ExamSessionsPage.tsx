@@ -315,93 +315,93 @@ const ExamSessionsPage: React.FC = () => {
         <div className="hidden md:block overflow-x-auto">
           <div className="inline-block min-w-full align-middle">
             <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
-                <tr>
+            <thead className="bg-gray-50">
+              <tr>
                   <th className="px-3 sm:px-6 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
-                    Candidate
-                  </th>
+                  Candidate
+                </th>
                   <th className="px-3 sm:px-6 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
-                    Job Title
-                  </th>
+                  Job Title
+                </th>
                   <th className="px-3 sm:px-6 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
-                    Status
-                  </th>
+                  Status
+                </th>
                   <th className="px-3 sm:px-6 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
-                    Progress
-                  </th>
+                  Progress
+                </th>
                   <th className="px-3 sm:px-6 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
-                    Time Remaining
-                  </th>
+                  Time Remaining
+                </th>
                   <th className="px-3 sm:px-6 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
-                    Score
-                  </th>
+                  Score
+                </th>
                   <th className="px-3 sm:px-6 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
-                    Actions
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
-                {filteredSessions.map((session) => (
-                  <tr key={session.id} className="hover:bg-gray-50">
+                  Actions
+                </th>
+              </tr>
+            </thead>
+            <tbody className="bg-white divide-y divide-gray-200">
+              {filteredSessions.map((session) => (
+                <tr key={session.id} className="hover:bg-gray-50">
                     <td className="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap">
-                      <div>
-                        <div className="text-sm font-medium text-gray-900">
-                          {session.candidate?.name || 'Unknown'}
-                        </div>
-                        <div className="text-sm text-gray-500">
-                          {session.candidate?.email || ''}
-                        </div>
-                      </div>
-                    </td>
-                    <td className="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-900">{session.job_description?.title || 'Unknown'}</div>
-                    </td>
-                    <td className="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap">
-                      <div className="flex items-center space-x-2">
-                        {getStatusIcon(session.status)}
-                        <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(session.status)}`}>
-                          {getStatusText(session.status)}
-                        </span>
-                      </div>
-                    </td>
-                    <td className="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-900">
-                        {session.total_questions} questions
+                    <div>
+                      <div className="text-sm font-medium text-gray-900">
+                        {session.candidate?.name || 'Unknown'}
                       </div>
                       <div className="text-sm text-gray-500">
-                        {session.duration_minutes} minutes
+                        {session.candidate?.email || ''}
                       </div>
-                    </td>
+                    </div>
+                  </td>
+                    <td className="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap">
+                    <div className="text-sm text-gray-900">{session.job_description?.title || 'Unknown'}</div>
+                  </td>
+                    <td className="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap">
+                    <div className="flex items-center space-x-2">
+                      {getStatusIcon(session.status)}
+                      <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(session.status)}`}>
+                        {getStatusText(session.status)}
+                      </span>
+                    </div>
+                  </td>
+                    <td className="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap">
+                    <div className="text-sm text-gray-900">
+                      {session.total_questions} questions
+                    </div>
+                    <div className="text-sm text-gray-500">
+                      {session.duration_minutes} minutes
+                    </div>
+                  </td>
                     <td className="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap text-sm text-gray-900">
-                      {session.status === 'in_progress' ? getTimeRemaining(session.expires_at) : '-'}
-                    </td>
+                    {session.status === 'in_progress' ? getTimeRemaining(session.expires_at) : '-'}
+                  </td>
                     <td className="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap text-sm text-gray-900">
-                      {session.score ? `${session.score}/${session.total_questions} (${session.percentage}%)` : '-'}
-                    </td>
+                    {session.score ? `${session.score}/${session.total_questions} (${session.percentage}%)` : '-'}
+                  </td>
                     <td className="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap text-sm font-medium">
-                      <div className="flex space-x-2">
+                    <div className="flex space-x-2">
+                      <button 
+                        onClick={() => handleViewSession(session.id)}
+                        className="text-ai-teal hover:text-ai-teal/80"
+                        title="View Session"
+                      >
+                        <Eye className="h-4 w-4" />
+                      </button>
+                      {session.status === 'in_progress' && (
                         <button 
-                          onClick={() => handleViewSession(session.id)}
-                          className="text-ai-teal hover:text-ai-teal/80"
-                          title="View Session"
+                          onClick={() => handleTerminateSession(session.id)}
+                          className="text-red-600 hover:text-red-800"
+                          title="Terminate Session"
                         >
-                          <Eye className="h-4 w-4" />
+                          <XCircle className="h-4 w-4" />
                         </button>
-                        {session.status === 'in_progress' && (
-                          <button 
-                            onClick={() => handleTerminateSession(session.id)}
-                            className="text-red-600 hover:text-red-800"
-                            title="Terminate Session"
-                          >
-                            <XCircle className="h-4 w-4" />
-                          </button>
-                        )}
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+                      )}
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
           </div>
         </div>
 

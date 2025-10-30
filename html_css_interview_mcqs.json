@@ -1,0 +1,2302 @@
+[
+  {
+    "question_text": "What does the <!DOCTYPE html> declaration do?",
+    "mcq_options": [
+      {
+        "option": "A",
+        "text": "It links to a DTD file"
+      },
+      {
+        "option": "B",
+        "text": "It tells the browser to use standards mode (HTML5)"
+      },
+      {
+        "option": "C",
+        "text": "It comments out the document type"
+      },
+      {
+        "option": "D",
+        "text": "It is optional and ignored"
+      }
+    ],
+    "correct_answer": "B",
+    "answer_explanation": "Declares HTML5 document type and triggers standards mode."
+  },
+  {
+    "question_text": "Which CSS property controls the space between an element's content and its border?",
+    "mcq_options": [
+      {
+        "option": "A",
+        "text": "margin"
+      },
+      {
+        "option": "B",
+        "text": "padding"
+      },
+      {
+        "option": "C",
+        "text": "border-spacing"
+      },
+      {
+        "option": "D",
+        "text": "gap"
+      }
+    ],
+    "correct_answer": "B",
+    "answer_explanation": "padding is the inner spacing between content and border."
+  },
+  {
+    "question_text": "Which tag is used for the largest heading in HTML5?",
+    "mcq_options": [
+      {
+        "option": "A",
+        "text": "<heading>"
+      },
+      {
+        "option": "B",
+        "text": "<h1>"
+      },
+      {
+        "option": "C",
+        "text": "<h6>"
+      },
+      {
+        "option": "D",
+        "text": "<title>"
+      }
+    ],
+    "correct_answer": "B",
+    "answer_explanation": "<h1> denotes the largest heading."
+  },
+  {
+    "question_text": "What does the box-sizing: border-box; property do?",
+    "mcq_options": [
+      {
+        "option": "A",
+        "text": "Includes padding and border in element's width/height"
+      },
+      {
+        "option": "B",
+        "text": "Excludes padding from width"
+      },
+      {
+        "option": "C",
+        "text": "Removes border"
+      },
+      {
+        "option": "D",
+        "text": "Sets box to display:block"
+      }
+    ],
+    "correct_answer": "A",
+    "answer_explanation": "border-box makes width/height include padding and border."
+  },
+  {
+    "question_text": "What attribute is used to provide alternative text for an image?",
+    "mcq_options": [
+      {
+        "option": "A",
+        "text": "alt"
+      },
+      {
+        "option": "B",
+        "text": "title"
+      },
+      {
+        "option": "C",
+        "text": "src"
+      },
+      {
+        "option": "D",
+        "text": "descr"
+      }
+    ],
+    "correct_answer": "A",
+    "answer_explanation": "alt provides alternative text for accessibility and when image fails to load."
+  },
+  {
+    "question_text": "Which CSS selector targets elements with class 'btn'?",
+    "mcq_options": [
+      {
+        "option": "A",
+        "text": ".btn"
+      },
+      {
+        "option": "B",
+        "text": "#btn"
+      },
+      {
+        "option": "C",
+        "text": "button"
+      },
+      {
+        "option": "D",
+        "text": "btn"
+      }
+    ],
+    "correct_answer": "A",
+    "answer_explanation": ".btn selects elements that have class=\"btn\"."
+  },
+  {
+    "question_text": "Which element is semantic and used to define navigation links?",
+    "mcq_options": [
+      {
+        "option": "A",
+        "text": "<nav>"
+      },
+      {
+        "option": "B",
+        "text": "<div>"
+      },
+      {
+        "option": "C",
+        "text": "<section>"
+      },
+      {
+        "option": "D",
+        "text": "<ul>"
+      }
+    ],
+    "correct_answer": "A",
+    "answer_explanation": "<nav> is a semantic element for navigation links."
+  },
+  {
+    "question_text": "Which display value makes an element a block-level element that doesn't start a new line?",
+    "mcq_options": [
+      {
+        "option": "A",
+        "text": "inline"
+      },
+      {
+        "option": "B",
+        "text": "inline-block"
+      },
+      {
+        "option": "C",
+        "text": "block"
+      },
+      {
+        "option": "D",
+        "text": "flex"
+      }
+    ],
+    "correct_answer": "B",
+    "answer_explanation": "inline-block allows block-style sizing while flowing inline."
+  },
+  {
+    "question_text": "Which attribute specifies the URL of a linked resource in an <a> tag?",
+    "mcq_options": [
+      {
+        "option": "A",
+        "text": "href"
+      },
+      {
+        "option": "B",
+        "text": "src"
+      },
+      {
+        "option": "C",
+        "text": "link"
+      },
+      {
+        "option": "D",
+        "text": "url"
+      }
+    ],
+    "correct_answer": "A",
+    "answer_explanation": "href holds the link destination in anchor tags."
+  },
+  {
+    "question_text": "How do you center an element horizontally with margin auto?",
+    "mcq_options": [
+      {
+        "option": "A",
+        "text": "display:block and set width and margin:0 auto"
+      },
+      {
+        "option": "B",
+        "text": "Use text-align:center on parent"
+      },
+      {
+        "option": "C",
+        "text": "Use transform"
+      },
+      {
+        "option": "D",
+        "text": "Use float:center"
+      }
+    ],
+    "correct_answer": "A",
+    "answer_explanation": "Set a width and margin: 0 auto on a block element to center it."
+  },
+  {
+    "question_text": "How do you make an input field required in HTML5?",
+    "mcq_options": [
+      {
+        "option": "A",
+        "text": "required"
+      },
+      {
+        "option": "B",
+        "text": "must"
+      },
+      {
+        "option": "C",
+        "text": "validate"
+      },
+      {
+        "option": "D",
+        "text": "needed"
+      }
+    ],
+    "correct_answer": "A",
+    "answer_explanation": "Use the required attribute to require a value before form submission."
+  },
+  {
+    "question_text": "Which property controls stacking order of positioned elements?",
+    "mcq_options": [
+      {
+        "option": "A",
+        "text": "z-index"
+      },
+      {
+        "option": "B",
+        "text": "order"
+      },
+      {
+        "option": "C",
+        "text": "stack"
+      },
+      {
+        "option": "D",
+        "text": "position"
+      }
+    ],
+    "correct_answer": "A",
+    "answer_explanation": "z-index sets stacking order when position is not static."
+  },
+  {
+    "question_text": "Which element is used to embed JavaScript in HTML?",
+    "mcq_options": [
+      {
+        "option": "A",
+        "text": "<script>"
+      },
+      {
+        "option": "B",
+        "text": "<js>"
+      },
+      {
+        "option": "C",
+        "text": "<code>"
+      },
+      {
+        "option": "D",
+        "text": "<embed>"
+      }
+    ],
+    "correct_answer": "A",
+    "answer_explanation": "<script> is used to include or embed JavaScript."
+  },
+  {
+    "question_text": "Which unit is relative to the root element font-size?",
+    "mcq_options": [
+      {
+        "option": "A",
+        "text": "em"
+      },
+      {
+        "option": "B",
+        "text": "rem"
+      },
+      {
+        "option": "C",
+        "text": "px"
+      },
+      {
+        "option": "D",
+        "text": "%"
+      }
+    ],
+    "correct_answer": "B",
+    "answer_explanation": "rem units are relative to the root (html) font-size."
+  },
+  {
+    "question_text": "Which element is used for the main content of a document?",
+    "mcq_options": [
+      {
+        "option": "A",
+        "text": "<main>"
+      },
+      {
+        "option": "B",
+        "text": "<body>"
+      },
+      {
+        "option": "C",
+        "text": "<article>"
+      },
+      {
+        "option": "D",
+        "text": "<div>"
+      }
+    ],
+    "correct_answer": "A",
+    "answer_explanation": "<main> denotes the primary content area of the document."
+  },
+  {
+    "question_text": "What does flex: 1 do on a flex item?",
+    "mcq_options": [
+      {
+        "option": "A",
+        "text": "Sets flex-basis to 0 and allows item to grow"
+      },
+      {
+        "option": "B",
+        "text": "Sets fixed width 1px"
+      },
+      {
+        "option": "C",
+        "text": "Makes item invisible"
+      },
+      {
+        "option": "D",
+        "text": "Locks item position"
+      }
+    ],
+    "correct_answer": "A",
+    "answer_explanation": "flex:1 allows the item to grow and share space in the flex container."
+  },
+  {
+    "question_text": "Which tag is appropriate for marking up a self-contained composition like a blog post?",
+    "mcq_options": [
+      {
+        "option": "A",
+        "text": "<section>"
+      },
+      {
+        "option": "B",
+        "text": "<article>"
+      },
+      {
+        "option": "C",
+        "text": "<aside>"
+      },
+      {
+        "option": "D",
+        "text": "<footer>"
+      }
+    ],
+    "correct_answer": "B",
+    "answer_explanation": "<article> represents a self-contained composition such as a post."
+  },
+  {
+    "question_text": "How do you create a CSS Grid with two equal columns?",
+    "mcq_options": [
+      {
+        "option": "A",
+        "text": "grid-template-columns: 1fr 1fr;"
+      },
+      {
+        "option": "B",
+        "text": "columns:2;"
+      },
+      {
+        "option": "C",
+        "text": "display:grid-cols(2);"
+      },
+      {
+        "option": "D",
+        "text": "grid-columns: equal"
+      }
+    ],
+    "correct_answer": "A",
+    "answer_explanation": "Use grid-template-columns with fractional units to define columns."
+  },
+  {
+    "question_text": "What is the purpose of the <meta name=\"viewport\"> tag?",
+    "mcq_options": [
+      {
+        "option": "A",
+        "text": "Style mobile layout"
+      },
+      {
+        "option": "B",
+        "text": "Provide script settings"
+      },
+      {
+        "option": "C",
+        "text": "Control viewport for responsive design"
+      },
+      {
+        "option": "D",
+        "text": "Cache settings"
+      }
+    ],
+    "correct_answer": "C",
+    "answer_explanation": "Meta viewport controls layout on mobile devices for responsive design."
+  },
+  {
+    "question_text": "Which property would you use to change the default font of a page?",
+    "mcq_options": [
+      {
+        "option": "A",
+        "text": "font-family"
+      },
+      {
+        "option": "B",
+        "text": "font-style"
+      },
+      {
+        "option": "C",
+        "text": "font"
+      },
+      {
+        "option": "D",
+        "text": "text-font"
+      }
+    ],
+    "correct_answer": "A",
+    "answer_explanation": "font-family sets typeface for text content."
+  },
+  {
+    "question_text": "Which attribute on <form> specifies the HTTP method for submission?",
+    "mcq_options": [
+      {
+        "option": "A",
+        "text": "method"
+      },
+      {
+        "option": "B",
+        "text": "action"
+      },
+      {
+        "option": "C",
+        "text": "type"
+      },
+      {
+        "option": "D",
+        "text": "submit"
+      }
+    ],
+    "correct_answer": "A",
+    "answer_explanation": "method sets HTTP method (GET or POST) for the form submission."
+  },
+  {
+    "question_text": "How do you apply a CSS rule only when the viewport is narrower than 600px?",
+    "mcq_options": [
+      {
+        "option": "A",
+        "text": "@media (max-width: 600px) { ... }"
+      },
+      {
+        "option": "B",
+        "text": "@media (min-width:600px)"
+      },
+      {
+        "option": "C",
+        "text": "@responsive 600"
+      },
+      {
+        "option": "D",
+        "text": "@screen <600"
+      }
+    ],
+    "correct_answer": "A",
+    "answer_explanation": "@media max-width applies rules for narrow viewports."
+  },
+  {
+    "question_text": "How do you include an external CSS file in HTML?",
+    "mcq_options": [
+      {
+        "option": "A",
+        "text": "<link rel=\"stylesheet\" href=\"style.css\">"
+      },
+      {
+        "option": "B",
+        "text": "<style src=\"style.css\">"
+      },
+      {
+        "option": "C",
+        "text": "<css src=\"style.css\">"
+      },
+      {
+        "option": "D",
+        "text": "<import href=\"style.css\">"
+      }
+    ],
+    "correct_answer": "A",
+    "answer_explanation": "Use <link rel=\"stylesheet\" href=\"...\"> to include external CSS."
+  },
+  {
+    "question_text": "Which pseudo-class applies when a user hovers over an element?",
+    "mcq_options": [
+      {
+        "option": "A",
+        "text": ":hover"
+      },
+      {
+        "option": "B",
+        "text": ":focus"
+      },
+      {
+        "option": "C",
+        "text": ":active"
+      },
+      {
+        "option": "D",
+        "text": ":visited"
+      }
+    ],
+    "correct_answer": "A",
+    "answer_explanation": ":hover styles elements during pointer hover."
+  },
+  {
+    "question_text": "Which tag is used to define a table row?",
+    "mcq_options": [
+      {
+        "option": "A",
+        "text": "<td>"
+      },
+      {
+        "option": "B",
+        "text": "<tr>"
+      },
+      {
+        "option": "C",
+        "text": "<th>"
+      },
+      {
+        "option": "D",
+        "text": "<table>"
+      }
+    ],
+    "correct_answer": "B",
+    "answer_explanation": "<tr> defines a table row; <td> defines table cells."
+  },
+  {
+    "question_text": "Which property makes an element transparent?",
+    "mcq_options": [
+      {
+        "option": "A",
+        "text": "opacity"
+      },
+      {
+        "option": "B",
+        "text": "transparent"
+      },
+      {
+        "option": "C",
+        "text": "visibility:hidden"
+      },
+      {
+        "option": "D",
+        "text": "display:none"
+      }
+    ],
+    "correct_answer": "A",
+    "answer_explanation": "opacity sets transparency while keeping element in flow."
+  },
+  {
+    "question_text": "Which attribute on <script> can be used to defer execution until after parsing?",
+    "mcq_options": [
+      {
+        "option": "A",
+        "text": "async"
+      },
+      {
+        "option": "B",
+        "text": "defer"
+      },
+      {
+        "option": "C",
+        "text": "delay"
+      },
+      {
+        "option": "D",
+        "text": "wait"
+      }
+    ],
+    "correct_answer": "B",
+    "answer_explanation": "defer delays script execution until after the document is parsed."
+  },
+  {
+    "question_text": "How do you create a CSS variable?",
+    "mcq_options": [
+      {
+        "option": "A",
+        "text": "--main-color: #333;"
+      },
+      {
+        "option": "B",
+        "text": "var(--main-color)"
+      },
+      {
+        "option": "C",
+        "text": "$main-color: #333;"
+      },
+      {
+        "option": "D",
+        "text": "@variable main-color"
+      }
+    ],
+    "correct_answer": "A",
+    "answer_explanation": "Custom properties are declared with --name in CSS."
+  },
+  {
+    "question_text": "What element should be used for side content like pull quotes or ads?",
+    "mcq_options": [
+      {
+        "option": "A",
+        "text": "<aside>"
+      },
+      {
+        "option": "B",
+        "text": "<section>"
+      },
+      {
+        "option": "C",
+        "text": "<div>"
+      },
+      {
+        "option": "D",
+        "text": "<span>"
+      }
+    ],
+    "correct_answer": "A",
+    "answer_explanation": "<aside> is for tangential content such as sidebars."
+  },
+  {
+    "question_text": "What selector targets direct children only?",
+    "mcq_options": [
+      {
+        "option": "A",
+        "text": ">"
+      },
+      {
+        "option": "B",
+        "text": " "
+      },
+      {
+        "option": "C",
+        "text": "+"
+      },
+      {
+        "option": "D",
+        "text": "~"
+      }
+    ],
+    "correct_answer": "A",
+    "answer_explanation": "The > combinator selects direct child elements."
+  },
+  {
+    "question_text": "Which input type provides a dropdown list of options?",
+    "mcq_options": [
+      {
+        "option": "A",
+        "text": "type=\"select\""
+      },
+      {
+        "option": "B",
+        "text": "type=\"dropdown\""
+      },
+      {
+        "option": "C",
+        "text": "<select> element"
+      },
+      {
+        "option": "D",
+        "text": "type=\"list\""
+      }
+    ],
+    "correct_answer": "C",
+    "answer_explanation": "<select> creates a dropdown; <option> items supply choices."
+  },
+  {
+    "question_text": "Which property controls how text wraps inside an element?",
+    "mcq_options": [
+      {
+        "option": "A",
+        "text": "word-wrap or overflow-wrap"
+      },
+      {
+        "option": "B",
+        "text": "white-space"
+      },
+      {
+        "option": "C",
+        "text": "text-wrap"
+      },
+      {
+        "option": "D",
+        "text": "text-overflow"
+      }
+    ],
+    "correct_answer": "A",
+    "answer_explanation": "overflow-wrap (formerly word-wrap) controls text wrapping to avoid overflow."
+  },
+  {
+    "question_text": "Which HTML attribute is used to specify inline CSS styles?",
+    "mcq_options": [
+      {
+        "option": "A",
+        "text": "style"
+      },
+      {
+        "option": "B",
+        "text": "class"
+      },
+      {
+        "option": "C",
+        "text": "css"
+      },
+      {
+        "option": "D",
+        "text": "inline"
+      }
+    ],
+    "correct_answer": "A",
+    "answer_explanation": "The style attribute sets inline CSS for an element."
+  },
+  {
+    "question_text": "What is specificity affected by?",
+    "mcq_options": [
+      {
+        "option": "A",
+        "text": "Order of rules only"
+      },
+      {
+        "option": "B",
+        "text": "Inline styles, IDs, classes/elements counts"
+      },
+      {
+        "option": "C",
+        "text": "Only !important"
+      },
+      {
+        "option": "D",
+        "text": "Number of selectors only"
+      }
+    ],
+    "correct_answer": "B",
+    "answer_explanation": "Specificity is calculated from inline styles, IDs, classes, and element counts."
+  },
+  {
+    "question_text": "Which tag is used to define a block of preformatted text?",
+    "mcq_options": [
+      {
+        "option": "A",
+        "text": "<pre>"
+      },
+      {
+        "option": "B",
+        "text": "<code>"
+      },
+      {
+        "option": "C",
+        "text": "<samp>"
+      },
+      {
+        "option": "D",
+        "text": "<kbd>"
+      }
+    ],
+    "correct_answer": "A",
+    "answer_explanation": "<pre> preserves whitespace and displays preformatted text."
+  },
+  {
+    "question_text": "Which property stops an element from shrinking in flexbox?",
+    "mcq_options": [
+      {
+        "option": "A",
+        "text": "flex-shrink: 0"
+      },
+      {
+        "option": "B",
+        "text": "flex-no-shrink"
+      },
+      {
+        "option": "C",
+        "text": "flex: none"
+      },
+      {
+        "option": "D",
+        "text": "flex-grow:0"
+      }
+    ],
+    "correct_answer": "A",
+    "answer_explanation": "flex-shrink:0 prevents item from shrinking when space is limited."
+  },
+  {
+    "question_text": "What is semantic HTML?",
+    "mcq_options": [
+      {
+        "option": "A",
+        "text": "Use of tags for styling only"
+      },
+      {
+        "option": "B",
+        "text": "Using meaningful tags that describe content"
+      },
+      {
+        "option": "C",
+        "text": "Avoiding tags entirely"
+      },
+      {
+        "option": "D",
+        "text": "Using inline styles exclusively"
+      }
+    ],
+    "correct_answer": "B",
+    "answer_explanation": "Semantic HTML uses elements that convey meaning, improving accessibility and SEO."
+  },
+  {
+    "question_text": "How do you make an element stick to the top during scroll using CSS?",
+    "mcq_options": [
+      {
+        "option": "A",
+        "text": "position: sticky; top: 0;"
+      },
+      {
+        "option": "B",
+        "text": "position: fixed; only"
+      },
+      {
+        "option": "C",
+        "text": "position: absolute; top:0;"
+      },
+      {
+        "option": "D",
+        "text": "float: top;"
+      }
+    ],
+    "correct_answer": "A",
+    "answer_explanation": "position: sticky with top value makes element stick within its container."
+  },
+  {
+    "question_text": "Which attribute on <a> opens link in a new tab/window?",
+    "mcq_options": [
+      {
+        "option": "A",
+        "text": "target=\"_new\""
+      },
+      {
+        "option": "B",
+        "text": "target=\"_blank\""
+      },
+      {
+        "option": "C",
+        "text": "rel=\"external\""
+      },
+      {
+        "option": "D",
+        "text": "open=\"true\""
+      }
+    ],
+    "correct_answer": "B",
+    "answer_explanation": "target=\"_blank\" opens the link in a new tab or window."
+  },
+  {
+    "question_text": "Which CSS rule hides an element but keeps it accessible to screen readers?",
+    "mcq_options": [
+      {
+        "option": "A",
+        "text": "visibility:hidden"
+      },
+      {
+        "option": "B",
+        "text": "display:none"
+      },
+      {
+        "option": "C",
+        "text": "opacity:0"
+      },
+      {
+        "option": "D",
+        "text": "clip-path and position to visually hide"
+      }
+    ],
+    "correct_answer": "D",
+    "answer_explanation": "Using off-screen or clipping techniques keeps it accessible; visibility:hidden and display:none remove from accessibility tree."
+  },
+  {
+    "question_text": "Which element provides a caption for a <figure>?",
+    "mcq_options": [
+      {
+        "option": "A",
+        "text": "<figcaption>"
+      },
+      {
+        "option": "B",
+        "text": "<caption>"
+      },
+      {
+        "option": "C",
+        "text": "<title>"
+      },
+      {
+        "option": "D",
+        "text": "<figurecaption>"
+      }
+    ],
+    "correct_answer": "A",
+    "answer_explanation": "<figcaption> labels the content of a <figure>."
+  },
+  {
+    "question_text": "What is the effect of transform: translateZ(0)?",
+    "mcq_options": [
+      {
+        "option": "A",
+        "text": "Adds 3D perspective"
+      },
+      {
+        "option": "B",
+        "text": "Triggers GPU acceleration composite layer"
+      },
+      {
+        "option": "C",
+        "text": "No effect"
+      },
+      {
+        "option": "D",
+        "text": "Breaks layout"
+      }
+    ],
+    "correct_answer": "B",
+    "answer_explanation": "translateZ(0) often promotes element to its own layer for smoother rendering."
+  },
+  {
+    "question_text": "Which tag is used to embed a video in HTML5?",
+    "mcq_options": [
+      {
+        "option": "A",
+        "text": "<media>"
+      },
+      {
+        "option": "B",
+        "text": "<video>"
+      },
+      {
+        "option": "C",
+        "text": "<embed>"
+      },
+      {
+        "option": "D",
+        "text": "<object>"
+      }
+    ],
+    "correct_answer": "B",
+    "answer_explanation": "<video> is the HTML5 element for embedding video content."
+  },
+  {
+    "question_text": "Which property is used to control spacing between flex items?",
+    "mcq_options": [
+      {
+        "option": "A",
+        "text": "gap"
+      },
+      {
+        "option": "B",
+        "text": "spacing"
+      },
+      {
+        "option": "C",
+        "text": "margin-between"
+      },
+      {
+        "option": "D",
+        "text": "flex-gap"
+      }
+    ],
+    "correct_answer": "A",
+    "answer_explanation": "gap sets spacing between flex or grid items."
+  },
+  {
+    "question_text": "Which attribute is used to specify language of the document?",
+    "mcq_options": [
+      {
+        "option": "A",
+        "text": "lang"
+      },
+      {
+        "option": "B",
+        "text": "xml:lang"
+      },
+      {
+        "option": "C",
+        "text": "language"
+      },
+      {
+        "option": "D",
+        "text": "locale"
+      }
+    ],
+    "correct_answer": "A",
+    "answer_explanation": "The lang attribute on <html> specifies the document language."
+  },
+  {
+    "question_text": "Which pseudo-element selects the first line of a block of text?",
+    "mcq_options": [
+      {
+        "option": "A",
+        "text": "::first-line"
+      },
+      {
+        "option": "B",
+        "text": ":first-line"
+      },
+      {
+        "option": "C",
+        "text": "::line-first"
+      },
+      {
+        "option": "D",
+        "text": ":line-first"
+      }
+    ],
+    "correct_answer": "A",
+    "answer_explanation": "::first-line targets the first formatted line."
+  },
+  {
+    "question_text": "How do you mark up a list of navigation links semantically?",
+    "mcq_options": [
+      {
+        "option": "A",
+        "text": "<div> with links"
+      },
+      {
+        "option": "B",
+        "text": "<nav><ul><li>..."
+      },
+      {
+        "option": "C",
+        "text": "<menu> only"
+      },
+      {
+        "option": "D",
+        "text": "<section> with anchors"
+      }
+    ],
+    "correct_answer": "B",
+    "answer_explanation": "Use <nav> containing a list (<ul>/<ol>) of links for navigation."
+  },
+  {
+    "question_text": "How do you create a responsive image that scales with its container?",
+    "mcq_options": [
+      {
+        "option": "A",
+        "text": "img { max-width:100%; height:auto; }"
+      },
+      {
+        "option": "B",
+        "text": "img { width:100px }"
+      },
+      {
+        "option": "C",
+        "text": "Use picture tag only"
+      },
+      {
+        "option": "D",
+        "text": "Set width in viewport units"
+      }
+    ],
+    "correct_answer": "A",
+    "answer_explanation": "max-width:100% with height:auto scales image responsively."
+  },
+  {
+    "question_text": "Which element is appropriate to contain a website's footer information?",
+    "mcq_options": [
+      {
+        "option": "A",
+        "text": "<bottom>"
+      },
+      {
+        "option": "B",
+        "text": "<footer>"
+      },
+      {
+        "option": "C",
+        "text": "<section id=\"footer\">"
+      },
+      {
+        "option": "D",
+        "text": "<div class=\"footer\">"
+      }
+    ],
+    "correct_answer": "B",
+    "answer_explanation": "<footer> denotes footer content for a document or section."
+  },
+  {
+    "question_text": "Which property controls whether an element's content may be scrolled?",
+    "mcq_options": [
+      {
+        "option": "A",
+        "text": "overflow"
+      },
+      {
+        "option": "B",
+        "text": "scrolling"
+      },
+      {
+        "option": "C",
+        "text": "overflow-x only"
+      },
+      {
+        "option": "D",
+        "text": "overflow-style"
+      }
+    ],
+    "correct_answer": "A",
+    "answer_explanation": "overflow controls scroll behavior and overflow handling."
+  },
+  {
+    "question_text": "Which attribute on <input> specifies maximum allowed length?",
+    "mcq_options": [
+      {
+        "option": "A",
+        "text": "maxlength"
+      },
+      {
+        "option": "B",
+        "text": "max"
+      },
+      {
+        "option": "C",
+        "text": "length"
+      },
+      {
+        "option": "D",
+        "text": "limit"
+      }
+    ],
+    "correct_answer": "A",
+    "answer_explanation": "maxlength limits the number of characters accepted in text inputs."
+  },
+  {
+    "question_text": "Which unit is relative to the viewport width?",
+    "mcq_options": [
+      {
+        "option": "A",
+        "text": "vh"
+      },
+      {
+        "option": "B",
+        "text": "vw"
+      },
+      {
+        "option": "C",
+        "text": "vmin"
+      },
+      {
+        "option": "D",
+        "text": "rem"
+      }
+    ],
+    "correct_answer": "B",
+    "answer_explanation": "vw is viewport width unit; vh is viewport height."
+  },
+  {
+    "question_text": "What does <base href> element do?",
+    "mcq_options": [
+      {
+        "option": "A",
+        "text": "Sets stylesheet base"
+      },
+      {
+        "option": "B",
+        "text": "Sets base URL for relative links"
+      },
+      {
+        "option": "C",
+        "text": "Defines base font"
+      },
+      {
+        "option": "D",
+        "text": "No effect"
+      }
+    ],
+    "correct_answer": "B",
+    "answer_explanation": "<base> sets a base URL for resolving relative URLs in the document."
+  },
+  {
+    "question_text": "What does the CSS 'contain' property do?",
+    "mcq_options": [
+      {
+        "option": "A",
+        "text": "Improves performance by limiting browser scope for layout/paint"
+      },
+      {
+        "option": "B",
+        "text": "Defines container element"
+      },
+      {
+        "option": "C",
+        "text": "Sets z-index context"
+      },
+      {
+        "option": "D",
+        "text": "No effect"
+      }
+    ],
+    "correct_answer": "A",
+    "answer_explanation": "contain helps the browser optimize by isolating layout/paint/size."
+  },
+  {
+    "question_text": "Which HTML element is used to represent contact information for the author or owner?",
+    "mcq_options": [
+      {
+        "option": "A",
+        "text": "<contact>"
+      },
+      {
+        "option": "B",
+        "text": "<address>"
+      },
+      {
+        "option": "C",
+        "text": "<footer>"
+      },
+      {
+        "option": "D",
+        "text": "<info>"
+      }
+    ],
+    "correct_answer": "B",
+    "answer_explanation": "<address> provides contact information."
+  },
+  {
+    "question_text": "Which property makes text truncate with ellipsis?",
+    "mcq_options": [
+      {
+        "option": "A",
+        "text": "text-overflow: ellipsis; overflow: hidden; white-space: nowrap;"
+      },
+      {
+        "option": "B",
+        "text": "truncate:true;"
+      },
+      {
+        "option": "C",
+        "text": "overflow:hidden only"
+      },
+      {
+        "option": "D",
+        "text": "display:ellipsis;"
+      }
+    ],
+    "correct_answer": "A",
+    "answer_explanation": "Combine text-overflow, overflow, and white-space to show ellipsis."
+  },
+  {
+    "question_text": "Which attribute tells the browser to autoplay a video?",
+    "mcq_options": [
+      {
+        "option": "A",
+        "text": "autoplay"
+      },
+      {
+        "option": "B",
+        "text": "play"
+      },
+      {
+        "option": "C",
+        "text": "start"
+      },
+      {
+        "option": "D",
+        "text": "auto"
+      }
+    ],
+    "correct_answer": "A",
+    "answer_explanation": "autoplay attribute makes media start playing automatically (with browser restrictions)."
+  },
+  {
+    "question_text": "How do you apply a style to every odd row in a table?",
+    "mcq_options": [
+      {
+        "option": "A",
+        "text": "tr:nth-child(odd)"
+      },
+      {
+        "option": "B",
+        "text": "tr:nth(odd)"
+      },
+      {
+        "option": "C",
+        "text": "tr:nth(1)"
+      },
+      {
+        "option": "D",
+        "text": "tr:odd"
+      }
+    ],
+    "correct_answer": "A",
+    "answer_explanation": "nth-child(odd) selects odd-indexed children (1-based indexing)."
+  },
+  {
+    "question_text": "How do you specify multiple alternative sources for a media element?",
+    "mcq_options": [
+      {
+        "option": "A",
+        "text": "<source> inside <video>/<audio>"
+      },
+      {
+        "option": "B",
+        "text": "srcset on <video>"
+      },
+      {
+        "option": "C",
+        "text": "multiple-src attribute"
+      },
+      {
+        "option": "D",
+        "text": "<sources> block"
+      }
+    ],
+    "correct_answer": "A",
+    "answer_explanation": "Use multiple <source> children inside <video> or <audio> for fallbacks."
+  },
+  {
+    "question_text": "Which display property turns an element into a flex container?",
+    "mcq_options": [
+      {
+        "option": "A",
+        "text": "display: flex;"
+      },
+      {
+        "option": "B",
+        "text": "display: block;"
+      },
+      {
+        "option": "C",
+        "text": "display: inline;"
+      },
+      {
+        "option": "D",
+        "text": "display: grid;"
+      }
+    ],
+    "correct_answer": "A",
+    "answer_explanation": "display:flex activates flex layout on the container."
+  },
+  {
+    "question_text": "Which element is best for marking up a blog post comment?",
+    "mcq_options": [
+      {
+        "option": "A",
+        "text": "<comment>"
+      },
+      {
+        "option": "B",
+        "text": "<article> or <section>"
+      },
+      {
+        "option": "C",
+        "text": "<aside>"
+      },
+      {
+        "option": "D",
+        "text": "<div>"
+      }
+    ],
+    "correct_answer": "B",
+    "answer_explanation": "Comments are self-contained and can use <article> or semantic containers."
+  },
+  {
+    "question_text": "What does the 'object-fit' property control for replaced elements like images?",
+    "mcq_options": [
+      {
+        "option": "A",
+        "text": "How the content fills its box (cover, contain)"
+      },
+      {
+        "option": "B",
+        "text": "Whether it floats"
+      },
+      {
+        "option": "C",
+        "text": "Aspect ratio only"
+      },
+      {
+        "option": "D",
+        "text": "Padding behavior"
+      }
+    ],
+    "correct_answer": "A",
+    "answer_explanation": "object-fit controls how replaced content is resized to fit its container."
+  },
+  {
+    "question_text": "What attribute is used to hint to the browser for autocomplete on form fields?",
+    "mcq_options": [
+      {
+        "option": "A",
+        "text": "autocomplete"
+      },
+      {
+        "option": "B",
+        "text": "autosuggest"
+      },
+      {
+        "option": "C",
+        "text": "autofill"
+      },
+      {
+        "option": "D",
+        "text": "predict"
+      }
+    ],
+    "correct_answer": "A",
+    "answer_explanation": "autocomplete suggests stored values for form controls."
+  },
+  {
+    "question_text": "Which property controls the distance between lines of text?",
+    "mcq_options": [
+      {
+        "option": "A",
+        "text": "line-height"
+      },
+      {
+        "option": "B",
+        "text": "letter-spacing"
+      },
+      {
+        "option": "C",
+        "text": "word-spacing"
+      },
+      {
+        "option": "D",
+        "text": "text-spacing"
+      }
+    ],
+    "correct_answer": "A",
+    "answer_explanation": "line-height sets vertical spacing between lines."
+  },
+  {
+    "question_text": "Which HTTP method should be used for form submissions that change server state?",
+    "mcq_options": [
+      {
+        "option": "A",
+        "text": "GET"
+      },
+      {
+        "option": "B",
+        "text": "POST"
+      },
+      {
+        "option": "C",
+        "text": "HEAD"
+      },
+      {
+        "option": "D",
+        "text": "OPTIONS"
+      }
+    ],
+    "correct_answer": "B",
+    "answer_explanation": "POST is used when submitting data that alters server state."
+  },
+  {
+    "question_text": "Which selector matches an element with id 'main'?",
+    "mcq_options": [
+      {
+        "option": "A",
+        "text": "#main"
+      },
+      {
+        "option": "B",
+        "text": ".main"
+      },
+      {
+        "option": "C",
+        "text": "main"
+      },
+      {
+        "option": "D",
+        "text": "*#main"
+      }
+    ],
+    "correct_answer": "A",
+    "answer_explanation": "#id selects element by id."
+  },
+  {
+    "question_text": "What is ARIA used for in HTML?",
+    "mcq_options": [
+      {
+        "option": "A",
+        "text": "Styling elements"
+      },
+      {
+        "option": "B",
+        "text": "Improving accessibility through roles and properties"
+      },
+      {
+        "option": "C",
+        "text": "Client-side routing"
+      },
+      {
+        "option": "D",
+        "text": "SEO only"
+      }
+    ],
+    "correct_answer": "B",
+    "answer_explanation": "ARIA supplies accessibility metadata for assistive technologies."
+  },
+  {
+    "question_text": "How do you make CSS animation run infinitely?",
+    "mcq_options": [
+      {
+        "option": "A",
+        "text": "animation-iteration-count: infinite;"
+      },
+      {
+        "option": "B",
+        "text": "animation-repeat: forever;"
+      },
+      {
+        "option": "C",
+        "text": "loop: infinite;"
+      },
+      {
+        "option": "D",
+        "text": "repeat: infinite;"
+      }
+    ],
+    "correct_answer": "A",
+    "answer_explanation": "Use animation-iteration-count: infinite to loop animations."
+  },
+  {
+    "question_text": "Which element is recommended for embedding third-party interactive content like maps?",
+    "mcq_options": [
+      {
+        "option": "A",
+        "text": "<iframe>"
+      },
+      {
+        "option": "B",
+        "text": "<embed>"
+      },
+      {
+        "option": "C",
+        "text": "<script>"
+      },
+      {
+        "option": "D",
+        "text": "<object>"
+      }
+    ],
+    "correct_answer": "A",
+    "answer_explanation": "<iframe> isolates and embeds external interactive content."
+  },
+  {
+    "question_text": "What is the default value of 'position' property?",
+    "mcq_options": [
+      {
+        "option": "A",
+        "text": "static"
+      },
+      {
+        "option": "B",
+        "text": "relative"
+      },
+      {
+        "option": "C",
+        "text": "absolute"
+      },
+      {
+        "option": "D",
+        "text": "fixed"
+      }
+    ],
+    "correct_answer": "A",
+    "answer_explanation": "position defaults to static."
+  },
+  {
+    "question_text": "How do you make a checkbox checked by default?",
+    "mcq_options": [
+      {
+        "option": "A",
+        "text": "value=\"checked\""
+      },
+      {
+        "option": "B",
+        "text": "checked attribute"
+      },
+      {
+        "option": "C",
+        "text": "default=\"true\""
+      },
+      {
+        "option": "D",
+        "text": "set in CSS"
+      }
+    ],
+    "correct_answer": "B",
+    "answer_explanation": "Include the checked attribute on the input to make it checked initially."
+  },
+  {
+    "question_text": "Which property sets the transparency of background color separately from content?",
+    "mcq_options": [
+      {
+        "option": "A",
+        "text": "background-color with rgba or HSLA"
+      },
+      {
+        "option": "B",
+        "text": "opacity"
+      },
+      {
+        "option": "C",
+        "text": "filter"
+      },
+      {
+        "option": "D",
+        "text": "mix-blend-mode"
+      }
+    ],
+    "correct_answer": "A",
+    "answer_explanation": "Use rgba()/hsla() alpha channel to set background transparency without affecting children."
+  },
+  {
+    "question_text": "Which attribute specifies where to send form-data on submission?",
+    "mcq_options": [
+      {
+        "option": "A",
+        "text": "action"
+      },
+      {
+        "option": "B",
+        "text": "method"
+      },
+      {
+        "option": "C",
+        "text": "submitTo"
+      },
+      {
+        "option": "D",
+        "text": "target"
+      }
+    ],
+    "correct_answer": "A",
+    "answer_explanation": "action specifies the URL that processes the form data."
+  },
+  {
+    "question_text": "Which CSS function allows you to calculate values like widths?",
+    "mcq_options": [
+      {
+        "option": "A",
+        "text": "calc()"
+      },
+      {
+        "option": "B",
+        "text": "compute()"
+      },
+      {
+        "option": "C",
+        "text": "math()"
+      },
+      {
+        "option": "D",
+        "text": "var()"
+      }
+    ],
+    "correct_answer": "A",
+    "answer_explanation": "calc() evaluates expressions combining units."
+  },
+  {
+    "question_text": "Which meta tag can prevent search engines from indexing a page?",
+    "mcq_options": [
+      {
+        "option": "A",
+        "text": "<meta name=\"robots\" content=\"noindex\">"
+      },
+      {
+        "option": "B",
+        "text": "<meta noindex>"
+      },
+      {
+        "option": "C",
+        "text": "<meta name=\"search\" content=\"no\">"
+      },
+      {
+        "option": "D",
+        "text": "<meta content=\"noindex\">"
+      }
+    ],
+    "correct_answer": "A",
+    "answer_explanation": "Use meta robots noindex to request search engines not to index a page."
+  },
+  {
+    "question_text": "Which pseudo-class targets input elements that are invalid according to constraints?",
+    "mcq_options": [
+      {
+        "option": "A",
+        "text": ":invalid"
+      },
+      {
+        "option": "B",
+        "text": ":error"
+      },
+      {
+        "option": "C",
+        "text": ":invalid-input"
+      },
+      {
+        "option": "D",
+        "text": ":bad"
+      }
+    ],
+    "correct_answer": "A",
+    "answer_explanation": ":invalid styles form controls failing validation."
+  },
+  {
+    "question_text": "Which element should you use for marking up a navigation menu item label visually hidden but accessible to screen readers?",
+    "mcq_options": [
+      {
+        "option": "A",
+        "text": "display:none"
+      },
+      {
+        "option": "B",
+        "text": "opacity:0"
+      },
+      {
+        "option": "C",
+        "text": "Use .sr-only class and keep in DOM"
+      },
+      {
+        "option": "D",
+        "text": "remove element"
+      }
+    ],
+    "correct_answer": "C",
+    "answer_explanation": "Visually hide via CSS but keep element accessible for screen readers (e.g., .sr-only)."
+  },
+  {
+    "question_text": "How do you make text unselectable by the user using CSS?",
+    "mcq_options": [
+      {
+        "option": "A",
+        "text": "user-select: none;"
+      },
+      {
+        "option": "B",
+        "text": "select: none;"
+      },
+      {
+        "option": "C",
+        "text": "pointer-events: none;"
+      },
+      {
+        "option": "D",
+        "text": "disable-select: true;"
+      }
+    ],
+    "correct_answer": "A",
+    "answer_explanation": "user-select: none prevents text selection."
+  },
+  {
+    "question_text": "Which element allows you to provide fallback content if browser doesn't support certain features?",
+    "mcq_options": [
+      {
+        "option": "A",
+        "text": "<noscript>"
+      },
+      {
+        "option": "B",
+        "text": "<fallback>"
+      },
+      {
+        "option": "C",
+        "text": "<unsupported>"
+      },
+      {
+        "option": "D",
+        "text": "<polyfill>"
+      }
+    ],
+    "correct_answer": "A",
+    "answer_explanation": "<noscript> displays content when scripts are disabled or unsupported."
+  },
+  {
+    "question_text": "Which property affects whether flex items wrap to the next line?",
+    "mcq_options": [
+      {
+        "option": "A",
+        "text": "flex-wrap"
+      },
+      {
+        "option": "B",
+        "text": "wrap"
+      },
+      {
+        "option": "C",
+        "text": "line-break"
+      },
+      {
+        "option": "D",
+        "text": "flex-flow: nowrap only"
+      }
+    ],
+    "correct_answer": "A",
+    "answer_explanation": "flex-wrap controls wrapping behavior in a flex container."
+  },
+  {
+    "question_text": "What is the purpose of the <template> element in HTML?",
+    "mcq_options": [
+      {
+        "option": "A",
+        "text": "Display a template to user"
+      },
+      {
+        "option": "B",
+        "text": "Store HTML fragments not rendered until instantiated"
+      },
+      {
+        "option": "C",
+        "text": "Deprecated layout element"
+      },
+      {
+        "option": "D",
+        "text": "Inline CSS container"
+      }
+    ],
+    "correct_answer": "B",
+    "answer_explanation": "<template> holds inert DOM fragments that can be cloned for later use."
+  },
+  {
+    "question_text": "What is the purpose of :root selector in CSS?",
+    "mcq_options": [
+      {
+        "option": "A",
+        "text": ": Targets top-level root element for variables and global styles"
+      },
+      {
+        "option": "B",
+        "text": "Selects first element in document"
+      },
+      {
+        "option": "C",
+        "text": "Deprecated"
+      },
+      {
+        "option": "D",
+        "text": "Same as body"
+      }
+    ],
+    "correct_answer": "A",
+    "answer_explanation": ":root targets the root element (html) commonly used for custom properties."
+  },
+  {
+    "question_text": "Which attribute on <img> is used to provide multiple images for responsive displays?",
+    "mcq_options": [
+      {
+        "option": "A",
+        "text": "srcset"
+      },
+      {
+        "option": "B",
+        "text": "picture"
+      },
+      {
+        "option": "C",
+        "text": "data-src"
+      },
+      {
+        "option": "D",
+        "text": "multiple-src"
+      }
+    ],
+    "correct_answer": "A",
+    "answer_explanation": "srcset provides different image sources for different resolutions."
+  },
+  {
+    "question_text": "Which CSS rule applies when two conflicting declarations have equal specificity?",
+    "mcq_options": [
+      {
+        "option": "A",
+        "text": "Last one in source order wins"
+      },
+      {
+        "option": "B",
+        "text": "First one wins"
+      },
+      {
+        "option": "C",
+        "text": "Inline wins always"
+      },
+      {
+        "option": "D",
+        "text": "!important ignored"
+      }
+    ],
+    "correct_answer": "A",
+    "answer_explanation": "When specificity ties, the latter declaration overrides earlier ones."
+  },
+  {
+    "question_text": "Which element represents a dialog box or window?",
+    "mcq_options": [
+      {
+        "option": "A",
+        "text": "<dialog>"
+      },
+      {
+        "option": "B",
+        "text": "<modal>"
+      },
+      {
+        "option": "C",
+        "text": "<window>"
+      },
+      {
+        "option": "D",
+        "text": "<popup>"
+      }
+    ],
+    "correct_answer": "A",
+    "answer_explanation": "<dialog> represents a dialog."
+  },
+  {
+    "question_text": "How do you vertically center a single-line text inside a fixed-height div using line-height?",
+    "mcq_options": [
+      {
+        "option": "A",
+        "text": "Set line-height equal to div's height"
+      },
+      {
+        "option": "B",
+        "text": "Use margin auto"
+      },
+      {
+        "option": "C",
+        "text": "Use translateY"
+      },
+      {
+        "option": "D",
+        "text": "Use flexbox only"
+      }
+    ],
+    "correct_answer": "A",
+    "answer_explanation": "Setting line-height equal to container height centers single-line inline text."
+  },
+  {
+    "question_text": "How do you mark an element as the site logo semantically?",
+    "mcq_options": [
+      {
+        "option": "A",
+        "text": "<logo>"
+      },
+      {
+        "option": "B",
+        "text": "<img alt=\"\" role=\"img\">"
+      },
+      {
+        "option": "C",
+        "text": "<header> with img and aria-label"
+      },
+      {
+        "option": "D",
+        "text": "Use <svg> only"
+      }
+    ],
+    "correct_answer": "C",
+    "answer_explanation": "Place logo in header with appropriate alt and aria attributes for semantics."
+  },
+  {
+    "question_text": "Which pseudo-class matches when an element has focus via keyboard navigation?",
+    "mcq_options": [
+      {
+        "option": "A",
+        "text": ":focus"
+      },
+      {
+        "option": "B",
+        "text": ":focus-visible"
+      },
+      {
+        "option": "C",
+        "text": ":active"
+      },
+      {
+        "option": "D",
+        "text": ":hover"
+      }
+    ],
+    "correct_answer": "B",
+    "answer_explanation": ":focus-visible indicates focus ring typically from keyboard navigation."
+  },
+  {
+    "question_text": "Which attribute is commonly used to store custom data on elements?",
+    "mcq_options": [
+      {
+        "option": "A",
+        "text": "data-* attributes"
+      },
+      {
+        "option": "B",
+        "text": "custom-*"
+      },
+      {
+        "option": "C",
+        "text": "meta-*"
+      },
+      {
+        "option": "D",
+        "text": "info-*"
+      }
+    ],
+    "correct_answer": "A",
+    "answer_explanation": "data-* attributes store custom, private data for scripts."
+  },
+  {
+    "question_text": "How do you create a linear gradient background?",
+    "mcq_options": [
+      {
+        "option": "A",
+        "text": "background: linear-gradient(red, blue);"
+      },
+      {
+        "option": "B",
+        "text": "background: gradient(linear);"
+      },
+      {
+        "option": "C",
+        "text": "background-image: gradient();"
+      },
+      {
+        "option": "D",
+        "text": "background: linear(red-blue);"
+      }
+    ],
+    "correct_answer": "A",
+    "answer_explanation": "Use linear-gradient to define gradient backgrounds."
+  },
+  {
+    "question_text": "Which tag can be used to define navigation breadcrumbs semantically?",
+    "mcq_options": [
+      {
+        "option": "A",
+        "text": "<nav aria-label=\"breadcrumb\">"
+      },
+      {
+        "option": "B",
+        "text": "<breadcrumb>"
+      },
+      {
+        "option": "C",
+        "text": "<ol class=\"breadcrumb\">"
+      },
+      {
+        "option": "D",
+        "text": "<ul class=\"breadcrumb\">"
+      }
+    ],
+    "correct_answer": "A",
+    "answer_explanation": "Use nav with aria-label and list markup for accessible breadcrumbs."
+  },
+  {
+    "question_text": "Which property is used to add a drop shadow to an element?",
+    "mcq_options": [
+      {
+        "option": "A",
+        "text": "box-shadow"
+      },
+      {
+        "option": "B",
+        "text": "text-shadow"
+      },
+      {
+        "option": "C",
+        "text": "shadow"
+      },
+      {
+        "option": "D",
+        "text": "filter: drop-shadow"
+      }
+    ],
+    "correct_answer": "A",
+    "answer_explanation": "box-shadow adds shadow to element box (filter:drop-shadow also exists)."
+  },
+  {
+    "question_text": "Which HTML tag is used to define a client-side script that should not execute until explicitly run?",
+    "mcq_options": [
+      {
+        "option": "A",
+        "text": "<script type=\"text/template\">"
+      },
+      {
+        "option": "B",
+        "text": "<script defer>"
+      },
+      {
+        "option": "C",
+        "text": "<script async>"
+      },
+      {
+        "option": "D",
+        "text": "<noscript>"
+      }
+    ],
+    "correct_answer": "A",
+    "answer_explanation": "Using a non-JS script type (e.g., text/template) keeps it inert until parsed."
+  },
+  {
+    "question_text": "How do you make an element invisible but still take up layout space?",
+    "mcq_options": [
+      {
+        "option": "A",
+        "text": "visibility: hidden;"
+      },
+      {
+        "option": "B",
+        "text": "display:none;"
+      },
+      {
+        "option": "C",
+        "text": "opacity:0; pointer-events:none;"
+      },
+      {
+        "option": "D",
+        "text": "transform: scale(0);"
+      }
+    ],
+    "correct_answer": "A",
+    "answer_explanation": "visibility:hidden hides while preserving layout space."
+  },
+  {
+    "question_text": "Which attribute on <a> should you use alongside target=\"_blank\" for security?",
+    "mcq_options": [
+      {
+        "option": "A",
+        "text": "rel=\"noopener noreferrer\""
+      },
+      {
+        "option": "B",
+        "text": "rel=\"external\""
+      },
+      {
+        "option": "C",
+        "text": "security=\"true\""
+      },
+      {
+        "option": "D",
+        "text": "referrer=\"no\""
+      }
+    ],
+    "correct_answer": "A",
+    "answer_explanation": "rel=\"noopener noreferrer\" prevents the new page from accessing window.opener and improves security."
+  },
+  {
+    "question_text": "Which property is useful for hardware-accelerated animations?",
+    "mcq_options": [
+      {
+        "option": "A",
+        "text": "will-change"
+      },
+      {
+        "option": "B",
+        "text": "enable-gpu"
+      },
+      {
+        "option": "C",
+        "text": "use-gpu"
+      },
+      {
+        "option": "D",
+        "text": "acceleration:true"
+      }
+    ],
+    "correct_answer": "A",
+    "answer_explanation": "will-change hints the browser to optimize for upcoming changes."
+  },
+  {
+    "question_text": "Which HTML element provides a native tooltip on hover?",
+    "mcq_options": [
+      {
+        "option": "A",
+        "text": "title attribute"
+      },
+      {
+        "option": "B",
+        "text": "data-tooltip"
+      },
+      {
+        "option": "C",
+        "text": "<tooltip>"
+      },
+      {
+        "option": "D",
+        "text": "aria-tooltip"
+      }
+    ],
+    "correct_answer": "A",
+    "answer_explanation": "title attribute shows a native browser tooltip on hover."
+  },
+  {
+    "question_text": "How do you apply a transition when a property changes?",
+    "mcq_options": [
+      {
+        "option": "A",
+        "text": "transition: property duration timing;"
+      },
+      {
+        "option": "B",
+        "text": "animate: property duration;"
+      },
+      {
+        "option": "C",
+        "text": "change: property;"
+      },
+      {
+        "option": "D",
+        "text": "transition-effect: on;"
+      }
+    ],
+    "correct_answer": "A",
+    "answer_explanation": "transition defines property, duration, and timing function for smooth changes."
+  },
+  {
+    "question_text": "What is the use of <progress> element?",
+    "mcq_options": [
+      {
+        "option": "A",
+        "text": "Display progress of a task"
+      },
+      {
+        "option": "B",
+        "text": "Create progress bar using JS only"
+      },
+      {
+        "option": "C",
+        "text": "Deprecated"
+      },
+      {
+        "option": "D",
+        "text": "Only for audio progress"
+      }
+    ],
+    "correct_answer": "A",
+    "answer_explanation": "<progress> represents completion progress of a task."
+  },
+  {
+    "question_text": "Which property specifies the order of flex items visually?",
+    "mcq_options": [
+      {
+        "option": "A",
+        "text": "order"
+      },
+      {
+        "option": "B",
+        "text": "z-index"
+      },
+      {
+        "option": "C",
+        "text": "flex-order"
+      },
+      {
+        "option": "D",
+        "text": "layout-order"
+      }
+    ],
+    "correct_answer": "A",
+    "answer_explanation": "order reorders flex items without changing source order."
+  }
+]

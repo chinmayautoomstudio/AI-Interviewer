@@ -259,6 +259,11 @@ export class TwoFactorAuthService {
         .single();
 
       if (error) {
+        // If the column/table doesn't exist in this project, silently disable 2FA
+        // Postgres error codes: 42703 = undefined column, 42P01 = undefined table
+        if ((error as any).code === '42703' || (error as any).code === '42P01') {
+          return false;
+        }
         console.error('Error checking 2FA status:', error);
         return false;
       }

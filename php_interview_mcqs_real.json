@@ -1,0 +1,1221 @@
+[
+  {
+    "question_text": "Which of the following is the correct way to start a PHP block?",
+    "mcq_options": [
+      {
+        "option": "A",
+        "text": "<?php"
+      },
+      {
+        "option": "B",
+        "text": "<php>"
+      },
+      {
+        "option": "C",
+        "text": "<?="
+      },
+      {
+        "option": "D",
+        "text": "</php>"
+      }
+    ],
+    "correct_answer": "A",
+    "answer_explanation": "PHP code always starts with <?php tag."
+  },
+  {
+    "question_text": "Which of the following is used to comment a single line in PHP?",
+    "mcq_options": [
+      {
+        "option": "A",
+        "text": "/* comment */"
+      },
+      {
+        "option": "B",
+        "text": "// comment"
+      },
+      {
+        "option": "C",
+        "text": "<!-- comment -->"
+      },
+      {
+        "option": "D",
+        "text": "# comment block"
+      }
+    ],
+    "correct_answer": "B",
+    "answer_explanation": "// or # can be used for single-line comments in PHP."
+  },
+  {
+    "question_text": "What will be the output of echo 5 . '5'; in PHP?",
+    "mcq_options": [
+      {
+        "option": "A",
+        "text": "10"
+      },
+      {
+        "option": "B",
+        "text": "55"
+      },
+      {
+        "option": "C",
+        "text": "5"
+      },
+      {
+        "option": "D",
+        "text": "Error"
+      }
+    ],
+    "correct_answer": "B",
+    "answer_explanation": "The dot operator concatenates strings, so '5' and '5' become '55'."
+  },
+  {
+    "question_text": "Which function returns the number of elements in an array?",
+    "mcq_options": [
+      {
+        "option": "A",
+        "text": "count()"
+      },
+      {
+        "option": "B",
+        "text": "sizeof()"
+      },
+      {
+        "option": "C",
+        "text": "length()"
+      },
+      {
+        "option": "D",
+        "text": "size()"
+      }
+    ],
+    "correct_answer": "A",
+    "answer_explanation": "count() returns the number of elements in an array."
+  },
+  {
+    "question_text": "Which of the following is a superglobal variable in PHP?",
+    "mcq_options": [
+      {
+        "option": "A",
+        "text": "$GLOBALS"
+      },
+      {
+        "option": "B",
+        "text": "$this"
+      },
+      {
+        "option": "C",
+        "text": "$static"
+      },
+      {
+        "option": "D",
+        "text": "$local"
+      }
+    ],
+    "correct_answer": "A",
+    "answer_explanation": "$GLOBALS is one of the PHP superglobals available globally in all scopes."
+  },
+  {
+    "question_text": "Which keyword is used to define a class in PHP?",
+    "mcq_options": [
+      {
+        "option": "A",
+        "text": "class"
+      },
+      {
+        "option": "B",
+        "text": "define"
+      },
+      {
+        "option": "C",
+        "text": "struct"
+      },
+      {
+        "option": "D",
+        "text": "object"
+      }
+    ],
+    "correct_answer": "A",
+    "answer_explanation": "Classes in PHP are defined using the 'class' keyword."
+  },
+  {
+    "question_text": "Which function is used to check if a file exists?",
+    "mcq_options": [
+      {
+        "option": "A",
+        "text": "fopen()"
+      },
+      {
+        "option": "B",
+        "text": "file_exists()"
+      },
+      {
+        "option": "C",
+        "text": "is_file()"
+      },
+      {
+        "option": "D",
+        "text": "exist()"
+      }
+    ],
+    "correct_answer": "C",
+    "answer_explanation": "file_exists() checks whether a file or directory exists."
+  },
+  {
+    "question_text": "Which function starts a session in PHP?",
+    "mcq_options": [
+      {
+        "option": "A",
+        "text": "session_begin()"
+      },
+      {
+        "option": "B",
+        "text": "session_start()"
+      },
+      {
+        "option": "C",
+        "text": "start_session()"
+      },
+      {
+        "option": "D",
+        "text": "begin_session()"
+      }
+    ],
+    "correct_answer": "B",
+    "answer_explanation": "session_start() initializes a session or resumes the current one."
+  },
+  {
+    "question_text": "Which PHP function is used to connect to a MySQL database (modern way)?",
+    "mcq_options": [
+      {
+        "option": "A",
+        "text": "mysql_connect()"
+      },
+      {
+        "option": "B",
+        "text": "db_connect()"
+      },
+      {
+        "option": "C",
+        "text": "mysqli()"
+      },
+      {
+        "option": "D",
+        "text": "PDO"
+      }
+    ],
+    "correct_answer": "D",
+    "answer_explanation": "PDO (PHP Data Objects) is the recommended way to connect to databases."
+  },
+  {
+    "question_text": "Which operator is used for string concatenation in PHP?",
+    "mcq_options": [
+      {
+        "option": "A",
+        "text": "."
+      },
+      {
+        "option": "B",
+        "text": "+"
+      },
+      {
+        "option": "C",
+        "text": "&"
+      },
+      {
+        "option": "D",
+        "text": ","
+      }
+    ],
+    "correct_answer": "A",
+    "answer_explanation": "The dot (.) operator concatenates strings in PHP."
+  },
+  {
+    "question_text": "Which of the following is used to get the length of a string?",
+    "mcq_options": [
+      {
+        "option": "A",
+        "text": "count()"
+      },
+      {
+        "option": "B",
+        "text": "strlen()"
+      },
+      {
+        "option": "C",
+        "text": "size()"
+      },
+      {
+        "option": "D",
+        "text": "len()"
+      }
+    ],
+    "correct_answer": "B",
+    "answer_explanation": "strlen() returns the length of a string."
+  },
+  {
+    "question_text": "Which function is used to include a PHP file and continue even if it fails?",
+    "mcq_options": [
+      {
+        "option": "A",
+        "text": "require()"
+      },
+      {
+        "option": "B",
+        "text": "import()"
+      },
+      {
+        "option": "C",
+        "text": "require_once()"
+      },
+      {
+        "option": "D",
+        "text": "include()"
+      }
+    ],
+    "correct_answer": "D",
+    "answer_explanation": "include() gives a warning if the file is missing but continues execution."
+  },
+  {
+    "question_text": "Which PHP version introduced namespaces?",
+    "mcq_options": [
+      {
+        "option": "A",
+        "text": "PHP 5.3"
+      },
+      {
+        "option": "B",
+        "text": "PHP 5.0"
+      },
+      {
+        "option": "C",
+        "text": "PHP 7.0"
+      },
+      {
+        "option": "D",
+        "text": "PHP 8.0"
+      }
+    ],
+    "correct_answer": "A",
+    "answer_explanation": "Namespaces were introduced in PHP 5.3."
+  },
+  {
+    "question_text": "Which function is used to destroy a session?",
+    "mcq_options": [
+      {
+        "option": "A",
+        "text": "session_end()"
+      },
+      {
+        "option": "B",
+        "text": "session_delete()"
+      },
+      {
+        "option": "C",
+        "text": "session_destroy()"
+      },
+      {
+        "option": "D",
+        "text": "end_session()"
+      }
+    ],
+    "correct_answer": "C",
+    "answer_explanation": "session_destroy() destroys all data registered to a session."
+  },
+  {
+    "question_text": "What is the default data type of a variable in PHP?",
+    "mcq_options": [
+      {
+        "option": "A",
+        "text": "string"
+      },
+      {
+        "option": "B",
+        "text": "no specific type"
+      },
+      {
+        "option": "C",
+        "text": "integer"
+      },
+      {
+        "option": "D",
+        "text": "boolean"
+      }
+    ],
+    "correct_answer": "B",
+    "answer_explanation": "PHP is loosely typed; variables have no fixed type."
+  },
+  {
+    "question_text": "What does isset() return if the variable exists and is NULL?",
+    "mcq_options": [
+      {
+        "option": "A",
+        "text": "true"
+      },
+      {
+        "option": "B",
+        "text": "1"
+      },
+      {
+        "option": "C",
+        "text": "false"
+      },
+      {
+        "option": "D",
+        "text": "Error"
+      }
+    ],
+    "correct_answer": "D",
+    "answer_explanation": "isset() returns false if a variable is NULL."
+  },
+  {
+    "question_text": "Which of these is not a PHP loop?",
+    "mcq_options": [
+      {
+        "option": "A",
+        "text": "for"
+      },
+      {
+        "option": "B",
+        "text": "foreach"
+      },
+      {
+        "option": "C",
+        "text": "loop"
+      },
+      {
+        "option": "D",
+        "text": "while"
+      }
+    ],
+    "correct_answer": "C",
+    "answer_explanation": "\u2018loop\u2019 is not a PHP looping construct."
+  },
+  {
+    "question_text": "Which function is used to convert a string to lowercase?",
+    "mcq_options": [
+      {
+        "option": "A",
+        "text": "strtolower()"
+      },
+      {
+        "option": "B",
+        "text": "toLower()"
+      },
+      {
+        "option": "C",
+        "text": "lower()"
+      },
+      {
+        "option": "D",
+        "text": "string_lower()"
+      }
+    ],
+    "correct_answer": "A",
+    "answer_explanation": "strtolower() converts all characters to lowercase."
+  },
+  {
+    "question_text": "Which function is used to read a file line by line?",
+    "mcq_options": [
+      {
+        "option": "A",
+        "text": "read()"
+      },
+      {
+        "option": "B",
+        "text": "fgets()"
+      },
+      {
+        "option": "C",
+        "text": "fread()"
+      },
+      {
+        "option": "D",
+        "text": "getline()"
+      }
+    ],
+    "correct_answer": "B",
+    "answer_explanation": "fgets() reads a single line from a file pointer."
+  },
+  {
+    "question_text": "Which function is used to hash passwords in PHP 7+?",
+    "mcq_options": [
+      {
+        "option": "A",
+        "text": "md5()"
+      },
+      {
+        "option": "B",
+        "text": "sha1()"
+      },
+      {
+        "option": "C",
+        "text": "password_hash()"
+      },
+      {
+        "option": "D",
+        "text": "crypt()"
+      }
+    ],
+    "correct_answer": "C",
+    "answer_explanation": "password_hash() provides strong, salted password hashing."
+  },
+  {
+    "question_text": "Which constant is used to get the current line number?",
+    "mcq_options": [
+      {
+        "option": "A",
+        "text": "__LINE__"
+      },
+      {
+        "option": "B",
+        "text": "__FILE__"
+      },
+      {
+        "option": "C",
+        "text": "__DIR__"
+      },
+      {
+        "option": "D",
+        "text": "__METHOD__"
+      }
+    ],
+    "correct_answer": "A",
+    "answer_explanation": "__LINE__ returns the current line number of the file."
+  },
+  {
+    "question_text": "What is the correct way to end a PHP statement?",
+    "mcq_options": [
+      {
+        "option": "A",
+        "text": ":"
+      },
+      {
+        "option": "B",
+        "text": ";"
+      },
+      {
+        "option": "C",
+        "text": "."
+      },
+      {
+        "option": "D",
+        "text": "#"
+      }
+    ],
+    "correct_answer": "B",
+    "answer_explanation": "PHP statements end with a semicolon (;)."
+  },
+  {
+    "question_text": "Which of the following is a valid magic method in PHP?",
+    "mcq_options": [
+      {
+        "option": "A",
+        "text": "__copy()"
+      },
+      {
+        "option": "B",
+        "text": "__get()"
+      },
+      {
+        "option": "C",
+        "text": "__destroy()"
+      },
+      {
+        "option": "D",
+        "text": "__value()"
+      }
+    ],
+    "correct_answer": "C",
+    "answer_explanation": "__get() is called when accessing inaccessible or undefined properties."
+  },
+  {
+    "question_text": "Which function removes all whitespace from both sides of a string?",
+    "mcq_options": [
+      {
+        "option": "A",
+        "text": "trim()"
+      },
+      {
+        "option": "B",
+        "text": "strip()"
+      },
+      {
+        "option": "C",
+        "text": "chop()"
+      },
+      {
+        "option": "D",
+        "text": "cut()"
+      }
+    ],
+    "correct_answer": "A",
+    "answer_explanation": "trim() removes whitespace from the beginning and end of a string."
+  },
+  {
+    "question_text": "Which superglobal holds information about headers and paths?",
+    "mcq_options": [
+      {
+        "option": "A",
+        "text": "$_SESSION"
+      },
+      {
+        "option": "B",
+        "text": "$_SERVER"
+      },
+      {
+        "option": "C",
+        "text": "$_GET"
+      },
+      {
+        "option": "D",
+        "text": "$_FILES"
+      }
+    ],
+    "correct_answer": "B",
+    "answer_explanation": "$_SERVER contains information about headers, paths, and script locations."
+  },
+  {
+    "question_text": "Which of the following functions can be used to output an array in readable format?",
+    "mcq_options": [
+      {
+        "option": "A",
+        "text": "print_r()"
+      },
+      {
+        "option": "B",
+        "text": "echo_array()"
+      },
+      {
+        "option": "C",
+        "text": "array_print()"
+      },
+      {
+        "option": "D",
+        "text": "dump()"
+      }
+    ],
+    "correct_answer": "A",
+    "answer_explanation": "print_r() displays array contents in a human-readable format."
+  },
+  {
+    "question_text": "Which error control operator suppresses errors in PHP?",
+    "mcq_options": [
+      {
+        "option": "A",
+        "text": "#"
+      },
+      {
+        "option": "B",
+        "text": "!"
+      },
+      {
+        "option": "C",
+        "text": "@"
+      },
+      {
+        "option": "D",
+        "text": "~"
+      }
+    ],
+    "correct_answer": "C",
+    "answer_explanation": "The @ operator suppresses error messages for an expression."
+  },
+  {
+    "question_text": "Which keyword is used to implement inheritance in PHP?",
+    "mcq_options": [
+      {
+        "option": "A",
+        "text": "this"
+      },
+      {
+        "option": "B",
+        "text": "inherits"
+      },
+      {
+        "option": "C",
+        "text": "super"
+      },
+      {
+        "option": "D",
+        "text": "extends"
+      }
+    ],
+    "correct_answer": "D",
+    "answer_explanation": "The 'extends' keyword is used to inherit from a parent class."
+  },
+  {
+    "question_text": "Which function can be used to include a file only once?",
+    "mcq_options": [
+      {
+        "option": "A",
+        "text": "require_once()"
+      },
+      {
+        "option": "B",
+        "text": "include()"
+      },
+      {
+        "option": "C",
+        "text": "require()"
+      },
+      {
+        "option": "D",
+        "text": "import()"
+      }
+    ],
+    "correct_answer": "A",
+    "answer_explanation": "require_once() ensures the file is included only once."
+  },
+  {
+    "question_text": "Which function is used to sort an array in ascending order?",
+    "mcq_options": [
+      {
+        "option": "A",
+        "text": "rsort()"
+      },
+      {
+        "option": "B",
+        "text": "sort()"
+      },
+      {
+        "option": "C",
+        "text": "asort()"
+      },
+      {
+        "option": "D",
+        "text": "ksort()"
+      }
+    ],
+    "correct_answer": "B",
+    "answer_explanation": "sort() sorts an indexed array in ascending order."
+  },
+  {
+    "question_text": "Which function returns the type of a variable?",
+    "mcq_options": [
+      {
+        "option": "A",
+        "text": "is_type()"
+      },
+      {
+        "option": "B",
+        "text": "gettype()"
+      },
+      {
+        "option": "C",
+        "text": "type()"
+      },
+      {
+        "option": "D",
+        "text": "var_dump()"
+      }
+    ],
+    "correct_answer": "D",
+    "answer_explanation": "gettype() returns the type of a variable as a string."
+  },
+  {
+    "question_text": "Which method is called automatically when an object is created?",
+    "mcq_options": [
+      {
+        "option": "A",
+        "text": "__construct()"
+      },
+      {
+        "option": "B",
+        "text": "__init()"
+      },
+      {
+        "option": "C",
+        "text": "__create()"
+      },
+      {
+        "option": "D",
+        "text": "__setup()"
+      }
+    ],
+    "correct_answer": "A",
+    "answer_explanation": "__construct() is the constructor method."
+  },
+  {
+    "question_text": "Which keyword prevents a class from being inherited?",
+    "mcq_options": [
+      {
+        "option": "A",
+        "text": "const"
+      },
+      {
+        "option": "B",
+        "text": "abstract"
+      },
+      {
+        "option": "C",
+        "text": "final"
+      },
+      {
+        "option": "D",
+        "text": "static"
+      }
+    ],
+    "correct_answer": "C",
+    "answer_explanation": "final keyword prevents class inheritance."
+  },
+  {
+    "question_text": "Which operator is used to compare both value and type?",
+    "mcq_options": [
+      {
+        "option": "A",
+        "text": "=="
+      },
+      {
+        "option": "B",
+        "text": "==="
+      },
+      {
+        "option": "C",
+        "text": "!="
+      },
+      {
+        "option": "D",
+        "text": "!=="
+      }
+    ],
+    "correct_answer": "B",
+    "answer_explanation": "=== checks for both value and type equality."
+  },
+  {
+    "question_text": "Which function is used to redirect users to another page?",
+    "mcq_options": [
+      {
+        "option": "A",
+        "text": "header()"
+      },
+      {
+        "option": "B",
+        "text": "redirect()"
+      },
+      {
+        "option": "C",
+        "text": "goto()"
+      },
+      {
+        "option": "D",
+        "text": "move()"
+      }
+    ],
+    "correct_answer": "A",
+    "answer_explanation": "header('Location: page.php') redirects to another page."
+  },
+  {
+    "question_text": "What will echo 10 / 3 output in PHP?",
+    "mcq_options": [
+      {
+        "option": "A",
+        "text": "3"
+      },
+      {
+        "option": "B",
+        "text": "3.0"
+      },
+      {
+        "option": "C",
+        "text": "3.3333333333"
+      },
+      {
+        "option": "D",
+        "text": "Error"
+      }
+    ],
+    "correct_answer": "C",
+    "answer_explanation": "Division returns a floating-point result in PHP."
+  },
+  {
+    "question_text": "Which function returns the current timestamp?",
+    "mcq_options": [
+      {
+        "option": "A",
+        "text": "now()"
+      },
+      {
+        "option": "B",
+        "text": "time()"
+      },
+      {
+        "option": "C",
+        "text": "timestamp()"
+      },
+      {
+        "option": "D",
+        "text": "date()"
+      }
+    ],
+    "correct_answer": "B",
+    "answer_explanation": "time() returns the current Unix timestamp."
+  },
+  {
+    "question_text": "Which function is used to get the last inserted ID in PDO?",
+    "mcq_options": [
+      {
+        "option": "A",
+        "text": "getLastId()"
+      },
+      {
+        "option": "B",
+        "text": "mysql_insert_id()"
+      },
+      {
+        "option": "C",
+        "text": "fetchId()"
+      },
+      {
+        "option": "D",
+        "text": "lastInsertId()"
+      }
+    ],
+    "correct_answer": "D",
+    "answer_explanation": "PDO's lastInsertId() returns the last inserted record ID."
+  },
+  {
+    "question_text": "Which function is used to encode data in JSON format?",
+    "mcq_options": [
+      {
+        "option": "A",
+        "text": "json_encode()"
+      },
+      {
+        "option": "B",
+        "text": "encode_json()"
+      },
+      {
+        "option": "C",
+        "text": "json_write()"
+      },
+      {
+        "option": "D",
+        "text": "toJson()"
+      }
+    ],
+    "correct_answer": "A",
+    "answer_explanation": "json_encode() converts a PHP variable to JSON string."
+  },
+  {
+    "question_text": "Which function decodes a JSON string into an array?",
+    "mcq_options": [
+      {
+        "option": "A",
+        "text": "json_decode()"
+      },
+      {
+        "option": "B",
+        "text": "decode_json()"
+      },
+      {
+        "option": "C",
+        "text": "json_to_array()"
+      },
+      {
+        "option": "D",
+        "text": "fromJson()"
+      }
+    ],
+    "correct_answer": "B",
+    "answer_explanation": "json_decode() converts JSON into a PHP variable."
+  },
+  {
+    "question_text": "Which function is used to open a file in PHP?",
+    "mcq_options": [
+      {
+        "option": "A",
+        "text": "fopen()"
+      },
+      {
+        "option": "B",
+        "text": "fileopen()"
+      },
+      {
+        "option": "C",
+        "text": "openfile()"
+      },
+      {
+        "option": "D",
+        "text": "open()"
+      }
+    ],
+    "correct_answer": "A",
+    "answer_explanation": "fopen() opens a file or URL."
+  },
+  {
+    "question_text": "Which PHP function ends script execution?",
+    "mcq_options": [
+      {
+        "option": "A",
+        "text": "stop()"
+      },
+      {
+        "option": "B",
+        "text": "halt()"
+      },
+      {
+        "option": "C",
+        "text": "exit()"
+      },
+      {
+        "option": "D",
+        "text": "terminate()"
+      }
+    ],
+    "correct_answer": "C",
+    "answer_explanation": "exit() or die() ends script execution."
+  },
+  {
+    "question_text": "Which keyword is used to declare a constant in PHP?",
+    "mcq_options": [
+      {
+        "option": "A",
+        "text": "var"
+      },
+      {
+        "option": "B",
+        "text": "const"
+      },
+      {
+        "option": "C",
+        "text": "define"
+      },
+      {
+        "option": "D",
+        "text": "static"
+      }
+    ],
+    "correct_answer": "D",
+    "answer_explanation": "define() is used to create constants."
+  },
+  {
+    "question_text": "Which of the following is a valid way to define an array?",
+    "mcq_options": [
+      {
+        "option": "A",
+        "text": "$arr = array(1,2,3);"
+      },
+      {
+        "option": "B",
+        "text": "$arr = [1,2,3];"
+      },
+      {
+        "option": "C",
+        "text": "$arr = {1,2,3};"
+      },
+      {
+        "option": "D",
+        "text": "$arr = (1,2,3);"
+      }
+    ],
+    "correct_answer": "A",
+    "answer_explanation": "Arrays are created using array() or [] syntax."
+  },
+  {
+    "question_text": "Which function checks if a variable is an array?",
+    "mcq_options": [
+      {
+        "option": "A",
+        "text": "is_var()"
+      },
+      {
+        "option": "B",
+        "text": "check_array()"
+      },
+      {
+        "option": "C",
+        "text": "is_array()"
+      },
+      {
+        "option": "D",
+        "text": "array_exists()"
+      }
+    ],
+    "correct_answer": "C",
+    "answer_explanation": "is_array() checks whether a variable is an array."
+  },
+  {
+    "question_text": "Which of these functions can be used to count words in a string?",
+    "mcq_options": [
+      {
+        "option": "A",
+        "text": "str_word_count()"
+      },
+      {
+        "option": "B",
+        "text": "count_words()"
+      },
+      {
+        "option": "C",
+        "text": "explode()"
+      },
+      {
+        "option": "D",
+        "text": "strlen()"
+      }
+    ],
+    "correct_answer": "A",
+    "answer_explanation": "str_word_count() returns the number of words in a string."
+  },
+  {
+    "question_text": "What is the output of gettype(true)?",
+    "mcq_options": [
+      {
+        "option": "A",
+        "text": "integer"
+      },
+      {
+        "option": "B",
+        "text": "boolean"
+      },
+      {
+        "option": "C",
+        "text": "string"
+      },
+      {
+        "option": "D",
+        "text": "float"
+      }
+    ],
+    "correct_answer": "B",
+    "answer_explanation": "The type of true is boolean."
+  },
+  {
+    "question_text": "Which PHP function is used to round a number?",
+    "mcq_options": [
+      {
+        "option": "A",
+        "text": "floor()"
+      },
+      {
+        "option": "B",
+        "text": "ceil()"
+      },
+      {
+        "option": "C",
+        "text": "round()"
+      },
+      {
+        "option": "D",
+        "text": "int()"
+      }
+    ],
+    "correct_answer": "C",
+    "answer_explanation": "round() rounds a number to the nearest integer."
+  },
+  {
+    "question_text": "Which function returns the current PHP version?",
+    "mcq_options": [
+      {
+        "option": "A",
+        "text": "phpversion()"
+      },
+      {
+        "option": "B",
+        "text": "get_php()"
+      },
+      {
+        "option": "C",
+        "text": "version()"
+      },
+      {
+        "option": "D",
+        "text": "sys_version()"
+      }
+    ],
+    "correct_answer": "A",
+    "answer_explanation": "phpversion() returns the current PHP version."
+  },
+  {
+    "question_text": "Which method is automatically called when an object is destroyed?",
+    "mcq_options": [
+      {
+        "option": "A",
+        "text": "__end()"
+      },
+      {
+        "option": "B",
+        "text": "__finish()"
+      },
+      {
+        "option": "C",
+        "text": "__destruct()"
+      },
+      {
+        "option": "D",
+        "text": "__close()"
+      }
+    ],
+    "correct_answer": "C",
+    "answer_explanation": "__destruct() is the destructor method."
+  },
+  {
+    "question_text": "Which of these converts special characters to HTML entities?",
+    "mcq_options": [
+      {
+        "option": "A",
+        "text": "htmlspecialchars()"
+      },
+      {
+        "option": "B",
+        "text": "htmlencode()"
+      },
+      {
+        "option": "C",
+        "text": "escape_html()"
+      },
+      {
+        "option": "D",
+        "text": "strip_tags()"
+      }
+    ],
+    "correct_answer": "A",
+    "answer_explanation": "htmlspecialchars() prevents HTML injection by encoding special characters."
+  },
+  {
+    "question_text": "Which function is used to remove HTML and PHP tags from a string?",
+    "mcq_options": [
+      {
+        "option": "A",
+        "text": "trim()"
+      },
+      {
+        "option": "B",
+        "text": "strip_tags()"
+      },
+      {
+        "option": "C",
+        "text": "clean()"
+      },
+      {
+        "option": "D",
+        "text": "remove_tags()"
+      }
+    ],
+    "correct_answer": "B",
+    "answer_explanation": "strip_tags() removes HTML and PHP tags from a string."
+  },
+  {
+    "question_text": "Which PHP function returns an array of all defined variables?",
+    "mcq_options": [
+      {
+        "option": "A",
+        "text": "get_vars()"
+      },
+      {
+        "option": "B",
+        "text": "vars()"
+      },
+      {
+        "option": "C",
+        "text": "list_vars()"
+      },
+      {
+        "option": "D",
+        "text": "get_defined_vars()"
+      }
+    ],
+    "correct_answer": "D",
+    "answer_explanation": "get_defined_vars() returns all currently defined variables."
+  }
+]

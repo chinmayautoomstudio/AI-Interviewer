@@ -114,7 +114,7 @@ const RegisterPage: React.FC = () => {
       {/* Abstract Background Image */}
       <div 
         className="absolute inset-0 bg-cover bg-center bg-no-repeat"
-        style={{ backgroundImage: `url(${process.env.PUBLIC_URL || ''}/background-login.jpeg)` }}
+        style={{ backgroundImage: `url('https://i.ibb.co/jvBV8tzd/background-login.webp')` }}
       >
         {/* Subtle overlay for better text readability */}
         <div className="absolute inset-0 bg-black/20"></div>
@@ -132,7 +132,7 @@ const RegisterPage: React.FC = () => {
                 {/* Logo */}
                 <div className="flex items-center space-x-3 mb-8">
                   <img 
-                    src={`${process.env.PUBLIC_URL || ''}/AI-Interviewer-logo.png`}
+                    src="https://i.ibb.co/7NZw57LJ/AI-Interviewer-logo.webp"
                     alt="AI HR Saathi" 
                     className="h-8 w-auto"
                   />

@@ -17,6 +17,11 @@ export class NotificationService {
   private static instance: NotificationService;
   private subscribers: Map<string, (notification: Notification) => void> = new Map();
   private realtimeSubscription: any = null;
+  
+  private isValidUuid(value: string): boolean {
+    // Basic UUID v4 regex (accepts any valid UUID format)
+    return /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-5][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$/.test(value);
+  }
 
   static getInstance(): NotificationService {
     if (!NotificationService.instance) {
@@ -71,11 +76,18 @@ export class NotificationService {
    */
   async getNotifications(userId: string, filter?: NotificationFilter): Promise<{ success: boolean; data?: Notification[]; error?: string }> {
     try {
-      let query = supabase
+      const base = supabase
         .from('notifications')
         .select('*')
-        .or(`user_id.is.null,user_id.eq.${userId}`) // Get notifications for all admins or specific user
         .order('created_at', { ascending: false });
+
+      let query = base;
+      if (this.isValidUuid(userId)) {
+        query = query.or(`user_id.is.null,user_id.eq.${userId}`);
+      } else {
+        // If userId is not a UUID (e.g., "admin"), only fetch global notifications
+        query = query.is('user_id', null);
+      }
 
       if (filter) {
         if (filter.type) {
@@ -128,7 +140,7 @@ export class NotificationService {
           updated_at: new Date().toISOString() 
         })
         .eq('id', notificationId)
-        .or(`user_id.is.null,user_id.eq.${userId}`);
+        .or(this.isValidUuid(userId) ? `user_id.is.null,user_id.eq.${userId}` : 'user_id.is.null');
 
       if (error) {
         console.error('Error marking notification as read:', error);
@@ -156,7 +168,7 @@ export class NotificationService {
           is_read: true, 
           updated_at: new Date().toISOString() 
         })
-        .or(`user_id.is.null,user_id.eq.${userId}`)
+        .or(this.isValidUuid(userId) ? `user_id.is.null,user_id.eq.${userId}` : 'user_id.is.null')
         .eq('is_read', false);
 
       if (error) {
@@ -183,7 +195,7 @@ export class NotificationService {
         .from('notifications')
         .delete()
         .eq('id', notificationId)
-        .or(`user_id.is.null,user_id.eq.${userId}`);
+        .or(this.isValidUuid(userId) ? `user_id.is.null,user_id.eq.${userId}` : 'user_id.is.null');
 
       if (error) {
         console.error('Error deleting notification:', error);
@@ -208,7 +220,7 @@ export class NotificationService {
       const { data, error } = await supabase
         .from('notifications')
         .select('type, is_read, created_at')
-        .or(`user_id.is.null,user_id.eq.${userId}`)
+        .or(this.isValidUuid(userId) ? `user_id.is.null,user_id.eq.${userId}` : 'user_id.is.null')
         .gte('created_at', new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()); // Last 24 hours
 
       if (error) {
@@ -259,6 +271,7 @@ export class NotificationService {
 
     // Set up real-time subscription if not already active
     if (!this.realtimeSubscription) {
+      const filter = this.isValidUuid(userId) ? `or(user_id.is.null,user_id.eq.${userId})` : 'user_id.is.null';
       this.realtimeSubscription = supabase
         .channel('notifications')
         .on('postgres_changes', 
@@ -266,7 +279,7 @@ export class NotificationService {
             event: 'INSERT', 
             schema: 'public', 
             table: 'notifications',
-            filter: `or(user_id.is.null,user_id.eq.${userId})`
+            filter
           }, 
           (payload) => {
             const notification = this.transformNotification(payload.new);
@@ -278,7 +291,7 @@ export class NotificationService {
             event: 'UPDATE', 
             schema: 'public', 
             table: 'notifications',
-            filter: `or(user_id.is.null,user_id.eq.${userId})`
+            filter
           }, 
           (payload) => {
             const notification = this.transformNotification(payload.new);

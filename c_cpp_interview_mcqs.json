@@ -1,0 +1,2440 @@
+[
+  {
+    "question_text": "What is the output of printf(\"%d\", sizeof(char));",
+    "mcq_options": [
+      {
+        "option": "A",
+        "text": "1"
+      },
+      {
+        "option": "B",
+        "text": "2"
+      },
+      {
+        "option": "C",
+        "text": "Depends on compiler"
+      },
+      {
+        "option": "D",
+        "text": "0"
+      }
+    ],
+    "correct_answer": "A",
+    "answer_explanation": "sizeof(char) is defined as 1 byte by the C standard."
+  },
+  {
+    "question_text": "Which function allocates zero-initialized memory in C?",
+    "mcq_options": [
+      {
+        "option": "A",
+        "text": "malloc()"
+      },
+      {
+        "option": "B",
+        "text": "alloc()"
+      },
+      {
+        "option": "C",
+        "text": "calloc()"
+      },
+      {
+        "option": "D",
+        "text": "realloc()"
+      }
+    ],
+    "correct_answer": "C",
+    "answer_explanation": "calloc initializes allocated memory to zero."
+  },
+  {
+    "question_text": "What does the expression *p++ do (where p is int* )?",
+    "mcq_options": [
+      {
+        "option": "A",
+        "text": "Increment pointer then dereference new address"
+      },
+      {
+        "option": "B",
+        "text": "Dereference then increment pointer (post-increment) and return old value"
+      },
+      {
+        "option": "C",
+        "text": "Syntax error"
+      },
+      {
+        "option": "D",
+        "text": "Increment value pointed by p then advance pointer"
+      }
+    ],
+    "correct_answer": "B",
+    "answer_explanation": "Postfix ++ has higher precedence on p: *p++ returns *p then p is incremented."
+  },
+  {
+    "question_text": "Which of these leads to undefined behavior in C?",
+    "mcq_options": [
+      {
+        "option": "A",
+        "text": "Accessing array within bounds"
+      },
+      {
+        "option": "B",
+        "text": "Dereferencing NULL pointer"
+      },
+      {
+        "option": "C",
+        "text": "Using sizeof on type"
+      },
+      {
+        "option": "D",
+        "text": "Comparing two pointers to same array"
+      }
+    ],
+    "correct_answer": "B",
+    "answer_explanation": "Dereferencing NULL pointer is undefined behavior."
+  },
+  {
+    "question_text": "Which header provides memcpy and memmove?",
+    "mcq_options": [
+      {
+        "option": "A",
+        "text": "<string.h>"
+      },
+      {
+        "option": "B",
+        "text": "<strings.h>"
+      },
+      {
+        "option": "C",
+        "text": "<memory.h>"
+      },
+      {
+        "option": "D",
+        "text": "<stdlib.h>"
+      }
+    ],
+    "correct_answer": "A",
+    "answer_explanation": "memcpy and memmove are declared in <string.h>."
+  },
+  {
+    "question_text": "What is the difference between malloc and realloc when size is zero?",
+    "mcq_options": [
+      {
+        "option": "A",
+        "text": "malloc(0) returns NULL, realloc(ptr,0) frees memory and returns NULL or non-NULL depending on implementation"
+      },
+      {
+        "option": "B",
+        "text": "Both always return NULL"
+      },
+      {
+        "option": "C",
+        "text": "Both always return a unique pointer"
+      },
+      {
+        "option": "D",
+        "text": "realloc can't be called with size 0"
+      }
+    ],
+    "correct_answer": "A",
+    "answer_explanation": "malloc(0) and realloc(...,0) behavior is implementation-defined; realloc(ptr,0) may free and return NULL."
+  },
+  {
+    "question_text": "Which statement about file modes is true for fopen(\"file\",\"r+\")?",
+    "mcq_options": [
+      {
+        "option": "A",
+        "text": "Opens for reading and writing; file must exist"
+      },
+      {
+        "option": "B",
+        "text": "Creates file if not exist"
+      },
+      {
+        "option": "C",
+        "text": "Opens in append mode"
+      },
+      {
+        "option": "D",
+        "text": "Truncates existing file"
+      }
+    ],
+    "correct_answer": "A",
+    "answer_explanation": "\"r+\" opens for read/write and requires the file to exist."
+  },
+  {
+    "question_text": "What does the preprocessor directive #define MAX 10 do?",
+    "mcq_options": [
+      {
+        "option": "A",
+        "text": "Creates a typed constant MAX=10 at compile time"
+      },
+      {
+        "option": "B",
+        "text": "Creates a macro replacing MAX with 10 before compilation"
+      },
+      {
+        "option": "C",
+        "text": "Creates a variable named MAX initialized to 10"
+      },
+      {
+        "option": "D",
+        "text": "Reserves 10 bytes in memory for MAX"
+      }
+    ],
+    "correct_answer": "B",
+    "answer_explanation": "#define performs token replacement before compilation."
+  },
+  {
+    "question_text": "Which is the correct way to declare a function pointer for a function int f(double)?",
+    "mcq_options": [
+      {
+        "option": "A",
+        "text": "int (*fp)(double);"
+      },
+      {
+        "option": "B",
+        "text": "int fp(double);"
+      },
+      {
+        "option": "C",
+        "text": "int *fp(double);"
+      },
+      {
+        "option": "D",
+        "text": "pointer<int(double)> fp;"
+      }
+    ],
+    "correct_answer": "A",
+    "answer_explanation": "int (*fp)(double) declares a pointer to function taking double and returning int."
+  },
+  {
+    "question_text": "What is a common risk when using strcpy without checks?",
+    "mcq_options": [
+      {
+        "option": "A",
+        "text": "Floating point error"
+      },
+      {
+        "option": "B",
+        "text": "Buffer overflow"
+      },
+      {
+        "option": "C",
+        "text": "Linker error"
+      },
+      {
+        "option": "D",
+        "text": "Undefined symbol at runtime"
+      }
+    ],
+    "correct_answer": "B",
+    "answer_explanation": "strcpy can overflow destination buffer if not sized correctly."
+  },
+  {
+    "question_text": "What does the volatile keyword indicate?",
+    "mcq_options": [
+      {
+        "option": "A",
+        "text": "Variable is constant"
+      },
+      {
+        "option": "B",
+        "text": "Value can change unexpectedly (prevent optimization)"
+      },
+      {
+        "option": "C",
+        "text": "Variable stored in ROM"
+      },
+      {
+        "option": "D",
+        "text": "Variable is thread-safe"
+      }
+    ],
+    "correct_answer": "B",
+    "answer_explanation": "volatile tells the compiler the value may change externally and prevents some optimizations."
+  },
+  {
+    "question_text": "Which storage class gives variable internal linkage within a translation unit?",
+    "mcq_options": [
+      {
+        "option": "A",
+        "text": "extern"
+      },
+      {
+        "option": "B",
+        "text": "static"
+      },
+      {
+        "option": "C",
+        "text": "auto"
+      },
+      {
+        "option": "D",
+        "text": "register"
+      }
+    ],
+    "correct_answer": "B",
+    "answer_explanation": "static at file scope gives internal linkage to the variable."
+  },
+  {
+    "question_text": "Which function reads a line from a file safely including newline?",
+    "mcq_options": [
+      {
+        "option": "A",
+        "text": "gets()"
+      },
+      {
+        "option": "B",
+        "text": "fgets()"
+      },
+      {
+        "option": "C",
+        "text": "scanf(\"%s\")"
+      },
+      {
+        "option": "D",
+        "text": "gets_s()"
+      }
+    ],
+    "correct_answer": "B",
+    "answer_explanation": "fgets reads a line with buffer limit and includes newline if present."
+  },
+  {
+    "question_text": "What happens if you free() the same pointer twice?",
+    "mcq_options": [
+      {
+        "option": "A",
+        "text": "Safe; does nothing second time"
+      },
+      {
+        "option": "B",
+        "text": "Undefined behavior (likely crash)"
+      },
+      {
+        "option": "C",
+        "text": "Reallocates memory"
+      },
+      {
+        "option": "D",
+        "text": "Memory is zeroed"
+      }
+    ],
+    "correct_answer": "B",
+    "answer_explanation": "Double free causes undefined behavior and can crash or corrupt heap."
+  },
+  {
+    "question_text": "Which operator has higher precedence: && or || ?",
+    "mcq_options": [
+      {
+        "option": "A",
+        "text": "&&"
+      },
+      {
+        "option": "B",
+        "text": "||"
+      },
+      {
+        "option": "C",
+        "text": "They have same precedence"
+      },
+      {
+        "option": "D",
+        "text": "Depends on compiler"
+      }
+    ],
+    "correct_answer": "A",
+    "answer_explanation": "Logical AND (&&) has higher precedence than logical OR (||)."
+  },
+  {
+    "question_text": "How are multidimensional arrays stored in C?",
+    "mcq_options": [
+      {
+        "option": "A",
+        "text": "Row-major order"
+      },
+      {
+        "option": "B",
+        "text": "Column-major order"
+      },
+      {
+        "option": "C",
+        "text": "Depends on compiler"
+      },
+      {
+        "option": "D",
+        "text": "Interleaved"
+      }
+    ],
+    "correct_answer": "A",
+    "answer_explanation": "C uses row-major order for multidimensional arrays."
+  },
+  {
+    "question_text": "Which of these is true about fgets vs gets?",
+    "mcq_options": [
+      {
+        "option": "A",
+        "text": "gets is safer"
+      },
+      {
+        "option": "B",
+        "text": "fgets allows buffer size limit"
+      },
+      {
+        "option": "C",
+        "text": "Both are equivalent"
+      },
+      {
+        "option": "D",
+        "text": "fgets doesn't read newline"
+      }
+    ],
+    "correct_answer": "B",
+    "answer_explanation": "fgets accepts a size parameter preventing buffer overflow."
+  },
+  {
+    "question_text": "What does the expression (void)0 commonly appear in macros to do?",
+    "mcq_options": [
+      {
+        "option": "A",
+        "text": "Cause compilation error"
+      },
+      {
+        "option": "B",
+        "text": "Provide a no-op expression that's syntactically valid"
+      },
+      {
+        "option": "C",
+        "text": "Return zero from function"
+      },
+      {
+        "option": "D",
+        "text": "Define a null pointer constant"
+      }
+    ],
+    "correct_answer": "B",
+    "answer_explanation": "(void)0 is used in macros as a safe no-op expression."
+  },
+  {
+    "question_text": "Which of these correctly declares an array parameter in function f(int a[])?",
+    "mcq_options": [
+      {
+        "option": "A",
+        "text": "int a[] is equivalent to int *a"
+      },
+      {
+        "option": "B",
+        "text": "int a[] allocates array on stack"
+      },
+      {
+        "option": "C",
+        "text": "int a[] passes array by value"
+      },
+      {
+        "option": "D",
+        "text": "int a[] is invalid syntax"
+      }
+    ],
+    "correct_answer": "A",
+    "answer_explanation": "In parameter lists, int a[] decays to int *a."
+  },
+  {
+    "question_text": "What is the common cause of segmentation fault?",
+    "mcq_options": [
+      {
+        "option": "A",
+        "text": "Division by zero"
+      },
+      {
+        "option": "B",
+        "text": "Accessing memory you don't own (invalid pointer)"
+      },
+      {
+        "option": "C",
+        "text": "Compilation error"
+      },
+      {
+        "option": "D",
+        "text": "Using printf incorrectly"
+      }
+    ],
+    "correct_answer": "B",
+    "answer_explanation": "Segfaults occur when accessing invalid memory, e.g., bad pointers."
+  },
+  {
+    "question_text": "What does the expression sizeof(array)/sizeof(array[0]) compute?",
+    "mcq_options": [
+      {
+        "option": "A",
+        "text": "Number of bytes in array"
+      },
+      {
+        "option": "B",
+        "text": "Number of elements in array (only in same scope)"
+      },
+      {
+        "option": "C",
+        "text": "Size of pointer"
+      },
+      {
+        "option": "D",
+        "text": "Undefined value"
+      }
+    ],
+    "correct_answer": "B",
+    "answer_explanation": "This computes element count when array hasn't decayed to pointer."
+  },
+  {
+    "question_text": "When is pointer arithmetic defined for void* in standard C?",
+    "mcq_options": [
+      {
+        "option": "A",
+        "text": "Always defined"
+      },
+      {
+        "option": "B",
+        "text": "Undefined; pointer arithmetic on void* is not allowed in standard C"
+      },
+      {
+        "option": "C",
+        "text": "Only on GCC"
+      },
+      {
+        "option": "D",
+        "text": "Only in C99"
+      }
+    ],
+    "correct_answer": "B",
+    "answer_explanation": "Standard C disallows arithmetic on void*; some compilers treat it as char* extension."
+  },
+  {
+    "question_text": "Which is true about functions declared with implicit int (no type) in modern C?",
+    "mcq_options": [
+      {
+        "option": "A",
+        "text": "Allowed in C99 and later"
+      },
+      {
+        "option": "B",
+        "text": "Removed by C99; functions must have explicit return type"
+      },
+      {
+        "option": "C",
+        "text": "Interpreted as returning void"
+      },
+      {
+        "option": "D",
+        "text": "Treated as float"
+      }
+    ],
+    "correct_answer": "B",
+    "answer_explanation": "Implicit int for functions was removed in C99; explicit types required."
+  },
+  {
+    "question_text": "What is correct behavior of memmove vs memcpy when regions overlap?",
+    "mcq_options": [
+      {
+        "option": "A",
+        "text": "memcpy handles overlap safely"
+      },
+      {
+        "option": "B",
+        "text": "memmove handles overlap safely, memcpy does not guarantee safety"
+      },
+      {
+        "option": "C",
+        "text": "Both undefined on overlap"
+      },
+      {
+        "option": "D",
+        "text": "Neither copies anything"
+      }
+    ],
+    "correct_answer": "B",
+    "answer_explanation": "memmove handles overlapping memory correctly; memcpy may not."
+  },
+  {
+    "question_text": "Which of these is a valid way to open a binary file for writing?",
+    "mcq_options": [
+      {
+        "option": "A",
+        "text": "fopen(\"f.bin\",\"wb\")"
+      },
+      {
+        "option": "B",
+        "text": "fopen(\"f.bin\",\"wt\")"
+      },
+      {
+        "option": "C",
+        "text": "fopen(\"f.bin\",\"w+text\")"
+      },
+      {
+        "option": "D",
+        "text": "fopen(\"f.bin\",\"rb\")"
+      }
+    ],
+    "correct_answer": "A",
+    "answer_explanation": "\"wb\" opens a file in binary write mode."
+  },
+  {
+    "question_text": "What does the expression &arr and arr give for int arr[10]?",
+    "mcq_options": [
+      {
+        "option": "A",
+        "text": "&arr is pointer to array (int (*)[10]) and arr decays to int*"
+      },
+      {
+        "option": "B",
+        "text": "Both are int*"
+      },
+      {
+        "option": "C",
+        "text": "Both are same type int (*)[10]"
+      },
+      {
+        "option": "D",
+        "text": "Error to take &arr"
+      }
+    ],
+    "correct_answer": "A",
+    "answer_explanation": "&arr has type int (*)[10], arr decays to int* in many contexts."
+  },
+  {
+    "question_text": "Which function is used to reposition file pointer?",
+    "mcq_options": [
+      {
+        "option": "A",
+        "text": "fseek()"
+      },
+      {
+        "option": "B",
+        "text": "fread()"
+      },
+      {
+        "option": "C",
+        "text": "fprintf()"
+      },
+      {
+        "option": "D",
+        "text": "fopen()"
+      }
+    ],
+    "correct_answer": "A",
+    "answer_explanation": "fseek repositions the file stream's position indicator."
+  },
+  {
+    "question_text": "What is the behavior of sizeof on a VLA (variable length array)?",
+    "mcq_options": [
+      {
+        "option": "A",
+        "text": "Evaluated at runtime for VLA"
+      },
+      {
+        "option": "B",
+        "text": "Compile-time only"
+      },
+      {
+        "option": "C",
+        "text": "Undefined"
+      },
+      {
+        "option": "D",
+        "text": "Always zero"
+      }
+    ],
+    "correct_answer": "A",
+    "answer_explanation": "sizeof on a VLA is evaluated at runtime to the object's size."
+  },
+  {
+    "question_text": "Which conversion is implicit in C?",
+    "mcq_options": [
+      {
+        "option": "A",
+        "text": "int to pointer implicit conversion"
+      },
+      {
+        "option": "B",
+        "text": "float to int without cast"
+      },
+      {
+        "option": "C",
+        "text": "widening arithmetic conversions like int to double"
+      },
+      {
+        "option": "D",
+        "text": "pointer to array conversion"
+      }
+    ],
+    "correct_answer": "C",
+    "answer_explanation": "Numeric promotions/widening (int to double) happen implicitly."
+  },
+  {
+    "question_text": "Which of these indicates a function declaration (prototype) in C?",
+    "mcq_options": [
+      {
+        "option": "A",
+        "text": "int f(); // no prototype"
+      },
+      {
+        "option": "B",
+        "text": "int f(void);"
+      },
+      {
+        "option": "C",
+        "text": "f int();"
+      },
+      {
+        "option": "D",
+        "text": "declare f();"
+      }
+    ],
+    "correct_answer": "B",
+    "answer_explanation": "int f(void) explicitly declares no parameters; int f() is old-style."
+  },
+  {
+    "question_text": "What is the result of reading past end-of-file with fgetc?",
+    "mcq_options": [
+      {
+        "option": "A",
+        "text": "Returns EOF and sets feof on stream"
+      },
+      {
+        "option": "B",
+        "text": "Returns 0"
+      },
+      {
+        "option": "C",
+        "text": "Undefined behavior"
+      },
+      {
+        "option": "D",
+        "text": "Exception thrown"
+      }
+    ],
+    "correct_answer": "A",
+    "answer_explanation": "fgetc returns EOF and feof indicates end-of-file."
+  },
+  {
+    "question_text": "Which is safest to use to avoid format-string vulnerabilities?",
+    "mcq_options": [
+      {
+        "option": "A",
+        "text": "printf(user_input)"
+      },
+      {
+        "option": "B",
+        "text": "printf(\"%s\", user_input)"
+      },
+      {
+        "option": "C",
+        "text": "puts(user_input) always safe"
+      },
+      {
+        "option": "D",
+        "text": "scanf(\"%s\", user_input)"
+      }
+    ],
+    "correct_answer": "B",
+    "answer_explanation": "Use format specifiers like \"%s\" to prevent treating input as format string."
+  },
+  {
+    "question_text": "Which of the following declarations creates a flexible array member in a struct?",
+    "mcq_options": [
+      {
+        "option": "A",
+        "text": "struct S { int n; char data[]; }; "
+      },
+      {
+        "option": "B",
+        "text": "char data[0];"
+      },
+      {
+        "option": "C",
+        "text": "char *data; "
+      },
+      {
+        "option": "D",
+        "text": "int data[1];"
+      }
+    ],
+    "correct_answer": "A",
+    "answer_explanation": "Flexible array member is declared as an incomplete array char data[]."
+  },
+  {
+    "question_text": "What is the effect of defining a macro with parameters incorrectly quoting arguments?",
+    "mcq_options": [
+      {
+        "option": "A",
+        "text": "No effect"
+      },
+      {
+        "option": "B",
+        "text": "May cause unexpected precedence and evaluation issues"
+      },
+      {
+        "option": "C",
+        "text": "Compiler error"
+      },
+      {
+        "option": "D",
+        "text": "Macro becomes function at runtime"
+      }
+    ],
+    "correct_answer": "B",
+    "answer_explanation": "Macros require careful parentheses to avoid precedence problems."
+  },
+  {
+    "question_text": "Which function can be used to parse formatted input from a string?",
+    "mcq_options": [
+      {
+        "option": "A",
+        "text": "sscanf()"
+      },
+      {
+        "option": "B",
+        "text": "fscanf()"
+      },
+      {
+        "option": "C",
+        "text": "scanf_s()"
+      },
+      {
+        "option": "D",
+        "text": "gets()"
+      }
+    ],
+    "correct_answer": "A",
+    "answer_explanation": "sscanf reads formatted data from a string."
+  },
+  {
+    "question_text": "What is true about enum underlying type in C?",
+    "mcq_options": [
+      {
+        "option": "A",
+        "text": "Always int"
+      },
+      {
+        "option": "B",
+        "text": "Implementation-defined integral type capable of representing values"
+      },
+      {
+        "option": "C",
+        "text": "Always unsigned int"
+      },
+      {
+        "option": "D",
+        "text": "Always char"
+      }
+    ],
+    "correct_answer": "B",
+    "answer_explanation": "Underlying type of enum is implementation-defined integral type."
+  },
+  {
+    "question_text": "Which is correct to declare a pointer to function returning void and taking no args?",
+    "mcq_options": [
+      {
+        "option": "A",
+        "text": "void (*fp)(void);"
+      },
+      {
+        "option": "B",
+        "text": "void fp();"
+      },
+      {
+        "option": "C",
+        "text": "(*fp)void();"
+      },
+      {
+        "option": "D",
+        "text": "pointer<void()> fp;"
+      }
+    ],
+    "correct_answer": "A",
+    "answer_explanation": "void (*fp)(void) is standard syntax for such a function pointer."
+  },
+  {
+    "question_text": "What happens to local variables when a function returns?",
+    "mcq_options": [
+      {
+        "option": "A",
+        "text": "They persist with previous values"
+      },
+      {
+        "option": "B",
+        "text": "Automatic locals go out of scope and lifetime ends"
+      },
+      {
+        "option": "C",
+        "text": "They are moved to heap automatically"
+      },
+      {
+        "option": "D",
+        "text": "They become global variables"
+      }
+    ],
+    "correct_answer": "B",
+    "answer_explanation": "Automatic (stack) variables' lifetime ends when function returns."
+  },
+  {
+    "question_text": "Which of the following causes undefined behavior: accessing uninitialized automatic variable?",
+    "mcq_options": [
+      {
+        "option": "A",
+        "text": "Yes, reading uninitialized automatic variable is undefined"
+      },
+      {
+        "option": "B",
+        "text": "No, it returns zero"
+      },
+      {
+        "option": "C",
+        "text": "Compiler assigns default value"
+      },
+      {
+        "option": "D",
+        "text": "It throws runtime error"
+      }
+    ],
+    "correct_answer": "A",
+    "answer_explanation": "Reading an uninitialized automatic variable results in undefined behavior."
+  },
+  {
+    "question_text": "What is the recommended way to compare two strings in C?",
+    "mcq_options": [
+      {
+        "option": "A",
+        "text": "Using == operator"
+      },
+      {
+        "option": "B",
+        "text": "Using strcmp()"
+      },
+      {
+        "option": "C",
+        "text": "Using memcmp() always safe"
+      },
+      {
+        "option": "D",
+        "text": "Comparing pointers directly"
+      }
+    ],
+    "correct_answer": "B",
+    "answer_explanation": "strcmp compares string contents properly."
+  },
+  {
+    "question_text": "Which of these indicates UB when modifying string literal?",
+    "mcq_options": [
+      {
+        "option": "A",
+        "text": "char *s = \"hello\"; s[0] = 'H';"
+      },
+      {
+        "option": "B",
+        "text": "char s[] = \"hello\"; s[0] = 'H';"
+      },
+      {
+        "option": "C",
+        "text": "Both are safe"
+      },
+      {
+        "option": "D",
+        "text": "Neither compiles"
+      }
+    ],
+    "correct_answer": "A",
+    "answer_explanation": "String literals are read-only; modifying via char* yields undefined behavior."
+  },
+  {
+    "question_text": "Which header defines exit, malloc, free functions?",
+    "mcq_options": [
+      {
+        "option": "A",
+        "text": "<stdlib.h>"
+      },
+      {
+        "option": "B",
+        "text": "<stdio.h>"
+      },
+      {
+        "option": "C",
+        "text": "<string.h>"
+      },
+      {
+        "option": "D",
+        "text": "<math.h>"
+      }
+    ],
+    "correct_answer": "A",
+    "answer_explanation": "malloc, free, and exit are declared in <stdlib.h>."
+  },
+  {
+    "question_text": "Which statement about pointer to function used as callback is true?",
+    "mcq_options": [
+      {
+        "option": "A",
+        "text": "Function pointers cannot be stored in structs"
+      },
+      {
+        "option": "B",
+        "text": "Function pointers can be passed and stored for callbacks"
+      },
+      {
+        "option": "C",
+        "text": "Function pointers always require extern keyword"
+      },
+      {
+        "option": "D",
+        "text": "Function pointers are type void*"
+      }
+    ],
+    "correct_answer": "B",
+    "answer_explanation": "Function pointers are commonly used for callbacks and can be stored in structs."
+  },
+  {
+    "question_text": "What is correct way to detect end-of-file when reading using scanf?",
+    "mcq_options": [
+      {
+        "option": "A",
+        "text": "Check return value for EOF or number of items matched"
+      },
+      {
+        "option": "B",
+        "text": "Use feof exclusively"
+      },
+      {
+        "option": "C",
+        "text": "scanf throws exception at EOF"
+      },
+      {
+        "option": "D",
+        "text": "Use gets to detect EOF"
+      }
+    ],
+    "correct_answer": "A",
+    "answer_explanation": "scanf returns EOF at end-of-file or number of items matched; check its return value."
+  },
+  {
+    "question_text": "Why is it unsafe to return pointer to local stack variable?",
+    "mcq_options": [
+      {
+        "option": "A",
+        "text": "Pointer will become NULL automatically"
+      },
+      {
+        "option": "B",
+        "text": "Local variable goes out of scope causing dangling pointer"
+      },
+      {
+        "option": "C",
+        "text": "Compiler forbids returning addresses"
+      },
+      {
+        "option": "D",
+        "text": "It is safe if optimized"
+      }
+    ],
+    "correct_answer": "B",
+    "answer_explanation": "Returning address of local variable yields dangling pointer as lifetime ends."
+  },
+  {
+    "question_text": "Which of these is true about struct padding?",
+    "mcq_options": [
+      {
+        "option": "A",
+        "text": "Compiler may insert padding between members for alignment"
+      },
+      {
+        "option": "B",
+        "text": "No padding ever inserted"
+      },
+      {
+        "option": "C",
+        "text": "Padding only in unions"
+      },
+      {
+        "option": "D",
+        "text": "Padding removed by sizeof"
+      }
+    ],
+    "correct_answer": "A",
+    "answer_explanation": "Structs often have padding to satisfy alignment requirements."
+  },
+  {
+    "question_text": "What is purpose of fflush on output stream?",
+    "mcq_options": [
+      {
+        "option": "A",
+        "text": "Flushes output buffer to device immediately"
+      },
+      {
+        "option": "B",
+        "text": "Closes the stream"
+      },
+      {
+        "option": "C",
+        "text": "Deletes file"
+      },
+      {
+        "option": "D",
+        "text": "Resets file pointer"
+      }
+    ],
+    "correct_answer": "A",
+    "answer_explanation": "fflush forces buffered output to be written to the underlying file or device."
+  },
+  {
+    "question_text": "Which of these reads binary data correctly into buffer?",
+    "mcq_options": [
+      {
+        "option": "A",
+        "text": "fread(buf, 1, n, fp)"
+      },
+      {
+        "option": "B",
+        "text": "fscanf(fp, \"%s\", buf)"
+      },
+      {
+        "option": "C",
+        "text": "fgets(buf, n, fp)"
+      },
+      {
+        "option": "D",
+        "text": "fprintf(fp, buf)"
+      }
+    ],
+    "correct_answer": "A",
+    "answer_explanation": "fread reads raw bytes from a binary stream into a buffer."
+  },
+  {
+    "question_text": "Which operator yields address of label for computed goto in GCC extension?",
+    "mcq_options": [
+      {
+        "option": "A",
+        "text": "&&label"
+      },
+      {
+        "option": "B",
+        "text": "&label"
+      },
+      {
+        "option": "C",
+        "text": "@label"
+      },
+      {
+        "option": "D",
+        "text": "goto_label(label)"
+      }
+    ],
+    "correct_answer": "A",
+    "answer_explanation": "GCC's label address extension uses &&label to get pointer to label."
+  },
+  {
+    "question_text": "Which of these functions is not reentrant and thus unsafe in signal handlers?",
+    "mcq_options": [
+      {
+        "option": "A",
+        "text": "malloc"
+      },
+      {
+        "option": "B",
+        "text": "write"
+      },
+      {
+        "option": "C",
+        "text": "_exit"
+      },
+      {
+        "option": "D",
+        "text": "signal-safe functions only"
+      }
+    ],
+    "correct_answer": "A",
+    "answer_explanation": "malloc is not async-signal-safe and should not be used in signal handlers."
+  },
+  {
+    "question_text": "What is result of converting large integer to smaller signed type (implementation-defined or UB)?",
+    "mcq_options": [
+      {
+        "option": "A",
+        "text": "Always wraps modulo 2^n"
+      },
+      {
+        "option": "B",
+        "text": "Behavior is implementation-defined for signed overflow/truncation"
+      },
+      {
+        "option": "C",
+        "text": "Always zeroes high bits"
+      },
+      {
+        "option": "D",
+        "text": "Compiler throws error"
+      }
+    ],
+    "correct_answer": "B",
+    "answer_explanation": "Conversions that don't fit can be implementation-defined or cause implementation-defined results."
+  },
+  {
+    "question_text": "Which C++ feature enables runtime polymorphism?",
+    "mcq_options": [
+      {
+        "option": "A",
+        "text": "Function overloading"
+      },
+      {
+        "option": "B",
+        "text": "Virtual functions"
+      },
+      {
+        "option": "C",
+        "text": "Templates"
+      },
+      {
+        "option": "D",
+        "text": "Namespaces"
+      }
+    ],
+    "correct_answer": "B",
+    "answer_explanation": "Virtual functions enable runtime dispatch via vtable."
+  },
+  {
+    "question_text": "What is the Rule of Three in C++?",
+    "mcq_options": [
+      {
+        "option": "A",
+        "text": "If you implement any of destructor, copy constructor, or copy assignment, implement all three"
+      },
+      {
+        "option": "B",
+        "text": "Three constructors required for class"
+      },
+      {
+        "option": "C",
+        "text": "Use three pointers in classes"
+      },
+      {
+        "option": "D",
+        "text": "Related to triple inheritance"
+      }
+    ],
+    "correct_answer": "A",
+    "answer_explanation": "Rule of Three advises implementing destructor, copy ctor, and copy assignment together."
+  },
+  {
+    "question_text": "Which smart pointer ensures unique ownership of an object?",
+    "mcq_options": [
+      {
+        "option": "A",
+        "text": "shared_ptr"
+      },
+      {
+        "option": "B",
+        "text": "weak_ptr"
+      },
+      {
+        "option": "C",
+        "text": "unique_ptr"
+      },
+      {
+        "option": "D",
+        "text": "auto_ptr"
+      }
+    ],
+    "correct_answer": "C",
+    "answer_explanation": "unique_ptr enforces single ownership and non-copyable semantics."
+  },
+  {
+    "question_text": "What does std::move do?",
+    "mcq_options": [
+      {
+        "option": "A",
+        "text": "Performs deep copy"
+      },
+      {
+        "option": "B",
+        "text": "Casts to rvalue reference enabling move semantics"
+      },
+      {
+        "option": "C",
+        "text": "Deletes object"
+      },
+      {
+        "option": "D",
+        "text": "Locks the object"
+      }
+    ],
+    "correct_answer": "B",
+    "answer_explanation": "std::move casts to rvalue reference to allow move operations."
+  },
+  {
+    "question_text": "Which of these makes a function a template?",
+    "mcq_options": [
+      {
+        "option": "A",
+        "text": "template<typename T> void f(T);"
+      },
+      {
+        "option": "B",
+        "text": "void template f(T);"
+      },
+      {
+        "option": "C",
+        "text": "using template f<T>();"
+      },
+      {
+        "option": "D",
+        "text": "#template void f<T>();"
+      }
+    ],
+    "correct_answer": "A",
+    "answer_explanation": "template<typename T> declares a function template."
+  },
+  {
+    "question_text": "What happens when a virtual destructor is missing in base class and delete is called on base pointer?",
+    "mcq_options": [
+      {
+        "option": "A",
+        "text": "Derived destructor is still called"
+      },
+      {
+        "option": "B",
+        "text": "Undefined behavior; derived destructor may not be called"
+      },
+      {
+        "option": "C",
+        "text": "Compilation error"
+      },
+      {
+        "option": "D",
+        "text": "Program prints warning"
+      }
+    ],
+    "correct_answer": "B",
+    "answer_explanation": "Deleting via base pointer without virtual destructor leads to undefined behavior."
+  },
+  {
+    "question_text": "Which container gives average O(1) lookup for keys?",
+    "mcq_options": [
+      {
+        "option": "A",
+        "text": "std::map"
+      },
+      {
+        "option": "B",
+        "text": "std::unordered_map"
+      },
+      {
+        "option": "C",
+        "text": "std::set"
+      },
+      {
+        "option": "D",
+        "text": "std::vector"
+      }
+    ],
+    "correct_answer": "B",
+    "answer_explanation": "unordered_map provides average constant-time lookup using hashing."
+  },
+  {
+    "question_text": "What is SFINAE in templates?",
+    "mcq_options": [
+      {
+        "option": "A",
+        "text": "Compilation error mechanism"
+      },
+      {
+        "option": "B",
+        "text": "Substitution Failure Is Not An Error: template substitution failures are discarded"
+      },
+      {
+        "option": "C",
+        "text": "Runtime exception for templates"
+      },
+      {
+        "option": "D",
+        "text": "A smart pointer type"
+      }
+    ],
+    "correct_answer": "B",
+    "answer_explanation": "SFINAE means failed template substitutions don't cause hard errors and allow overload resolution to continue."
+  },
+  {
+    "question_text": "What does noexcept on a function indicate?",
+    "mcq_options": [
+      {
+        "option": "A",
+        "text": "Function will never throw exceptions; calling code can optimize accordingly"
+      },
+      {
+        "option": "B",
+        "text": "Function always throws"
+      },
+      {
+        "option": "C",
+        "text": "Function returns error code instead"
+      },
+      {
+        "option": "D",
+        "text": "Deprecated syntax"
+      }
+    ],
+    "correct_answer": "A",
+    "answer_explanation": "noexcept promises not to throw, enabling certain optimizations."
+  },
+  {
+    "question_text": "Which of these correctly declares an iterator over vector<int>?",
+    "mcq_options": [
+      {
+        "option": "A",
+        "text": "std::vector<int>::iterator it;"
+      },
+      {
+        "option": "B",
+        "text": "vector<int>::it it;"
+      },
+      {
+        "option": "C",
+        "text": "std::iterator<int> it;"
+      },
+      {
+        "option": "D",
+        "text": "int::iterator it;"
+      }
+    ],
+    "correct_answer": "A",
+    "answer_explanation": "std::vector<int>::iterator is the proper iterator type for vector<int>."
+  },
+  {
+    "question_text": "What is the effect of marking a member function as const?",
+    "mcq_options": [
+      {
+        "option": "A",
+        "text": "Function cannot modify the object (this is const)"
+      },
+      {
+        "option": "B",
+        "text": "Function returns const value"
+      },
+      {
+        "option": "C",
+        "text": "Function becomes static"
+      },
+      {
+        "option": "D",
+        "text": "Function can only be called by const objects"
+      }
+    ],
+    "correct_answer": "A",
+    "answer_explanation": "const member functions promise not to modify non-mutable members of the object."
+  },
+  {
+    "question_text": "What is the difference between overloading and overriding?",
+    "mcq_options": [
+      {
+        "option": "A",
+        "text": "Overloading is same-name different signatures (compile-time); overriding replaces base virtual function (runtime)"
+      },
+      {
+        "option": "B",
+        "text": "They are identical"
+      },
+      {
+        "option": "C",
+        "text": "Overriding is compile-time only"
+      },
+      {
+        "option": "D",
+        "text": "Overloading requires virtual"
+      }
+    ],
+    "correct_answer": "A",
+    "answer_explanation": "Overloading is compile-time polymorphism; overriding is runtime via virtual functions."
+  },
+  {
+    "question_text": "Which of the following invalidates iterators of std::vector?",
+    "mcq_options": [
+      {
+        "option": "A",
+        "text": "Pushing back beyond capacity causing reallocation"
+      },
+      {
+        "option": "B",
+        "text": "Reading elements"
+      },
+      {
+        "option": "C",
+        "text": "Using const_iterator"
+      },
+      {
+        "option": "D",
+        "text": "Calling size()"
+      }
+    ],
+    "correct_answer": "A",
+    "answer_explanation": "Reallocation on growth invalidates existing iterators and references."
+  },
+  {
+    "question_text": "What is the typical purpose of std::weak_ptr?",
+    "mcq_options": [
+      {
+        "option": "A",
+        "text": "Holds shared ownership and increments ref count"
+      },
+      {
+        "option": "B",
+        "text": "Observes object managed by shared_ptr without affecting lifetime"
+      },
+      {
+        "option": "C",
+        "text": "Deletes object when out of scope"
+      },
+      {
+        "option": "D",
+        "text": "Replaces unique_ptr"
+      }
+    ],
+    "correct_answer": "B",
+    "answer_explanation": "weak_ptr observes shared_ptr-managed object without contributing to reference count."
+  },
+  {
+    "question_text": "Which form of cast performs compile-time type checking and is preferred in C++?",
+    "mcq_options": [
+      {
+        "option": "A",
+        "text": "reinterpret_cast"
+      },
+      {
+        "option": "B",
+        "text": "static_cast"
+      },
+      {
+        "option": "C",
+        "text": "C-style cast (T)x"
+      },
+      {
+        "option": "D",
+        "text": "const_cast"
+      }
+    ],
+    "correct_answer": "B",
+    "answer_explanation": "static_cast is safer and checked at compile-time where applicable."
+  },
+  {
+    "question_text": "What happens to automatic local objects when an exception is thrown?",
+    "mcq_options": [
+      {
+        "option": "A",
+        "text": "They leak memory"
+      },
+      {
+        "option": "B",
+        "text": "Their destructors are called during stack unwinding"
+      },
+      {
+        "option": "C",
+        "text": "Destructors are not called"
+      },
+      {
+        "option": "D",
+        "text": "Program terminates immediately"
+      }
+    ],
+    "correct_answer": "B",
+    "answer_explanation": "During stack unwinding, locals' destructors are invoked to clean up."
+  },
+  {
+    "question_text": "How to prevent copying of a class in modern C++?",
+    "mcq_options": [
+      {
+        "option": "A",
+        "text": "Declare copy constructor and assignment operator private and undefined"
+      },
+      {
+        "option": "B",
+        "text": "= delete the copy constructor and copy assignment operator"
+      },
+      {
+        "option": "C",
+        "text": "Make destructor private"
+      },
+      {
+        "option": "D",
+        "text": "Use virtual functions"
+      }
+    ],
+    "correct_answer": "B",
+    "answer_explanation": "Using = delete on copy ctor and copy assignment prevents copying explicitly."
+  },
+  {
+    "question_text": "Which of these adds a function to a namespace std?",
+    "mcq_options": [
+      {
+        "option": "A",
+        "text": "Writing new overloads for user-defined types is allowed, but adding things to std is undefined behavior"
+      },
+      {
+        "option": "B",
+        "text": "It's always safe to add to std"
+      },
+      {
+        "option": "C",
+        "text": "You can add any new templates to std"
+      },
+      {
+        "option": "D",
+        "text": "std is read-only and cannot be modified"
+      }
+    ],
+    "correct_answer": "A",
+    "answer_explanation": "Adding to namespace std (except allowed specializations) is undefined behavior."
+  },
+  {
+    "question_text": "Which C++11 feature allows lambda expressions?",
+    "mcq_options": [
+      {
+        "option": "A",
+        "text": "auto keyword only"
+      },
+      {
+        "option": "B",
+        "text": "Lambdas introduced in C++11 with syntax [captures](params){body}"
+      },
+      {
+        "option": "C",
+        "text": "Templates"
+      },
+      {
+        "option": "D",
+        "text": "Namespaces"
+      }
+    ],
+    "correct_answer": "B",
+    "answer_explanation": "C++11 introduced lambda expressions with capture list and parameter list."
+  },
+  {
+    "question_text": "What is the value category of std::vector<int>{1,2,3} ?",
+    "mcq_options": [
+      {
+        "option": "A",
+        "text": "lvalue"
+      },
+      {
+        "option": "B",
+        "text": "xvalue (rvalue)"
+      },
+      {
+        "option": "C",
+        "text": "glvalue"
+      },
+      {
+        "option": "D",
+        "text": "prvalue only"
+      }
+    ],
+    "correct_answer": "B",
+    "answer_explanation": "A temporary std::vector constructed like that is an xvalue (rvalue) in many contexts enabling moves."
+  },
+  {
+    "question_text": "Which keyword is used to create a compile-time constant expression?",
+    "mcq_options": [
+      {
+        "option": "A",
+        "text": "const"
+      },
+      {
+        "option": "B",
+        "text": "constexpr"
+      },
+      {
+        "option": "C",
+        "text": "static"
+      },
+      {
+        "option": "D",
+        "text": "volatile"
+      }
+    ],
+    "correct_answer": "B",
+    "answer_explanation": "constexpr marks expressions or functions for compile-time evaluation when possible."
+  },
+  {
+    "question_text": "What is the effect of passing std::unique_ptr by value to a function?",
+    "mcq_options": [
+      {
+        "option": "A",
+        "text": "Copies the pointer"
+      },
+      {
+        "option": "B",
+        "text": "Transfers ownership (move) and invalidates caller's pointer if moved"
+      },
+      {
+        "option": "C",
+        "text": "Shared ownership established"
+      },
+      {
+        "option": "D",
+        "text": "Causes compilation error always"
+      }
+    ],
+    "correct_answer": "B",
+    "answer_explanation": "Passing unique_ptr by value moves ownership; caller loses ownership unless std::move used otherwise."
+  },
+  {
+    "question_text": "Which STL algorithm sorts a range in ascending order by default?",
+    "mcq_options": [
+      {
+        "option": "A",
+        "text": "std::sort"
+      },
+      {
+        "option": "B",
+        "text": "std::stable_sort"
+      },
+      {
+        "option": "C",
+        "text": "Both sort ascending by default"
+      },
+      {
+        "option": "D",
+        "text": "std::partial_sort only"
+      }
+    ],
+    "correct_answer": "C",
+    "answer_explanation": "std::sort and std::stable_sort both sort in ascending order by default."
+  },
+  {
+    "question_text": "Which of these is true about multiple inheritance ambiguity?",
+    "mcq_options": [
+      {
+        "option": "A",
+        "text": "Ambiguity must be resolved when two bases provide same member name"
+      },
+      {
+        "option": "B",
+        "text": "Compiler automatically resolves ambiguity"
+      },
+      {
+        "option": "C",
+        "text": "Multiple inheritance is forbidden in C++"
+      },
+      {
+        "option": "D",
+        "text": "Ambiguity never occurs with virtual functions"
+      }
+    ],
+    "correct_answer": "A",
+    "answer_explanation": "If two base classes have same-named member, derived must disambiguate which to use."
+  },
+  {
+    "question_text": "What does std::forward do in templates?",
+    "mcq_options": [
+      {
+        "option": "A",
+        "text": "Always moves the argument"
+      },
+      {
+        "option": "B",
+        "text": "Perfectly forwards lvalue/rvalue based on template parameter forwarding reference"
+      },
+      {
+        "option": "C",
+        "text": "Deletes the argument"
+      },
+      {
+        "option": "D",
+        "text": "Converts to const reference"
+      }
+    ],
+    "correct_answer": "B",
+    "answer_explanation": "std::forward preserves the value category for forwarding references in templates."
+  },
+  {
+    "question_text": "Which header is needed for std::vector?",
+    "mcq_options": [
+      {
+        "option": "A",
+        "text": "<vector>"
+      },
+      {
+        "option": "B",
+        "text": "<list>"
+      },
+      {
+        "option": "C",
+        "text": "<array>"
+      },
+      {
+        "option": "D",
+        "text": "<stl>"
+      }
+    ],
+    "correct_answer": "A",
+    "answer_explanation": "std::vector is declared in the <vector> header."
+  },
+  {
+    "question_text": "What is the default access specifier for members of a class (not struct)?",
+    "mcq_options": [
+      {
+        "option": "A",
+        "text": "public"
+      },
+      {
+        "option": "B",
+        "text": "private"
+      },
+      {
+        "option": "C",
+        "text": "protected"
+      },
+      {
+        "option": "D",
+        "text": "internal"
+      }
+    ],
+    "correct_answer": "B",
+    "answer_explanation": "In class, members default to private; in struct they default to public."
+  },
+  {
+    "question_text": "Which of these casts can remove constness?",
+    "mcq_options": [
+      {
+        "option": "A",
+        "text": "static_cast"
+      },
+      {
+        "option": "B",
+        "text": "const_cast"
+      },
+      {
+        "option": "C",
+        "text": "reinterpret_cast"
+      },
+      {
+        "option": "D",
+        "text": "dynamic_cast"
+      }
+    ],
+    "correct_answer": "B",
+    "answer_explanation": "const_cast is used to add or remove const/volatile qualifiers."
+  },
+  {
+    "question_text": "Which exception type should you catch by reference?",
+    "mcq_options": [
+      {
+        "option": "A",
+        "text": "By value for polymorphism"
+      },
+      {
+        "option": "B",
+        "text": "Catch exceptions by const reference (e.g., const std::exception&)"
+      },
+      {
+        "option": "C",
+        "text": "Always catch by pointer"
+      },
+      {
+        "option": "D",
+        "text": "Catch by rvalue reference only"
+      }
+    ],
+    "correct_answer": "B",
+    "answer_explanation": "Catching by const reference avoids slicing and unnecessary copying."
+  },
+  {
+    "question_text": "What does the 'override' specifier do on virtual functions?",
+    "mcq_options": [
+      {
+        "option": "A",
+        "text": "Forces function to override a base virtual and causes compile error if not"
+      },
+      {
+        "option": "B",
+        "text": "Makes function non-virtual"
+      },
+      {
+        "option": "C",
+        "text": "Changes return type"
+      },
+      {
+        "option": "D",
+        "text": "Optimizes vtable"
+      }
+    ],
+    "correct_answer": "A",
+    "answer_explanation": "override enforces that the function overrides a base class virtual function."
+  },
+  {
+    "question_text": "Which of these causes UB: accessing invalidated iterator after erase in std::list?",
+    "mcq_options": [
+      {
+        "option": "A",
+        "text": "Erasing an element invalidates only that iterator; others remain valid in list"
+      },
+      {
+        "option": "B",
+        "text": "All iterators become invalid"
+      },
+      {
+        "option": "C",
+        "text": "list iterators are never invalidated"
+      },
+      {
+        "option": "D",
+        "text": "Undefined behavior only in vector"
+      }
+    ],
+    "correct_answer": "A",
+    "answer_explanation": "In std::list, erasing invalidates only iterators to erased elements; others stay valid."
+  },
+  {
+    "question_text": "What is the purpose of std::enable_if in templates?",
+    "mcq_options": [
+      {
+        "option": "A",
+        "text": "Enable function overloading based on compile-time conditions (SFINAE)"
+      },
+      {
+        "option": "B",
+        "text": "Enable runtime checks"
+      },
+      {
+        "option": "C",
+        "text": "Disable exceptions"
+      },
+      {
+        "option": "D",
+        "text": "Manage memory"
+      }
+    ],
+    "correct_answer": "A",
+    "answer_explanation": "std::enable_if is used to conditionally enable template overloads at compile time."
+  },
+  {
+    "question_text": "Which of the following is true about noexcept(true) functions when they throw?",
+    "mcq_options": [
+      {
+        "option": "A",
+        "text": "Exception propagates normally"
+      },
+      {
+        "option": "B",
+        "text": "std::terminate is called"
+      },
+      {
+        "option": "C",
+        "text": "Exception is converted to bad_alloc"
+      },
+      {
+        "option": "D",
+        "text": "Undefined behavior"
+      }
+    ],
+    "correct_answer": "B",
+    "answer_explanation": "Throwing from a noexcept function calls std::terminate."
+  },
+  {
+    "question_text": "Which operator can be overloaded as a non-member function?",
+    "mcq_options": [
+      {
+        "option": "A",
+        "text": "operator= only as member"
+      },
+      {
+        "option": "B",
+        "text": "operator<< often overloaded as non-member for streams"
+      },
+      {
+        "option": "C",
+        "text": "operator[] only non-member"
+      },
+      {
+        "option": "D",
+        "text": "operator.* only non-member"
+      }
+    ],
+    "correct_answer": "B",
+    "answer_explanation": "operator<< is typically implemented as a non-member to allow left operand to be ostream."
+  },
+  {
+    "question_text": "What is the effect of using 'using namespace std;' at global scope?",
+    "mcq_options": [
+      {
+        "option": "A",
+        "text": "Avoids needing std:: prefix but pollutes global namespace and can cause name clashes"
+      },
+      {
+        "option": "B",
+        "text": "Improves performance"
+      },
+      {
+        "option": "C",
+        "text": "Disables exceptions in std"
+      },
+      {
+        "option": "D",
+        "text": "Renames std to global"
+      }
+    ],
+    "correct_answer": "A",
+    "answer_explanation": "Using namespace std brings all std names into global scope and can cause collisions."
+  },
+  {
+    "question_text": "Which of these best describes move constructor?",
+    "mcq_options": [
+      {
+        "option": "A",
+        "text": "Constructs by copying data always"
+      },
+      {
+        "option": "B",
+        "text": "Initializes object by taking resources from rvalue source to avoid copy"
+      },
+      {
+        "option": "C",
+        "text": "Destroys the source object"
+      },
+      {
+        "option": "D",
+        "text": "Only available in C++98"
+      }
+    ],
+    "correct_answer": "B",
+    "answer_explanation": "Move constructor steals resources from a temporary to avoid expensive copies."
+  },
+  {
+    "question_text": "Which of the following ensures a class is abstract?",
+    "mcq_options": [
+      {
+        "option": "A",
+        "text": "Declaring at least one pure virtual function (=0)"
+      },
+      {
+        "option": "B",
+        "text": "Having private members"
+      },
+      {
+        "option": "C",
+        "text": "Deleting copy constructor"
+      },
+      {
+        "option": "D",
+        "text": "Using protected destructor"
+      }
+    ],
+    "correct_answer": "A",
+    "answer_explanation": "A class with at least one pure virtual function is abstract and cannot be instantiated."
+  },
+  {
+    "question_text": "Which container stores elements in sorted order and disallows duplicate keys?",
+    "mcq_options": [
+      {
+        "option": "A",
+        "text": "std::unordered_set"
+      },
+      {
+        "option": "B",
+        "text": "std::multiset"
+      },
+      {
+        "option": "C",
+        "text": "std::set"
+      },
+      {
+        "option": "D",
+        "text": "std::vector"
+      }
+    ],
+    "correct_answer": "C",
+    "answer_explanation": "std::set maintains sorted unique elements."
+  },
+  {
+    "question_text": "What is iterator invalidation behavior for std::map on insert?",
+    "mcq_options": [
+      {
+        "option": "A",
+        "text": "All iterators invalidated on insert"
+      },
+      {
+        "option": "B",
+        "text": "No iterators invalidated on insert (insert preserves iterators)"
+      },
+      {
+        "option": "C",
+        "text": "Only end() is invalidated"
+      },
+      {
+        "option": "D",
+        "text": "Undefined"
+      }
+    ],
+    "correct_answer": "B",
+    "answer_explanation": "std::map insertions do not invalidate iterators to existing elements."
+  },
+  {
+    "question_text": "Which of these casts is safe for downcasting polymorphic types at runtime?",
+    "mcq_options": [
+      {
+        "option": "A",
+        "text": "static_cast"
+      },
+      {
+        "option": "B",
+        "text": "dynamic_cast"
+      },
+      {
+        "option": "C",
+        "text": "reinterpret_cast"
+      },
+      {
+        "option": "D",
+        "text": "const_cast"
+      }
+    ],
+    "correct_answer": "B",
+    "answer_explanation": "dynamic_cast performs runtime check and returns null or throws on failure for polymorphic types."
+  },
+  {
+    "question_text": "What does 'diamond problem' relate to?",
+    "mcq_options": [
+      {
+        "option": "A",
+        "text": "Templates ambiguity"
+      },
+      {
+        "option": "B",
+        "text": "Multiple inheritance causing duplicate base subobjects without virtual inheritance"
+      },
+      {
+        "option": "C",
+        "text": "Operator overloading conflict"
+      },
+      {
+        "option": "D",
+        "text": "STL iterator invalidation"
+      }
+    ],
+    "correct_answer": "B",
+    "answer_explanation": "Diamond problem occurs in multiple inheritance; virtual inheritance can resolve duplicate base instances."
+  },
+  {
+    "question_text": "Which of these is correct syntax for a member initializer list in constructor?",
+    "mcq_options": [
+      {
+        "option": "A",
+        "text": "Class(){ a(1) {} }"
+      },
+      {
+        "option": "B",
+        "text": "Class(): a(1) {}"
+      },
+      {
+        "option": "C",
+        "text": "Class { a=1; }"
+      },
+      {
+        "option": "D",
+        "text": "Class() -> a(1) {}"
+      }
+    ],
+    "correct_answer": "B",
+    "answer_explanation": "Member initializer list uses colon syntax: Class(): a(1) {}."
+  },
+  {
+    "question_text": "Which of these will prevent exception object slicing when throwing?",
+    "mcq_options": [
+      {
+        "option": "A",
+        "text": "Throw by value and catch by value"
+      },
+      {
+        "option": "B",
+        "text": "Throw by pointer and catch by pointer"
+      },
+      {
+        "option": "C",
+        "text": "Throw by value and catch by reference"
+      },
+      {
+        "option": "D",
+        "text": "Always throw integers"
+      }
+    ],
+    "correct_answer": "C",
+    "answer_explanation": "Catching exceptions by reference avoids slicing of derived exception objects."
+  },
+  {
+    "question_text": "What is the meaning of 'decltype' in C++?",
+    "mcq_options": [
+      {
+        "option": "A",
+        "text": "Defines function return type only"
+      },
+      {
+        "option": "B",
+        "text": "Determines the type of an expression at compile time"
+      },
+      {
+        "option": "C",
+        "text": "Deprecated keyword"
+      },
+      {
+        "option": "D",
+        "text": "Same as auto"
+      }
+    ],
+    "correct_answer": "B",
+    "answer_explanation": "decltype yields the type of an expression without evaluating it."
+  },
+  {
+    "question_text": "Which of the following is true about std::string data()?",
+    "mcq_options": [
+      {
+        "option": "A",
+        "text": "Before C++11 returns char* without null-termination guarantee"
+      },
+      {
+        "option": "B",
+        "text": "C++11 onwards returns contiguous char* with null-termination from data() in C++17 onwards guaranteed"
+      },
+      {
+        "option": "C",
+        "text": "Never contiguous"
+      },
+      {
+        "option": "D",
+        "text": "Always returns const wchar_t*"
+      }
+    ],
+    "correct_answer": "B",
+    "answer_explanation": "C++11 required contiguous storage; C++17 guarantees null-termination for data()."
+  },
+  {
+    "question_text": "Which keyword enforces that a class cannot be inherited from in C++11?",
+    "mcq_options": [
+      {
+        "option": "A",
+        "text": "final"
+      },
+      {
+        "option": "B",
+        "text": "sealed"
+      },
+      {
+        "option": "C",
+        "text": "override"
+      },
+      {
+        "option": "D",
+        "text": "static"
+      }
+    ],
+    "correct_answer": "A",
+    "answer_explanation": "The final specifier prevents further inheritance of a class or virtual function."
+  },
+  {
+    "question_text": "Which of these makes a member function pure virtual?",
+    "mcq_options": [
+      {
+        "option": "A",
+        "text": "virtual void f() = 0;"
+      },
+      {
+        "option": "B",
+        "text": "virtual void f();"
+      },
+      {
+        "option": "C",
+        "text": "void f() = 0;"
+      },
+      {
+        "option": "D",
+        "text": "pure void f();"
+      }
+    ],
+    "correct_answer": "A",
+    "answer_explanation": "Setting =0 makes a virtual function pure virtual (abstract)."
+  },
+  {
+    "question_text": "Which of the following will default construct an object?",
+    "mcq_options": [
+      {
+        "option": "A",
+        "text": "T obj;"
+      },
+      {
+        "option": "B",
+        "text": "T obj = T();"
+      },
+      {
+        "option": "C",
+        "text": "Both behave as default construction but may differ for built-ins"
+      },
+      {
+        "option": "D",
+        "text": "None"
+      }
+    ],
+    "correct_answer": "C",
+    "answer_explanation": "Both forms default-construct; for built-ins T obj; leaves indeterminate value, T() value-initializes to zero."
+  },
+  {
+    "question_text": "What is RAII principle?",
+    "mcq_options": [
+      {
+        "option": "A",
+        "text": "Resources Acquired Is Initializer"
+      },
+      {
+        "option": "B",
+        "text": "Resource Acquisition Is Initialization: tie resource lifetime to object lifetime"
+      },
+      {
+        "option": "C",
+        "text": "Runtime Allocation Is Immediate"
+      },
+      {
+        "option": "D",
+        "text": "Random Access Is Important"
+      }
+    ],
+    "correct_answer": "B",
+    "answer_explanation": "RAII ties resource management to object lifetime using constructors/destructors."
+  },
+  {
+    "question_text": "Which of these is true about std::async?",
+    "mcq_options": [
+      {
+        "option": "A",
+        "text": "Always launches a new thread"
+      },
+      {
+        "option": "B",
+        "text": "May run deferred or asynchronously depending on launch policy"
+      },
+      {
+        "option": "C",
+        "text": "Is only for IO operations"
+      },
+      {
+        "option": "D",
+        "text": "Replaces std::thread completely"
+      }
+    ],
+    "correct_answer": "B",
+    "answer_explanation": "std::async can run deferred or asynchronously depending on policy flags."
+  },
+  {
+    "question_text": "Which operator can be overloaded to allow range-based for loop to work?",
+    "mcq_options": [
+      {
+        "option": "A",
+        "text": "operator++ and begin()/end() functions on the container"
+      },
+      {
+        "option": "B",
+        "text": "Only operator[]"
+      },
+      {
+        "option": "C",
+        "text": "operator() only"
+      },
+      {
+        "option": "D",
+        "text": "operator* only"
+      }
+    ],
+    "correct_answer": "A",
+    "answer_explanation": "Range-based for uses begin() and end() (or ADL-found free functions) and iterator ++/*."
+  },
+  {
+    "question_text": "Which of these best describes std::shared_ptr cycle problem?",
+    "mcq_options": [
+      {
+        "option": "A",
+        "text": "shared_ptr cannot be used with vectors"
+      },
+      {
+        "option": "B",
+        "text": "Cyclic references with shared_ptr cause memory leak because reference counts never reach zero"
+      },
+      {
+        "option": "C",
+        "text": "shared_ptr always avoids leaks"
+      },
+      {
+        "option": "D",
+        "text": "shared_ptr uses garbage collector"
+      }
+    ],
+    "correct_answer": "B",
+    "answer_explanation": "Cyclic shared_ptr references leak because reference counts keep objects alive."
+  },
+  {
+    "question_text": "Which of these can be used to prevent virtual inheritance ambiguity?",
+    "mcq_options": [
+      {
+        "option": "A",
+        "text": "Use virtual inheritance for common base classes"
+      },
+      {
+        "option": "B",
+        "text": "Avoid using constructors"
+      },
+      {
+        "option": "C",
+        "text": "Use templates instead"
+      },
+      {
+        "option": "D",
+        "text": "Use friend classes"
+      }
+    ],
+    "correct_answer": "A",
+    "answer_explanation": "Virtual inheritance ensures only one base subobject for shared bases in diamond patterns."
+  },
+  {
+    "question_text": "Which C++ feature allows compile-time selection of function overloads based on type traits?",
+    "mcq_options": [
+      {
+        "option": "A",
+        "text": "Runtime polymorphism only"
+      },
+      {
+        "option": "B",
+        "text": "SFINAE with type traits and enable_if"
+      },
+      {
+        "option": "C",
+        "text": "Exceptions"
+      },
+      {
+        "option": "D",
+        "text": "virtual functions"
+      }
+    ],
+    "correct_answer": "B",
+    "answer_explanation": "SFINAE and type traits enable compile-time overload selection."
+  },
+  {
+    "question_text": "What is the effect of defaulted functions declared as '= default;'?",
+    "mcq_options": [
+      {
+        "option": "A",
+        "text": "Compiler generates default implementation"
+      },
+      {
+        "option": "B",
+        "text": "Function removed"
+      },
+      {
+        "option": "C",
+        "text": "Errors at compile time"
+      },
+      {
+        "option": "D",
+        "text": "Marks as deprecated"
+      }
+    ],
+    "correct_answer": "A",
+    "answer_explanation": "= default tells compiler to generate the defaulted special member function."
+  }
+]
