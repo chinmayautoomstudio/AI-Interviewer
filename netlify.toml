@@ -3,8 +3,9 @@
   command = "npm run build"
   functions = "netlify/functions"
 
-# Redirect rules - handled by _redirects file in public folder
-# Static assets are excluded from redirects in _redirects file
+# Netlify should serve static files before processing redirects
+# The _redirects file in public/ will be copied to build/ during build
+# Static files in /static/ should be served directly
 
 [build.environment]
   NODE_VERSION = "18"
