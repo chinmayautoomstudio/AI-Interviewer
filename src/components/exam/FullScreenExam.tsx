@@ -178,8 +178,8 @@ const FullScreenExam: React.FC<FullScreenExamProps> = ({
 
   if (showConsentModal && showWarning) {
     return (
-      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-        <div className="bg-white rounded-lg p-8 max-w-2xl mx-4 shadow-2xl">
+      <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4 overflow-y-auto">
+        <div className="bg-white rounded-lg w-full max-w-2xl mx-auto shadow-2xl p-6 sm:p-8 max-h-[85vh] overflow-y-auto">
           <div className="text-center">
             <div className="mb-6">
               <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
@@ -213,7 +213,7 @@ const FullScreenExam: React.FC<FullScreenExamProps> = ({
               </ul>
             </div>
 
-            <div className="flex space-x-4 justify-center">
+            <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center sticky bottom-0 bg-white/80 pt-2">
               <button
                 onClick={handleConsentDecline}
                 className="px-6 py-3 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400 transition-colors"

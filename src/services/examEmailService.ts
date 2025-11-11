@@ -59,7 +59,13 @@ export class ExamEmailService {
           table { width: 100%; border-collapse: collapse; }
           td { padding: 8px 0; }
           .label { font-weight: bold; width: 120px; }
-          .code { font-family: monospace; background: white; padding: 5px; border-radius: 3px; }
+          .code { font-family: monospace; background: white; padding: 8px; border-radius: 6px; display: block; word-break: break-all; overflow-wrap: anywhere; }
+          .link-wrapper { word-break: break-all; overflow-wrap: anywhere; }
+          @media (max-width: 480px) {
+            .content { padding: 20px; }
+            .btn { width: 100% !important; box-sizing: border-box; font-size: 15px; padding: 14px 16px; }
+            .code { font-size: 12px; padding: 10px; }
+          }
         </style>
       </head>
       <body>
@@ -107,9 +113,11 @@ export class ExamEmailService {
                 <a href="${examUrl}" class="btn" style="color: #ffffff !important;">Start Exam Now</a>
               </div>
               <p style="margin-top: 15px; font-size: 12px; color: #666;">
-                Or copy and paste this link in your browser:<br>
-                <span class="code">${examUrl}</span>
+                Or copy and paste this link in your browser:
               </p>
+              <div class="link-wrapper">
+                <span class="code">${examUrl}</span>
+              </div>
             </div>
             
             <!-- Instructions -->

@@ -875,12 +875,12 @@ export class ExamService {
       // Get all responses for this session
       const responses = await this.getSessionResponses(sessionId);
       
-      // Calculate totals - account for ALL questions, not just answered ones
-      const totalQuestionsInSession = session.total_questions || 0;
+      // Calculate totals based on actual answered questions
+      // Note: Since questions are fetched dynamically, we can't rely on total_questions from session
       const answeredQuestions = responses.length;
       const correctAnswers = responses.filter(r => r.is_correct).length;
       const wrongAnswers = responses.filter(r => !r.is_correct).length;
-      const skippedQuestions = totalQuestionsInSession - answeredQuestions;
+      const skippedQuestions = 0; // Set to 0 since we don't have a definitive "total questions" reference
       
       // Calculate points - only from answered questions
       const totalPoints = responses.reduce((sum, r) => sum + (r.points_earned || 0), 0);
@@ -942,7 +942,6 @@ export class ExamService {
         console.error('❌ Error updating exam results:', error);
       } else {
         console.log('✅ Exam results recalculated:', {
-          totalQuestionsInSession,
           answeredQuestions,
           correctAnswers,
           wrongAnswers,
@@ -1137,12 +1136,13 @@ export class ExamService {
     // Get all responses
     const responses = await this.getSessionResponses(sessionId);
     
-    // Calculate scores - account for ALL questions in the session
-    const totalQuestionsInSession = session.total_questions || 0;
+    // Calculate scores based on actual answered questions
+    // Note: Since questions are fetched dynamically, we can't rely on total_questions from session
+    // Therefore, skipped should be calculated based on whether candidate answered all questions they saw
     const answeredQuestions = responses.length;
     const correct_answers = responses.filter(r => r.is_correct).length;
     const wrong_answers = responses.filter(r => !r.is_correct).length;
-    const skipped_questions = Math.max(0, totalQuestionsInSession - answeredQuestions);
+    const skipped_questions = 0; // Set to 0 since we don't have a definitive "total questions" reference
     
     // Calculate points from answered questions
     const total_score = responses.reduce((sum, r) => sum + (r.points_earned || 0), 0);
@@ -1155,7 +1155,6 @@ export class ExamService {
     const percentage = max_score > 0 ? Math.round((total_score / max_score) * 100) : 0;
     
     console.log('📊 Exam completion calculation:', {
-      totalQuestionsInSession,
       answeredQuestions,
       correct_answers,
       wrong_answers,

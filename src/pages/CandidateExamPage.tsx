@@ -49,6 +49,7 @@ export const CandidateExamPage: React.FC = () => {
   const [showInstructions, setShowInstructions] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [autoSaveStatus, setAutoSaveStatus] = useState<'saved' | 'saving' | 'error'>('saved');
+  const [showSubmittingModal, setShowSubmittingModal] = useState(false);
 
   // Security violation handler
   const handleSecurityViolation = useCallback((violation: SecurityViolation) => {
@@ -367,6 +368,7 @@ export const CandidateExamPage: React.FC = () => {
     
     try {
       setIsSubmitting(true);
+      setShowSubmittingModal(true);
       
       // Stop security monitoring when time is up
       await handleExamSubmission();
@@ -376,6 +378,7 @@ export const CandidateExamPage: React.FC = () => {
     } catch (err) {
       console.error('Error completing exam:', err);
       setError('Failed to submit exam. Please contact support.');
+      setShowSubmittingModal(false);
     }
   }, [session, navigate, handleExamSubmission]);
 
@@ -564,6 +567,7 @@ export const CandidateExamPage: React.FC = () => {
 
     try {
       setIsSubmitting(true);
+      setShowSubmittingModal(true);
       
       // Stop security monitoring before submitting exam
       await handleExamSubmission();
@@ -574,6 +578,7 @@ export const CandidateExamPage: React.FC = () => {
       console.error('Error submitting exam:', err);
       setError('Failed to submit exam. Please try again.');
       setIsSubmitting(false);
+      setShowSubmittingModal(false);
     }
   };
 
@@ -658,6 +663,16 @@ export const CandidateExamPage: React.FC = () => {
       examDurationMinutes={session?.duration_minutes}
     >
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50 fixed inset-0 overflow-auto">
+      {/* Submitting modal overlay */}
+      {showSubmittingModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
+          <div className="bg-white w-11/12 max-w-md rounded-2xl shadow-2xl p-6 text-center">
+            <div className="mx-auto mb-4 h-12 w-12 animate-spin rounded-full border-4 border-blue-600 border-t-transparent"></div>
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">Submitting your responses…</h3>
+            <p className="text-sm text-gray-600">We are saving and analyzing your answers. Please do not refresh or close this window.</p>
+          </div>
+        </div>
+      )}
       {/* Header */}
       <div className="bg-white/95 backdrop-blur-sm border-b border-gray-200/50 sticky top-0 z-10 shadow-sm">
         <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-8">

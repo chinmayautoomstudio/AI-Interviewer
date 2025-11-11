@@ -14,8 +14,7 @@ import {
   ChevronRight,
   Trophy,
   Target,
-  Brain,
-  TrendingUp
+  Brain
 } from 'lucide-react';
 import { examService } from '../../services/examService';
 import { ExamResult, ExamResponse } from '../../types';
@@ -253,7 +252,6 @@ const MCQExamResultsPage: React.FC<MCQExamResultsPageProps> = () => {
                     </div>
                     <span className="text-blue-900 font-bold">{responses.length || examResult.examSession?.total_questions || 0}</span>
                   </div>
-                  
                   <div className="flex items-center justify-between p-3 bg-purple-50 rounded-lg">
                     <div className="flex items-center space-x-3">
                       <Clock className="h-5 w-5 text-purple-600" />
@@ -261,7 +259,6 @@ const MCQExamResultsPage: React.FC<MCQExamResultsPageProps> = () => {
                     </div>
                     <span className="text-purple-900 font-bold">
                       {(() => {
-                        // Calculate time taken from session data
                         if (examResult.examSession?.started_at && examResult.examSession?.completed_at) {
                           const startTime = new Date(examResult.examSession.started_at);
                           const endTime = new Date(examResult.examSession.completed_at);
@@ -276,24 +273,12 @@ const MCQExamResultsPage: React.FC<MCQExamResultsPageProps> = () => {
                 </div>
 
                 <div className="space-y-4">
-                  <div className="flex items-center justify-between p-3 bg-green-50 rounded-lg">
+                  <div className="flex items-center justify-between p-3 bg-indigo-50 rounded-lg">
                     <div className="flex items-center space-x-3">
-                      <TrendingUp className="h-5 w-5 text-green-600" />
-                      <span className="text-green-800 font-medium">Technical Score</span>
+                      <Eye className="h-5 w-5 text-indigo-600" />
+                      <span className="text-indigo-800 font-medium">Responses Submitted</span>
                     </div>
-                    <span className="text-green-900 font-bold">
-                      {examResult.technicalScore || examResult.correctAnswers || 0}
-                    </span>
-                  </div>
-                  
-                  <div className="flex items-center justify-between p-3 bg-orange-50 rounded-lg">
-                    <div className="flex items-center space-x-3">
-                      <Brain className="h-5 w-5 text-orange-600" />
-                      <span className="text-orange-800 font-medium">Aptitude Score</span>
-                    </div>
-                    <span className="text-orange-900 font-bold">
-                      {examResult.aptitudeScore || Math.round((examResult.correctAnswers / (examResult.correctAnswers + examResult.wrongAnswers)) * 100) || 0}
-                    </span>
+                    <span className="text-indigo-900 font-bold">{(examResult.correctAnswers || 0) + (examResult.wrongAnswers || 0)}</span>
                   </div>
                 </div>
               </div>
@@ -360,18 +345,18 @@ const MCQExamResultsPage: React.FC<MCQExamResultsPageProps> = () => {
         <div className="container mx-auto px-4 py-8">
           <div className="max-w-4xl mx-auto">
             {/* Review Header */}
-            <div className="flex items-center justify-between mb-6">
+            <div className="flex flex-col sm:flex-row items-center justify-between mb-6 space-y-3 sm:space-y-0">
               <button
                 onClick={() => setShowQuestionReview(false)}
-                className="flex items-center space-x-2 text-blue-600 hover:text-blue-800 font-medium"
+                className="flex items-center space-x-2 text-blue-600 hover:text-blue-800 font-medium text-sm sm:text-base"
               >
-                <ChevronLeft className="h-5 w-5" />
+                <ChevronLeft className="h-4 w-4 sm:h-5 sm:w-5" />
                 <span>Back to Results</span>
               </button>
               
-              <div className="text-center">
-                <h2 className="text-2xl font-bold text-gray-900">Question Review</h2>
-                <p className="text-gray-600">
+              <div className="text-center order-first sm:order-none">
+                <h2 className="text-xl sm:text-2xl font-bold text-gray-900">Question Review</h2>
+                <p className="text-sm sm:text-base text-gray-600">
                   Question {currentQuestionIndex + 1} of {responses.length}
                 </p>
               </div>
@@ -399,7 +384,7 @@ const MCQExamResultsPage: React.FC<MCQExamResultsPageProps> = () => {
                     }
                   }
                 }}
-                className="flex items-center space-x-2 px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors text-sm"
+                className="flex items-center space-x-2 px-3 py-2 sm:px-4 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors text-xs sm:text-sm"
               >
                 <span>Close Exam</span>
               </button>
