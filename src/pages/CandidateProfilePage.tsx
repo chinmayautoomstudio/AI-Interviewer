@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import Card from '../components/ui/Card';
 import Button from '../components/ui/Button';
@@ -40,17 +40,12 @@ const CandidateProfilePage: React.FC = () => {
   // Edit modal state
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
 
-  useEffect(() => {
-    if (id) {
-      loadCandidate();
-    }
-  }, [id]);
-
-  const loadCandidate = async () => {
+  const loadCandidate = useCallback(async () => {
+    if (!id) return;
     try {
       setLoading(true);
       setError(null);
-      const candidateData = await getCandidateById(id!);
+      const candidateData = await getCandidateById(id);
       console.log('Loaded candidate data:', candidateData);
       setCandidate(candidateData);
     } catch (err) {
@@ -59,7 +54,13 @@ const CandidateProfilePage: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [id]);
+
+  useEffect(() => {
+    if (id) {
+      loadCandidate();
+    }
+  }, [id, loadCandidate]);
 
   const handleDeleteCandidate = async () => {
     if (!candidate?.id) return;

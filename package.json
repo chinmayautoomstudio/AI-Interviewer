@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "description": "A comprehensive AI-powered HR management platform with intelligent interview capabilities, voice integration, resume parsing, and advanced candidate management features.",
-  "homepage": ".",
+  "homepage": "/",
   "bugs": {
     "url": "https://github.com/chinmayautoomstudio/AI-Interviewer/issues"
   },

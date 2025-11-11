@@ -169,7 +169,7 @@ const CandidateInterviewPage: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  }, [sessionToken]); // Include sessionToken in dependency array
+  }, [sessionToken, interviewStarted]); // Include sessionToken and interviewStarted in dependency array
 
   // Load interview data when sessionToken changes
   useEffect(() => {
