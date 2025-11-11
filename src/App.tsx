@@ -42,6 +42,7 @@ import ExamCompletionPage from './pages/exam/ExamCompletionPage';
 import MCQExamResultsPage from './pages/exam/MCQExamResultsPage';
 import ExamReportPage from './pages/reports/ExamReportPage';
 import LoadingSpinner from './components/ui/LoadingSpinner';
+import ErrorBoundary from './components/ErrorBoundary';
 
 const AppContent: React.FC = () => {
   const { user, loading, signOut } = useAuth();
@@ -124,6 +125,7 @@ const AppContent: React.FC = () => {
 
 function App() {
   return (
+    <ErrorBoundary>
     <AuthProvider>
       <LayoutProvider>
         <NotificationProvider>
@@ -133,6 +135,7 @@ function App() {
         </NotificationProvider>
       </LayoutProvider>
     </AuthProvider>
+    </ErrorBoundary>
   );
 }
 

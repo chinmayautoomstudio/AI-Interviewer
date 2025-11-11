@@ -75,46 +75,70 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
 
   // Setup real-time subscription
   useEffect(() => {
-    console.log('🔔 Setting up notification subscription...');
-    try {
-      if (!subscriptionRef.current) {
-        const subId = notificationService.subscribeToNotifications(ADMIN_USER_ID, (notification) => {
-          console.log('📨 Received notification:', notification);
-          addNotification(notification);
-        });
-        subscriptionRef.current = subId;
-        setIsConnected(true);
-        console.log('✅ Notification subscription established');
+    let isMounted = true;
+    
+    const setupSubscription = async () => {
+      try {
+        console.log('🔔 Setting up notification subscription...');
+        if (!subscriptionRef.current && isMounted) {
+          const subId = notificationService.subscribeToNotifications(ADMIN_USER_ID, (notification) => {
+            if (isMounted) {
+              console.log('📨 Received notification:', notification);
+              addNotification(notification);
+            }
+          });
+          if (isMounted) {
+            subscriptionRef.current = subId;
+            setIsConnected(true);
+            console.log('✅ Notification subscription established');
+          }
+        }
+      } catch (error) {
+        console.error('❌ Failed to setup notification subscription:', error);
+        if (isMounted) {
+          setIsConnected(false);
+        }
       }
-    } catch (error) {
-      console.error('❌ Failed to setup notification subscription:', error);
-      setIsConnected(false);
-    }
+    };
+
+    setupSubscription();
 
     // Cleanup subscription on unmount
     return () => {
+      isMounted = false;
       if (subscriptionRef.current) {
-        notificationService.unsubscribeFromNotifications(subscriptionRef.current);
-        subscriptionRef.current = null;
-        console.log('🔔 Notification subscription cleaned up');
+        try {
+          notificationService.unsubscribeFromNotifications(subscriptionRef.current);
+          subscriptionRef.current = null;
+          console.log('🔔 Notification subscription cleaned up');
+        } catch (error) {
+          console.error('Error cleaning up subscription:', error);
+        }
       }
     };
   }, [addNotification]);
 
   // Load initial notifications
   useEffect(() => {
+    let isMounted = true;
+    
     const loadInitialNotifications = async () => {
       try {
         const result = await notificationService.getNotifications(ADMIN_USER_ID, { limit: 20 });
-        if (result.success && result.data) {
+        if (isMounted && result.success && result.data) {
           setNotifications(result.data);
         }
       } catch (error) {
         console.error('Failed to load initial notifications:', error);
+        // Don't block rendering if notifications fail to load
       }
     };
 
     loadInitialNotifications();
+    
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
   const value: NotificationContextType = {

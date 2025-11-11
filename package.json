@@ -2,6 +2,30 @@
   "name": "ai-hr-saathi",
   "version": "0.1.0",
   "private": true,
+  "description": "A comprehensive AI-powered HR management platform with intelligent interview capabilities, voice integration, resume parsing, and advanced candidate management features.",
+  "homepage": ".",
+  "bugs": {
+    "url": "https://github.com/chinmayautoomstudio/AI-Interviewer/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/chinmayautoomstudio/AI-Interviewer.git"
+  },
+  "license": "ISC",
+  "author": "",
+  "type": "commonjs",
+  "main": ".eslintrc.js",
+  "directories": {
+    "doc": "docs"
+  },
+  "scripts": {
+    "start": "react-scripts start",
+    "build": "node scripts/build.js",
+    "build-react": "react-scripts build",
+    "copy-functions": "node scripts/copy-functions.js",
+    "test": "react-scripts test",
+    "eject": "react-scripts eject"
+  },
   "dependencies": {
     "@headlessui/react": "^2.2.7",
     "@heroicons/react": "^2.2.0",
@@ -29,13 +53,10 @@
     "typescript": "^4.9.5",
     "web-vitals": "^2.1.4"
   },
-  "scripts": {
-    "start": "react-scripts start",
-    "build": "node scripts/build.js",
-    "build-react": "react-scripts build",
-    "copy-functions": "node scripts/copy-functions.js",
-    "test": "react-scripts test",
-    "eject": "react-scripts eject"
+  "devDependencies": {
+    "autoprefixer": "^10.4.21",
+    "postcss": "^8.5.6",
+    "tailwindcss": "^3.4.17"
   },
   "eslintConfig": {
     "extends": [
@@ -54,10 +75,5 @@
       "last 1 firefox version",
       "last 1 safari version"
     ]
-  },
-  "devDependencies": {
-    "autoprefixer": "^10.4.21",
-    "postcss": "^8.5.6",
-    "tailwindcss": "^3.4.17"
   }
 }
