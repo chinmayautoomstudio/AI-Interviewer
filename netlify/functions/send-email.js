@@ -74,9 +74,12 @@ exports.handler = async (event, context) => {
     console.log('Resend initialized successfully');
 
     // Send email
+    // Get from email from environment variable or use default
+    const fromEmail = process.env.REACT_APP_FROM_EMAIL || 'AI HR Saathi <noreply@aihrsaathi.com>';
     console.log('Sending email to:', data.to);
+    console.log('From email:', fromEmail);
     const result = await resend.emails.send({
-      from: 'AI HR Saathi <noreply@updates.aihrsaathi.com>', // Use verified subdomain
+      from: fromEmail, // Use verified domain (aihrsaathi.com)
       to: data.to,
       subject: data.subject,
       html: data.html,

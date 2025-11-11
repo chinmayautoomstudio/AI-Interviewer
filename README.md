@@ -99,8 +99,8 @@ REACT_APP_AUTO_VOICE_SELECTION=true
 # Email Configuration (for 2FA and notifications)
 REACT_APP_RESEND_API_KEY=your_resend_api_key
 REACT_APP_COMPANY_NAME=AI HR Saathi
-REACT_APP_FROM_EMAIL=noreply@updates.aihrsaathi.com
-REACT_APP_SUPPORT_EMAIL=support@updates.aihrsaathi.com
+REACT_APP_FROM_EMAIL=noreply@aihrsaathi.com
+REACT_APP_SUPPORT_EMAIL=support@aihrsaathi.com
 REACT_APP_WEBSITE=https://aihrsaathi.com
 ```
 
