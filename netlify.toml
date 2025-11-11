@@ -3,14 +3,13 @@
   command = "npm run build"
   functions = "netlify/functions"
 
-# SPA redirect: Redirect all routes to index.html except static assets
-# Using conditions to exclude file extensions ensures static assets are served correctly
+# SPA redirect: Redirect all routes to index.html for client-side routing
+# Netlify serves static files BEFORE processing redirects, so static assets
+# (JS, CSS, images, etc.) are served directly and won't be caught by this redirect
 [[redirects]]
   from = "/*"
   to = "/index.html"
   status = 200
-  force = false
-  conditions = {Path = ["!*.js", "!*.css", "!*.png", "!*.jpg", "!*.jpeg", "!*.gif", "!*.svg", "!*.ico", "!*.woff", "!*.woff2", "!*.ttf", "!*.eot", "!*.otf", "!*.json", "!*.xml", "!*.txt", "!*.webp", "!*.avif"]}
 
 [build.environment]
   NODE_VERSION = "18"
