@@ -1,7 +1,9 @@
 # Netlify redirects for React SPA
 # Netlify serves existing files BEFORE processing redirects
-# So static files in /static/ will be served automatically
-# This redirect only applies to routes that don't match actual files
+# Static files are served automatically and won't match the redirect rule below
 
-# Redirect all routes to index.html for client-side routing
+# Redirect all routes to index.html for client-side routing (SPA)
+# This ensures routes like /candidate/exam/:token work correctly
+# Note: Static assets (JS, CSS, images in /static/) are served first
+# and will not be affected by this redirect rule
 /*    /index.html   200
