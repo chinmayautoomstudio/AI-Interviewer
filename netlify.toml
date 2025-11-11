@@ -13,13 +13,6 @@
   GENERATE_SOURCEMAP = "false"
   ESLINT_NO_DEV_ERRORS = "true"
 
-# SPA redirect rule - ensures all routes serve index.html for client-side routing
-# Static assets are served first and won't be affected by this redirect
-[[redirects]]
-  from = "/*"
-  to = "/index.html"
-  status = 200
-
 # Ensure functions are deployed
 [functions]
   directory = "netlify/functions"
