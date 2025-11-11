@@ -3,29 +3,14 @@
   command = "npm run build"
   functions = "netlify/functions"
 
-# Debugging: Add explicit rules for static assets BEFORE catch-all
-# This helps identify which redirects are being matched
-[[redirects]]
-  from = "/static/*"
-  to = "/static/:splat"
-  status = 200
-  force = false
-  headers = { X-Debug-Redirect = "static-asset" }
-
-[[redirects]]
-  from = "/manifest.json"
-  to = "/manifest.json"
-  status = 200
-  force = false
-  headers = { X-Debug-Redirect = "manifest" }
-
-# Catch-all redirect for SPA routes (must be last)
+# SPA redirect: Redirect all routes to index.html except static assets
+# Using conditions to exclude file extensions ensures static assets are served correctly
 [[redirects]]
   from = "/*"
   to = "/index.html"
   status = 200
   force = false
-  headers = { X-Debug-Redirect = "spa-catch-all" }
+  conditions = {Path = ["!*.js", "!*.css", "!*.png", "!*.jpg", "!*.jpeg", "!*.gif", "!*.svg", "!*.ico", "!*.woff", "!*.woff2", "!*.ttf", "!*.eot", "!*.otf", "!*.json", "!*.xml", "!*.txt", "!*.webp", "!*.avif"]}
 
 [build.environment]
   NODE_VERSION = "18"
