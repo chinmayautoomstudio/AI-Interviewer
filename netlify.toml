@@ -3,10 +3,8 @@
   command = "npm run build"
   functions = "netlify/functions"
 
-[[redirects]]
-  from = "/*"
-  to = "/index.html"
-  status = 200
+# Redirect rules - handled by _redirects file in public folder
+# Static assets are excluded from redirects in _redirects file
 
 [build.environment]
   NODE_VERSION = "18"
