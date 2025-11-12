@@ -34,6 +34,7 @@ const MCQExamResultsPage: React.FC<MCQExamResultsPageProps> = () => {
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [showQuestionReview, setShowQuestionReview] = useState(false);
   const [gotoInputValue, setGotoInputValue] = useState<string>('');
+  const [isGotoInputFocused, setIsGotoInputFocused] = useState(false);
 
   const loadExamResults = useCallback(async () => {
     try {
@@ -206,9 +207,12 @@ const MCQExamResultsPage: React.FC<MCQExamResultsPageProps> = () => {
   }, [sessionId, loadExamResults]);
 
   // Clear goto input value when question index changes externally (e.g., via pagination)
+  // Only clear if input is not focused (user is not actively typing)
   useEffect(() => {
-    setGotoInputValue('');
-  }, [currentQuestionIndex]);
+    if (!isGotoInputFocused) {
+      setGotoInputValue('');
+    }
+  }, [currentQuestionIndex, isGotoInputFocused]);
 
   const getScoreColor = (percentage: number) => {
     if (percentage >= 80) return 'text-green-600';
@@ -453,6 +457,15 @@ const MCQExamResultsPage: React.FC<MCQExamResultsPageProps> = () => {
                       })()}
                     </span>
                   </div>
+                  <div className="flex items-center justify-between p-3 bg-teal-50 rounded-lg">
+                    <div className="flex items-center space-x-3">
+                      <Clock className="h-5 w-5 text-teal-600" />
+                      <span className="text-teal-800 font-medium">Total Exam Time</span>
+                    </div>
+                    <span className="text-teal-900 font-bold">
+                      {formatTime(examResult.examSession?.duration_minutes || 0)}
+                    </span>
+                  </div>
                 </div>
 
                 <div className="space-y-4">
@@ -675,26 +688,65 @@ const MCQExamResultsPage: React.FC<MCQExamResultsPageProps> = () => {
                 <div className="flex items-center space-x-2">
                   <span className="text-xs lg:text-sm text-gray-600">Go to:</span>
                   <input
-                    type="number"
+                    type="text"
+                    inputMode="numeric"
+                    pattern="[0-9]*"
                     min="1"
                     max={allQuestions.length}
-                    value={gotoInputValue || currentQuestionIndex + 1}
+                    value={isGotoInputFocused ? gotoInputValue : (gotoInputValue || (currentQuestionIndex + 1).toString())}
                     onChange={(e) => {
                       const inputValue = e.target.value;
-                      setGotoInputValue(inputValue);
+                      // Allow empty string or valid numbers
+                      if (inputValue === '' || /^\d+$/.test(inputValue)) {
+                        setGotoInputValue(inputValue);
+                      }
+                    }}
+                    onFocus={(e) => {
+                      setIsGotoInputFocused(true);
+                      // Only set value if it's empty (first time focusing)
+                      // This allows user to edit without resetting
+                      if (!gotoInputValue) {
+                        setGotoInputValue((currentQuestionIndex + 1).toString());
+                        // Select all text for easy replacement
+                        setTimeout(() => e.target.select(), 0);
+                      }
                     }}
                     onBlur={(e) => {
-                      const value = parseInt(e.target.value);
+                      setIsGotoInputFocused(false);
+                      const inputValue = e.target.value.trim();
+                      if (inputValue === '') {
+                        // If empty, just reset without navigating
+                        setGotoInputValue('');
+                        return;
+                      }
+                      const value = parseInt(inputValue);
                       if (!isNaN(value) && value >= 1 && value <= allQuestions.length) {
                         setCurrentQuestionIndex(value - 1);
                         setGotoInputValue('');
                       } else {
+                        // If invalid, reset to empty (will show current question on next render)
                         setGotoInputValue('');
                       }
                     }}
-                    onKeyPress={(e) => {
+                    onKeyDown={(e) => {
+                      // Handle Enter key to navigate
                       if (e.key === 'Enter') {
-                        e.currentTarget.blur();
+                        e.preventDefault();
+                        const target = e.target as HTMLInputElement;
+                        const value = parseInt(target.value);
+                        if (!isNaN(value) && value >= 1 && value <= allQuestions.length) {
+                          setCurrentQuestionIndex(value - 1);
+                          setGotoInputValue('');
+                          setIsGotoInputFocused(false);
+                          target.blur();
+                        }
+                      }
+                      // Allow Escape to cancel
+                      if (e.key === 'Escape') {
+                        setGotoInputValue('');
+                        setIsGotoInputFocused(false);
+                        const target = e.target as HTMLInputElement;
+                        target.blur();
                       }
                     }}
                     className="w-12 lg:w-16 px-2 py-1 text-center border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
