@@ -334,14 +334,6 @@ const Header: React.FC<HeaderProps> = ({ user, onLogout }) => {
                     <AlertTriangle className="h-4 w-4" />
                     <span>Disclaimer</span>
                   </button>
-                  <div className="border-t border-gray-200 my-1"></div>
-                  <button
-                    onClick={() => handleSettingsClick('logout')}
-                    className="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-red-50 flex items-center space-x-2"
-                  >
-                    <LogOut className="h-4 w-4" />
-                    <span>Logout</span>
-                  </button>
                 </div>
               </div>
             )}
@@ -387,6 +379,14 @@ const Header: React.FC<HeaderProps> = ({ user, onLogout }) => {
                     >
                       <User className="h-4 w-4" />
                       <span>View Profile</span>
+                    </button>
+                    <div className="border-t border-gray-200 my-1"></div>
+                    <button
+                      onClick={() => handleSettingsClick('logout')}
+                      className="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-red-50 flex items-center space-x-2"
+                    >
+                      <LogOut className="h-4 w-4" />
+                      <span>Logout</span>
                     </button>
                   </div>
                 </div>

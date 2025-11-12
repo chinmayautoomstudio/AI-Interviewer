@@ -49,14 +49,14 @@ const ExamResultDetailsModal: React.FC<ExamResultDetailsModalProps> = ({
   }, [resultId]);
 
   const loadResponses = useCallback(async () => {
-    if (!resultId) return;
+    if (!result || !result.examSessionId) return;
 
     try {
       setLoadingResponses(true);
       
       const { ExamService } = await import('../../services/examService');
       const examService = new ExamService();
-      const responses = await examService.getSessionResponses(resultId);
+      const responses = await examService.getSessionResponses(result.examSessionId);
       
       setResponses(responses);
     } catch (err) {
@@ -64,18 +64,24 @@ const ExamResultDetailsModal: React.FC<ExamResultDetailsModalProps> = ({
     } finally {
       setLoadingResponses(false);
     }
-  }, [resultId]);
+  }, [result]);
 
   useEffect(() => {
     if (isOpen && resultId) {
       loadResultDetails();
+    }
+  }, [isOpen, resultId, loadResultDetails]);
+
+  useEffect(() => {
+    if (result && result.examSessionId) {
       loadResponses();
     }
-  }, [isOpen, resultId, loadResultDetails, loadResponses]);
+  }, [result, loadResponses]);
 
   const handleClose = () => {
     setResult(null);
     setError(null);
+    setResponses([]);
     onClose();
   };
 

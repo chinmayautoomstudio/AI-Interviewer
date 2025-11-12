@@ -1137,12 +1137,11 @@ export class ExamService {
     const responses = await this.getSessionResponses(sessionId);
     
     // Calculate scores based on actual answered questions
-    // Note: Since questions are fetched dynamically, we can't rely on total_questions from session
-    // Therefore, skipped should be calculated based on whether candidate answered all questions they saw
     const answeredQuestions = responses.length;
     const correct_answers = responses.filter(r => r.is_correct).length;
     const wrong_answers = responses.filter(r => !r.is_correct).length;
-    const skipped_questions = 0; // Set to 0 since we don't have a definitive "total questions" reference
+    // Calculate skipped questions: total questions in session - answered questions
+    const skipped_questions = Math.max(0, (session.total_questions || 0) - answeredQuestions);
     
     // Calculate points from answered questions
     const total_score = responses.reduce((sum, r) => sum + (r.points_earned || 0), 0);

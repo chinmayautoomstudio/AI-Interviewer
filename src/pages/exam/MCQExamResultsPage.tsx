@@ -216,8 +216,11 @@ const MCQExamResultsPage: React.FC<MCQExamResultsPageProps> = () => {
                 <h2 className="text-2xl font-semibold text-gray-900 mb-2">
                   Your Score
                 </h2>
-                <p className={`text-lg font-medium ${getScoreColor(percentage)}`}>
+                <p className={`text-lg font-medium ${getScoreColor(percentage)} mb-2`}>
                   {examResult.evaluationStatus === 'passed' ? 'PASSED' : 'NEEDS IMPROVEMENT'}
+                </p>
+                <p className="text-base text-gray-600 font-semibold">
+                  {examResult.totalScore || 0} / {examResult.maxScore || 0} points
                 </p>
               </div>
 
@@ -250,7 +253,7 @@ const MCQExamResultsPage: React.FC<MCQExamResultsPageProps> = () => {
                       <BookOpen className="h-5 w-5 text-blue-600" />
                       <span className="text-blue-800 font-medium">Total Questions</span>
                     </div>
-                    <span className="text-blue-900 font-bold">{responses.length || examResult.examSession?.total_questions || 0}</span>
+                    <span className="text-blue-900 font-bold">{examResult.examSession?.total_questions || responses.length || 0}</span>
                   </div>
                   <div className="flex items-center justify-between p-3 bg-purple-50 rounded-lg">
                     <div className="flex items-center space-x-3">
@@ -278,7 +281,7 @@ const MCQExamResultsPage: React.FC<MCQExamResultsPageProps> = () => {
                       <Eye className="h-5 w-5 text-indigo-600" />
                       <span className="text-indigo-800 font-medium">Responses Submitted</span>
                     </div>
-                    <span className="text-indigo-900 font-bold">{(examResult.correctAnswers || 0) + (examResult.wrongAnswers || 0)}</span>
+                    <span className="text-indigo-900 font-bold">{responses.length || 0}</span>
                   </div>
                 </div>
               </div>

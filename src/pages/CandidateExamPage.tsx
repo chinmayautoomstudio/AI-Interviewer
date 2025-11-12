@@ -970,14 +970,33 @@ export const CandidateExamPage: React.FC = () => {
                 Q{currentQuestionIndex + 1}/{questions.length}
               </div>
 
-              <button
-                onClick={handleNextQuestion}
-                disabled={currentQuestionIndex === questions.length - 1}
-                className={`flex items-center space-x-1 sm:space-x-2 px-3 sm:px-4 py-2 sm:py-3 rounded-lg font-semibold text-sm sm:text-base transition-all duration-200 bg-gradient-to-r from-blue-600 to-indigo-600 text-white hover:from-blue-700 hover:to-indigo-700 shadow-md hover:shadow-lg ${currentQuestionIndex === questions.length - 1 ? 'opacity-50 cursor-not-allowed' : ''}`}
-              >
-                <span>Next</span>
-                <ArrowRight className="w-4 h-4 sm:w-5 sm:h-5" />
-              </button>
+              {currentQuestionIndex === questions.length - 1 ? (
+                <button
+                  onClick={handleSubmitExam}
+                  disabled={isSubmitting}
+                  className={`flex items-center space-x-1 sm:space-x-2 px-3 sm:px-4 py-2 sm:py-3 rounded-lg font-semibold text-sm sm:text-base transition-all duration-200 bg-gradient-to-r from-green-600 to-emerald-600 text-white hover:from-green-700 hover:to-emerald-700 shadow-md hover:shadow-lg ${isSubmitting ? 'opacity-50 cursor-not-allowed' : ''}`}
+                >
+                  {isSubmitting ? (
+                    <>
+                      <Loader2 className="w-4 h-4 sm:w-5 sm:h-5 animate-spin" />
+                      <span>Submitting...</span>
+                    </>
+                  ) : (
+                    <>
+                      <CheckCircle className="w-4 h-4 sm:w-5 sm:h-5" />
+                      <span>Submit Exam</span>
+                    </>
+                  )}
+                </button>
+              ) : (
+                <button
+                  onClick={handleNextQuestion}
+                  className="flex items-center space-x-1 sm:space-x-2 px-3 sm:px-4 py-2 sm:py-3 rounded-lg font-semibold text-sm sm:text-base transition-all duration-200 bg-gradient-to-r from-blue-600 to-indigo-600 text-white hover:from-blue-700 hover:to-indigo-700 shadow-md hover:shadow-lg"
+                >
+                  <span>Next</span>
+                  <ArrowRight className="w-4 h-4 sm:w-5 sm:h-5" />
+                </button>
+              )}
             </div>
           </div>
 
@@ -1008,38 +1027,6 @@ export const CandidateExamPage: React.FC = () => {
 
           {/* Mobile Bottom Navigation - Simplified */}
           <div className="xl:hidden fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-sm border-t border-gray-200/50 shadow-lg z-20">
-            {/* Save Response Button - Always visible on Mobile when exam is in progress */}
-            {session?.status === 'in_progress' && (
-              <div className="px-3 pt-2 pb-1 border-b border-gray-200">
-                <button
-                  onClick={handleSaveResponse}
-                  disabled={autoSaveStatus === 'saving' || !currentAnswer || !currentAnswer.trim()}
-                  className={`w-full flex items-center justify-center space-x-2 px-4 py-2.5 rounded-lg font-semibold text-sm transition-all duration-200 shadow-md ${
-                    autoSaveStatus === 'saving' || !currentAnswer || !currentAnswer.trim()
-                      ? 'bg-gray-300 text-gray-400 cursor-not-allowed'
-                      : 'bg-gradient-to-r from-green-600 to-emerald-600 text-white hover:from-green-700 hover:to-emerald-700 active:scale-95'
-                  }`}
-                >
-                  {autoSaveStatus === 'saving' ? (
-                    <>
-                      <Loader2 className="w-5 h-5 animate-spin" />
-                      <span>Saving Response...</span>
-                    </>
-                  ) : autoSaveStatus === 'saved' ? (
-                    <>
-                      <CheckCircle className="w-5 h-5" />
-                      <span>✓ Response Saved</span>
-                    </>
-                  ) : (
-                    <>
-                      <Save className="w-5 h-5" />
-                      <span>{currentAnswer && currentAnswer.trim() ? '💾 Save Response' : '💾 Select Answer to Save'}</span>
-                    </>
-                  )}
-                </button>
-              </div>
-            )}
-            
             <div className="px-3 py-2">
               {/* Mobile Progress Bar - Compact */}
               <div className="mb-2">
@@ -1057,38 +1044,57 @@ export const CandidateExamPage: React.FC = () => {
 
               {/* Mobile Navigation Controls */}
               <div className="flex items-center justify-between mb-2">
-                {/* Previous Button */}
+                {/* Previous Button - Larger for mobile */}
                 <button
                   onClick={handlePreviousQuestion}
                   disabled={currentQuestionIndex === 0}
-                  className={`flex items-center space-x-1 px-2 py-1 rounded text-xs font-semibold transition-all duration-200 ${
+                  className={`flex items-center space-x-2 px-5 py-3 rounded-lg text-base font-semibold transition-all duration-200 ${
                     currentQuestionIndex === 0 
                       ? 'bg-gray-100 text-gray-400 cursor-not-allowed' 
-                      : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                      : 'bg-gray-200 text-gray-700 hover:bg-gray-300 active:scale-95'
                   }`}
                 >
-                  <ArrowLeft className="w-3 h-3" />
+                  <ArrowLeft className="w-5 h-5" />
                   <span>Prev</span>
                 </button>
 
                 {/* Question Counter */}
-                <div className="text-xs text-gray-600 font-medium">
+                <div className="text-sm text-gray-600 font-medium">
                   Q{currentQuestionIndex + 1}/{questions.length}
                 </div>
 
-                {/* Next Button */}
-                <button
-                  onClick={handleNextQuestion}
-                  disabled={currentQuestionIndex === questions.length - 1}
-                  className={`flex items-center space-x-1 px-2 py-1 rounded text-xs font-semibold transition-all duration-200 ${
-                    currentQuestionIndex === questions.length - 1 
-                      ? 'bg-gray-100 text-gray-400 cursor-not-allowed' 
-                      : 'bg-blue-600 text-white hover:bg-blue-700'
-                  }`}
-                >
-                  <span>Next</span>
-                  <ArrowRight className="w-3 h-3" />
-                </button>
+                {/* Next/Submit Button - Larger for mobile */}
+                {currentQuestionIndex === questions.length - 1 ? (
+                  <button
+                    onClick={handleSubmitExam}
+                    disabled={isSubmitting}
+                    className={`flex items-center space-x-2 px-5 py-3 rounded-lg text-base font-semibold transition-all duration-200 ${
+                      isSubmitting 
+                        ? 'bg-gray-100 text-gray-400 cursor-not-allowed' 
+                        : 'bg-green-600 text-white hover:bg-green-700 active:scale-95'
+                    }`}
+                  >
+                    {isSubmitting ? (
+                      <>
+                        <Loader2 className="w-5 h-5 animate-spin" />
+                        <span>Submitting...</span>
+                      </>
+                    ) : (
+                      <>
+                        <CheckCircle className="w-5 h-5" />
+                        <span>Submit Exam</span>
+                      </>
+                    )}
+                  </button>
+                ) : (
+                  <button
+                    onClick={handleNextQuestion}
+                    className="flex items-center space-x-2 px-5 py-3 rounded-lg text-base font-semibold transition-all duration-200 bg-blue-600 text-white hover:bg-blue-700 active:scale-95"
+                  >
+                    <span>Next</span>
+                    <ArrowRight className="w-5 h-5" />
+                  </button>
+                )}
               </div>
 
               {/* Mobile Question Navigator - Compact (scrolls all questions) */}
