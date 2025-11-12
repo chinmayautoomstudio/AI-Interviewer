@@ -17,7 +17,8 @@ import {
   Brain
 } from 'lucide-react';
 import { examService } from '../../services/examService';
-import { ExamResult, ExamResponse } from '../../types';
+import { ExamResult, ExamResponse, ExamQuestion } from '../../types';
+import { FormattedQuestionText } from '../../components/exam/FormattedQuestionText';
 
 interface MCQExamResultsPageProps {}
 
@@ -29,6 +30,7 @@ const MCQExamResultsPage: React.FC<MCQExamResultsPageProps> = () => {
   const [error, setError] = useState<string | null>(null);
   const [examResult, setExamResult] = useState<ExamResult | null>(null);
   const [responses, setResponses] = useState<ExamResponse[]>([]);
+  const [allQuestions, setAllQuestions] = useState<ExamQuestion[]>([]);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [showQuestionReview, setShowQuestionReview] = useState(false);
 
@@ -37,25 +39,77 @@ const MCQExamResultsPage: React.FC<MCQExamResultsPageProps> = () => {
       setLoading(true);
       setError(null);
 
-      // Load exam result and responses
-      const [result, responsesData] = await Promise.all([
+      // Load exam result, responses, and all questions shown in the exam
+      const [result, responsesData, questionsData] = await Promise.all([
         examService.getExamResult(sessionId!),
-        examService.getSessionResponses(sessionId!)
+        examService.getSessionResponses(sessionId!),
+        examService.getExamQuestions(sessionId!)
       ]);
 
       console.log('🔍 Exam Result Debug:', {
         result,
         responsesData,
+        questionsData,
         examSession: result?.examSession,
         totalQuestions: result?.examSession?.total_questions,
         responsesLength: responsesData?.length,
+        questionsLength: questionsData?.length,
         startedAt: result?.examSession?.started_at,
         completedAt: result?.examSession?.completed_at,
         timeTakenMinutes: result?.timeTakenMinutes
       });
 
+      // Build a comprehensive question list:
+      // Strategy: Use RESPONSES as the primary source of truth (they tell us which questions were shown)
+      // Responses have question data joined, so we know exactly which questions were answered
+      // Then add questions from getExamQuestions() that weren't answered (skipped questions)
+      
+      // Step 1: Extract questions from responses (these were definitely shown and answered)
+      const answeredQuestionIds = new Set<string>();
+      const questionsFromResponses: ExamQuestion[] = [];
+      responsesData.forEach(r => {
+        if (r.question && r.question_id) {
+          answeredQuestionIds.add(r.question_id);
+          // Only add if not already added (avoid duplicates)
+          if (!questionsFromResponses.find(q => q.id === r.question_id)) {
+            questionsFromResponses.push(r.question);
+          }
+        }
+      });
+      
+      // Step 2: Add questions from getExamQuestions() that weren't answered (skipped questions)
+      const skippedQuestions = questionsData.filter(q => !answeredQuestionIds.has(q.id));
+      
+      // Step 3: Combine - answered questions first (in response order), then skipped questions
+      // This ensures we show all questions that were shown during the exam
+      const finalQuestions = [...questionsFromResponses, ...skippedQuestions];
+      
+      // Step 4: If we have fewer questions than expected, use getExamQuestions() as fallback
+      // (This handles edge cases where responses might be missing question data)
+      const expectedQuestionCount = result?.examSession?.total_questions || questionsData.length;
+      const finalQuestionsList = finalQuestions.length >= expectedQuestionCount 
+        ? finalQuestions 
+        : questionsData;
+
+      // Debug: Log question IDs and response IDs to verify matching
+      console.log('🔍 Question-Response Matching Debug:', {
+        questionsFromGetExamQuestions: questionsData?.length,
+        responsesCount: responsesData?.length,
+        questionsFromResponses: questionsFromResponses.length,
+        skippedQuestions: skippedQuestions.length,
+        finalQuestionsCount: finalQuestionsList.length,
+        expectedQuestionCount,
+        answeredQuestionIds: Array.from(answeredQuestionIds),
+        questionIdsFromGetExam: questionsData?.map(q => q.id),
+        responseQuestionIds: responsesData?.map(r => r.question_id),
+        questionsWithResponses: finalQuestionsList.filter(q => 
+          answeredQuestionIds.has(q.id)
+        ).length
+      });
+
       setExamResult(result);
       setResponses(responsesData);
+      setAllQuestions(finalQuestionsList);
     } catch (err) {
       console.error('Error loading exam results:', err);
       setError('Failed to load exam results');
@@ -107,10 +161,51 @@ const MCQExamResultsPage: React.FC<MCQExamResultsPageProps> = () => {
     return `${hours}h ${remainingMinutes}m`;
   };
 
+  // Create a map of question_id -> response for quick lookup
+  // Since we build questions from responses first, matching should be straightforward
+  const responsesMap = new Map<string, ExamResponse>();
+  responses.forEach(r => {
+    if (r.question_id) {
+      responsesMap.set(r.question_id, r);
+    }
+    // Also index by question.id from joined data as fallback
+    if (r.question?.id) {
+      responsesMap.set(r.question.id, r);
+    }
+  });
+  
+  // Create a set of answered question IDs for quick lookup
+  const answeredQuestionIds = new Set(responses.map(r => r.question_id).filter(Boolean));
+  
+  // Debug: Log matching info for current question
+  if (allQuestions.length > 0 && currentQuestionIndex < allQuestions.length) {
+    const debugQuestion = allQuestions[currentQuestionIndex];
+    const debugResponse = responsesMap.get(debugQuestion.id);
+    const isAnswered = answeredQuestionIds.has(debugQuestion.id);
+    console.log('🔍 Current Question Matching Debug:', {
+      questionIndex: currentQuestionIndex,
+      questionId: debugQuestion.id,
+      questionText: debugQuestion.question_text?.substring(0, 50),
+      hasResponse: !!debugResponse,
+      isAnswered,
+      responseQuestionId: debugResponse?.question_id,
+      responseAnswer: debugResponse?.answer_text,
+      responseIsCorrect: debugResponse?.is_correct,
+      allResponseIds: Array.from(responsesMap.keys()),
+      answeredQuestionIds: Array.from(answeredQuestionIds)
+    });
+  }
+  
+  // Get current question and its response (if answered)
+  const currentQuestion = allQuestions[currentQuestionIndex] || null;
+  // Simple lookup: question is answered if it's in the responses map
+  const currentResponse = currentQuestion ? responsesMap.get(currentQuestion.id) || null : null;
+  const isSkipped = currentQuestion && !answeredQuestionIds.has(currentQuestion.id);
+
   const handleQuestionNavigation = (direction: 'prev' | 'next') => {
     if (direction === 'prev' && currentQuestionIndex > 0) {
       setCurrentQuestionIndex(currentQuestionIndex - 1);
-    } else if (direction === 'next' && currentQuestionIndex < responses.length - 1) {
+    } else if (direction === 'next' && currentQuestionIndex < allQuestions.length - 1) {
       setCurrentQuestionIndex(currentQuestionIndex + 1);
     }
   };
@@ -154,14 +249,14 @@ const MCQExamResultsPage: React.FC<MCQExamResultsPageProps> = () => {
     );
   }
 
-  // Additional safety check for empty responses
-  if (responses.length === 0) {
+  // Additional safety check for empty questions
+  if (allQuestions.length === 0) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-yellow-50 via-white to-orange-50 flex items-center justify-center p-4">
         <div className="max-w-md w-full bg-white rounded-2xl shadow-xl p-8 text-center">
           <BookOpen className="h-16 w-16 text-yellow-500 mx-auto mb-4" />
-          <h1 className="text-2xl font-bold text-gray-900 mb-4">No Responses Found</h1>
-          <p className="text-gray-600 mb-6">No exam responses were found for this session. The exam may not have been completed properly.</p>
+          <h1 className="text-2xl font-bold text-gray-900 mb-4">No Questions Found</h1>
+          <p className="text-gray-600 mb-6">No exam questions were found for this session. The exam may not have been set up properly.</p>
           <button
             onClick={() => navigate('/')}
             className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
@@ -173,7 +268,6 @@ const MCQExamResultsPage: React.FC<MCQExamResultsPageProps> = () => {
     );
   }
 
-  const currentResponse = responses[currentQuestionIndex];
   const percentage = Math.round(examResult.percentage);
   
   // Debug logging for troubleshooting
@@ -253,7 +347,7 @@ const MCQExamResultsPage: React.FC<MCQExamResultsPageProps> = () => {
                       <BookOpen className="h-5 w-5 text-blue-600" />
                       <span className="text-blue-800 font-medium">Total Questions</span>
                     </div>
-                    <span className="text-blue-900 font-bold">{examResult.examSession?.total_questions || responses.length || 0}</span>
+                    <span className="text-blue-900 font-bold">{allQuestions.length || examResult.examSession?.total_questions || 0}</span>
                   </div>
                   <div className="flex items-center justify-between p-3 bg-purple-50 rounded-lg">
                     <div className="flex items-center space-x-3">
@@ -360,7 +454,7 @@ const MCQExamResultsPage: React.FC<MCQExamResultsPageProps> = () => {
               <div className="text-center order-first sm:order-none">
                 <h2 className="text-xl sm:text-2xl font-bold text-gray-900">Question Review</h2>
                 <p className="text-sm sm:text-base text-gray-600">
-                  Question {currentQuestionIndex + 1} of {responses.length}
+                  Question {currentQuestionIndex + 1} of {allQuestions.length}
                 </p>
               </div>
               
@@ -394,56 +488,73 @@ const MCQExamResultsPage: React.FC<MCQExamResultsPageProps> = () => {
             </div>
 
             {/* Question Card */}
-            {currentResponse && (
+            {currentQuestion && (
               <div className="bg-white rounded-2xl shadow-xl p-8 mb-6">
                 {/* Question Header */}
                 <div className="flex items-center justify-between mb-6">
                   <div className="flex items-center space-x-3">
-                    <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
-                      currentResponse.is_correct ? 'bg-green-100' : 'bg-red-100'
-                    }`}>
-                      {currentResponse.is_correct ? (
-                        <CheckCircle className="h-5 w-5 text-green-600" />
-                      ) : (
-                        <XCircle className="h-5 w-5 text-red-600" />
-                      )}
-                    </div>
-                    <span className={`font-semibold ${
-                      currentResponse.is_correct ? 'text-green-600' : 'text-red-600'
-                    }`}>
-                      {currentResponse.is_correct ? 'Correct' : 'Incorrect'}
-                    </span>
+                    {isSkipped ? (
+                      <>
+                        <div className="w-8 h-8 rounded-full flex items-center justify-center bg-gray-100">
+                          <Clock className="h-5 w-5 text-gray-600" />
+                        </div>
+                        <span className="font-semibold text-gray-600">
+                          Skipped
+                        </span>
+                      </>
+                    ) : currentResponse ? (
+                      <>
+                        <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
+                          currentResponse.is_correct ? 'bg-green-100' : 'bg-red-100'
+                        }`}>
+                          {currentResponse.is_correct ? (
+                            <CheckCircle className="h-5 w-5 text-green-600" />
+                          ) : (
+                            <XCircle className="h-5 w-5 text-red-600" />
+                          )}
+                        </div>
+                        <span className={`font-semibold ${
+                          currentResponse.is_correct ? 'text-green-600' : 'text-red-600'
+                        }`}>
+                          {currentResponse.is_correct ? 'Correct' : 'Incorrect'}
+                        </span>
+                      </>
+                    ) : null}
                   </div>
                   
                   <div className="text-sm text-gray-500">
-                    Points: {currentResponse.points_earned}/{currentResponse.question?.points || 0}
+                    {isSkipped ? (
+                      <>Points: 0/{currentQuestion.points || 1}</>
+                    ) : currentResponse ? (
+                      <>Points: {currentResponse.points_earned}/{currentResponse.question?.points || 0}</>
+                    ) : null}
                   </div>
                 </div>
 
                 {/* Question */}
                 <div className="mb-6">
-                  <h3 className="text-lg font-semibold text-gray-900 mb-4">
-                    {currentResponse.question?.question_text}
-                  </h3>
+                  <div className="text-lg font-semibold text-gray-900 mb-4">
+                    <FormattedQuestionText text={currentQuestion.question_text} />
+                  </div>
                   
                   {/* Options */}
                   <div className="space-y-3">
-                    {currentResponse.question?.mcq_options?.map((option, index) => (
+                    {currentQuestion.mcq_options?.map((option, index) => (
                       <div
                         key={index}
                         className={`p-4 rounded-lg border-2 ${getOptionStyle(
                           option.option,
-                          currentResponse.question?.correct_answer || '',
-                          currentResponse.answer_text || ''
+                          currentQuestion.correct_answer || '',
+                          isSkipped ? '' : (currentResponse?.answer_text || '')
                         )}`}
                       >
                         <div className="flex items-center space-x-3">
                           <span className="font-medium">{option.option}.</span>
                           <span>{option.text}</span>
-                          {option.option === currentResponse.question?.correct_answer && (
+                          {option.option === currentQuestion.correct_answer && (
                             <CheckCircle className="h-5 w-5 text-green-600 ml-auto" />
                           )}
-                          {option.option === currentResponse.answer_text && option.option !== currentResponse.question?.correct_answer && (
+                          {!isSkipped && option.option === currentResponse?.answer_text && option.option !== currentQuestion.correct_answer && (
                             <XCircle className="h-5 w-5 text-red-600 ml-auto" />
                           )}
                         </div>
@@ -453,10 +564,10 @@ const MCQExamResultsPage: React.FC<MCQExamResultsPageProps> = () => {
                 </div>
 
                 {/* Explanation */}
-                {currentResponse.question?.answer_explanation && (
+                {currentQuestion.answer_explanation && (
                   <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
                     <h4 className="font-semibold text-blue-900 mb-2">Explanation:</h4>
-                    <p className="text-blue-800">{currentResponse.question.answer_explanation}</p>
+                    <p className="text-blue-800">{currentQuestion.answer_explanation}</p>
                   </div>
                 )}
               </div>
@@ -474,46 +585,57 @@ const MCQExamResultsPage: React.FC<MCQExamResultsPageProps> = () => {
               </button>
               
               {/* Quick navigation input for large question sets */}
-              {responses.length > 10 && (
+              {allQuestions.length > 10 && (
                 <div className="flex items-center space-x-2">
                   <span className="text-xs lg:text-sm text-gray-600">Go to:</span>
                   <input
                     type="number"
                     min="1"
-                    max={responses.length}
+                    max={allQuestions.length}
                     value={currentQuestionIndex + 1}
                     onChange={(e) => {
                       const value = parseInt(e.target.value);
-                      if (value >= 1 && value <= responses.length) {
+                      if (value >= 1 && value <= allQuestions.length) {
                         setCurrentQuestionIndex(value - 1);
                       }
                     }}
                     className="w-12 lg:w-16 px-2 py-1 text-center border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
                   />
-                  <span className="text-xs lg:text-sm text-gray-600">of {responses.length}</span>
+                  <span className="text-xs lg:text-sm text-gray-600">of {allQuestions.length}</span>
                 </div>
               )}
               
               <div className="flex items-center space-x-1">
                 {/* Optimized pagination with ellipsis */}
                 {(() => {
-                  const totalQuestions = responses.length;
+                  const totalQuestions = allQuestions.length;
                   const currentPage = currentQuestionIndex + 1;
                   const maxVisiblePages = 7; // Show max 7 page numbers
                   
+                  // Helper function to get button style for a question
+                  const getQuestionButtonStyle = (index: number) => {
+                    if (index === currentQuestionIndex) {
+                      return 'bg-blue-600 text-white';
+                    }
+                    const question = allQuestions[index];
+                    // Check if question was answered using the answeredQuestionIds set
+                    if (!answeredQuestionIds.has(question.id)) {
+                      return 'bg-gray-100 text-gray-600 hover:bg-gray-200'; // Skipped
+                    }
+                    // Question was answered - check if correct or incorrect
+                    const response = responsesMap.get(question.id);
+                    return response?.is_correct
+                      ? 'bg-green-100 text-green-600 hover:bg-green-200'
+                      : 'bg-red-100 text-red-600 hover:bg-red-200';
+                  };
+                  
                   if (totalQuestions <= maxVisiblePages) {
                     // Show all pages if total is small
-                    return responses.map((_, index) => (
+                    return allQuestions.map((_, index) => (
                       <button
                         key={index}
                         onClick={() => setCurrentQuestionIndex(index)}
-                        className={`w-8 h-8 lg:w-10 lg:h-10 rounded-lg font-medium transition-colors text-xs lg:text-sm ${
-                          index === currentQuestionIndex
-                            ? 'bg-blue-600 text-white'
-                            : responses[index].is_correct
-                            ? 'bg-green-100 text-green-600 hover:bg-green-200'
-                            : 'bg-red-100 text-red-600 hover:bg-red-200'
-                        }`}
+                        className={`w-8 h-8 lg:w-10 lg:h-10 rounded-lg font-medium transition-colors text-xs lg:text-sm ${getQuestionButtonStyle(index)}`}
                       >
                         {index + 1}
                       </button>
@@ -529,13 +651,7 @@ const MCQExamResultsPage: React.FC<MCQExamResultsPageProps> = () => {
                     <button
                       key={0}
                       onClick={() => setCurrentQuestionIndex(0)}
-                      className={`w-8 h-8 lg:w-10 lg:h-10 rounded-lg font-medium transition-colors text-xs lg:text-sm ${
-                        0 === currentQuestionIndex
-                          ? 'bg-blue-600 text-white'
-                          : responses[0].is_correct
-                          ? 'bg-green-100 text-green-600 hover:bg-green-200'
-                          : 'bg-red-100 text-red-600 hover:bg-red-200'
-                      }`}
+                      className={`w-8 h-8 lg:w-10 lg:h-10 rounded-lg font-medium transition-colors text-xs lg:text-sm ${getQuestionButtonStyle(0)}`}
                     >
                       1
                     </button>
@@ -557,13 +673,7 @@ const MCQExamResultsPage: React.FC<MCQExamResultsPageProps> = () => {
                         <button
                           key={i}
                           onClick={() => setCurrentQuestionIndex(i)}
-                          className={`w-8 h-8 lg:w-10 lg:h-10 rounded-lg font-medium transition-colors text-xs lg:text-sm ${
-                            i === currentQuestionIndex
-                              ? 'bg-blue-600 text-white'
-                              : responses[i].is_correct
-                              ? 'bg-green-100 text-green-600 hover:bg-green-200'
-                              : 'bg-red-100 text-red-600 hover:bg-red-200'
-                          }`}
+                          className={`w-8 h-8 lg:w-10 lg:h-10 rounded-lg font-medium transition-colors text-xs lg:text-sm ${getQuestionButtonStyle(i)}`}
                         >
                           {i + 1}
                         </button>
@@ -583,13 +693,7 @@ const MCQExamResultsPage: React.FC<MCQExamResultsPageProps> = () => {
                       <button
                         key={totalQuestions - 1}
                         onClick={() => setCurrentQuestionIndex(totalQuestions - 1)}
-                        className={`w-8 h-8 lg:w-10 lg:h-10 rounded-lg font-medium transition-colors text-xs lg:text-sm ${
-                          totalQuestions - 1 === currentQuestionIndex
-                            ? 'bg-blue-600 text-white'
-                            : responses[totalQuestions - 1].is_correct
-                            ? 'bg-green-100 text-green-600 hover:bg-green-200'
-                            : 'bg-red-100 text-red-600 hover:bg-red-200'
-                        }`}
+                        className={`w-8 h-8 lg:w-10 lg:h-10 rounded-lg font-medium transition-colors text-xs lg:text-sm ${getQuestionButtonStyle(totalQuestions - 1)}`}
                       >
                         {totalQuestions}
                       </button>
@@ -602,7 +706,7 @@ const MCQExamResultsPage: React.FC<MCQExamResultsPageProps> = () => {
               
               <button
                 onClick={() => handleQuestionNavigation('next')}
-                disabled={currentQuestionIndex === responses.length - 1}
+                disabled={currentQuestionIndex === allQuestions.length - 1}
                 className="flex items-center space-x-2 px-4 lg:px-6 py-2 lg:py-3 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-sm lg:text-base"
               >
                 <span>Next</span>

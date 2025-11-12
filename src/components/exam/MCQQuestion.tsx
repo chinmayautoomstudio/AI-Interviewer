@@ -4,6 +4,7 @@
 import React from 'react';
 import { CheckCircle, Circle } from 'lucide-react';
 import { MCQQuestionProps } from '../../types';
+import { FormattedQuestionText } from './FormattedQuestionText';
 
 export const MCQQuestion: React.FC<MCQQuestionProps> = ({
   question,
@@ -30,9 +31,9 @@ export const MCQQuestion: React.FC<MCQQuestionProps> = ({
           {/* Time limit hidden per mobile UX request */}
         </div>
         
-        <h3 className="text-lg sm:text-xl font-semibold text-gray-900 leading-relaxed">
-          {question.question_text}
-        </h3>
+        <div className="text-lg sm:text-xl font-semibold text-gray-900 leading-relaxed">
+          <FormattedQuestionText text={question.question_text} />
+        </div>
       </div>
 
       {/* Options */}

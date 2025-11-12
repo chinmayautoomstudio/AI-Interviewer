@@ -1153,12 +1153,9 @@ export class ExamService {
     
     // Calculate points from answered questions
     const total_score = responses.reduce((sum, r) => sum + (r.points_earned || 0), 0);
-    const max_score_from_answered = responses.reduce((sum, r) => sum + (r.question?.points || 1), 0);
     
-    // Note: max_score is calculated from answered questions only
-    // To include unattempted questions, we would need to fetch all questions assigned to the session
-    // For now, percentage is calculated based on answered questions only
-    const max_score = max_score_from_answered;
+    // Calculate max_score from ALL questions shown (including skipped ones)
+    const max_score = actualQuestionsShown.reduce((sum, q) => sum + (q.points || 1), 0);
     const percentage = max_score > 0 ? Math.round((total_score / max_score) * 100) : 0;
     
     console.log('📊 Exam completion calculation:', {
