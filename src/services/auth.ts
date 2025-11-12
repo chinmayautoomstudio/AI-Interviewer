@@ -50,6 +50,39 @@ export class AuthService {
         createdAt: new Date().toISOString(),
         lastLogin: new Date().toISOString(),
       }
+    },
+    'dillip.sahoo@autoomstudio.com': {
+      password: 'Dillip@ut00m',
+      user: {
+        id: 'dev-user-4',
+        email: 'dillip.sahoo@autoomstudio.com',
+        name: 'Dillip Sahoo',
+        role: 'admin' as const,
+        createdAt: new Date().toISOString(),
+        lastLogin: new Date().toISOString(),
+      }
+    },
+    'aditya.sahoo@autoomstudio.com': {
+      password: 'Aditya@ut00m',
+      user: {
+        id: 'dev-user-5',
+        email: 'aditya.sahoo@autoomstudio.com',
+        name: 'Aditya Sahoo',
+        role: 'admin' as const,
+        createdAt: new Date().toISOString(),
+        lastLogin: new Date().toISOString(),
+      }
+    },
+    'udit.sahoo@autoomstudio.com': {
+      password: 'Udit@ut00m',
+      user: {
+        id: 'dev-user-6',
+        email: 'udit.sahoo@autoomstudio.com',
+        name: 'Udit Sahoo',
+        role: 'admin' as const,
+        createdAt: new Date().toISOString(),
+        lastLogin: new Date().toISOString(),
+      }
     }
   };
 
