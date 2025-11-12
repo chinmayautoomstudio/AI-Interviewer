@@ -55,15 +55,11 @@ export const CandidateExamPage: React.FC = () => {
 
   // Security violation handler
   const handleSecurityViolation = useCallback((violation: SecurityViolation) => {
-    // Log violation to server
+    // Log violation to server silently (no UI notification to candidate)
     if (session) {
       examService.logSecurityViolation(session.id, violation).catch(console.error);
     }
-
-    // Show warning for high severity violations
-    if (violation.severity === 'high') {
-      alert(`Security violation detected: ${violation.details}\n\nThis violation has been logged. Continued violations may result in exam termination.`);
-    }
+    // Note: Violations are logged but not shown to candidates during exam
   }, [session]);
 
   // Exam start handler
