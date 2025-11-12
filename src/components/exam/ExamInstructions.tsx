@@ -28,7 +28,6 @@ interface ExamInstructionsProps {
     duration: number;
     totalQuestions: number;
     questionTypes: string[];
-    passingScore: number;
   };
   candidate?: Candidate;
   jobDescription?: JobDescription;
@@ -49,7 +48,7 @@ export const ExamInstructions: React.FC<ExamInstructionsProps> = ({
       icon: <Clock className="w-5 h-5" />,
       title: "Time Management",
       items: [
-        "You have 30 minutes to complete the exam",
+        `You have ${examDetails.duration} minute${examDetails.duration !== 1 ? 's' : ''} to complete the exam`,
         "Timer will be displayed at the top of the screen",
         "Auto-submit when time expires",
         "No time extensions will be provided"
@@ -59,8 +58,14 @@ export const ExamInstructions: React.FC<ExamInstructionsProps> = ({
       icon: <FileText className="w-5 h-5" />,
       title: "Question Types",
       items: [
-        "Multiple Choice Questions (MCQs) - Select one correct answer",
-        "Text Questions - Type detailed answers in the text area",
+        ...examDetails.questionTypes.map(type => {
+          if (type.includes('MCQ') || type.includes('Multiple Choice')) {
+            return "Multiple Choice Questions (MCQs) - Select one correct answer";
+          } else if (type.includes('Text')) {
+            return "Text Questions - Type detailed answers in the text area";
+          }
+          return `${type} - Follow the instructions for each question`;
+        }),
         "Questions are randomly selected from the question bank",
         "Each question has a specific time limit"
       ]
@@ -247,14 +252,6 @@ export const ExamInstructions: React.FC<ExamInstructionsProps> = ({
                 <span className="font-medium text-purple-900">Total Questions</span>
               </div>
               <p className="text-purple-800">{examDetails.totalQuestions} questions</p>
-            </div>
-            
-            <div className="bg-yellow-50 rounded-lg p-4">
-              <div className="flex items-center space-x-2 mb-2">
-                <CheckCircle className="w-5 h-5 text-yellow-600" />
-                <span className="font-medium text-yellow-900">Passing Score</span>
-              </div>
-              <p className="text-yellow-800">{examDetails.passingScore}%</p>
             </div>
             
             <div className="bg-indigo-50 rounded-lg p-4 md:col-span-2">

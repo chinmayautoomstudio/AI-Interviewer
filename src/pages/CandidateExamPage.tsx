@@ -51,6 +51,7 @@ export const CandidateExamPage: React.FC = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [autoSaveStatus, setAutoSaveStatus] = useState<'saved' | 'saving' | 'error'>('saved');
   const [showSubmittingModal, setShowSubmittingModal] = useState(false);
+  const [questionTypes, setQuestionTypes] = useState<string[]>([]);
 
   // Security violation handler
   const handleSecurityViolation = useCallback((violation: SecurityViolation) => {
@@ -183,6 +184,30 @@ export const CandidateExamPage: React.FC = () => {
         }
 
         setSession(examSession);
+
+        // Fetch questions early to determine question types for instructions
+        try {
+          console.log('🔄 Fetching questions early for instructions...');
+          const examQuestions = await examService.getExamQuestions(examSession.id);
+          console.log('📚 Loaded questions for instructions:', examQuestions.length);
+          
+          // Determine question types from fetched questions
+          const uniqueTypes = new Set<string>();
+          examQuestions.forEach(q => {
+            if (q.question_type === 'mcq') {
+              uniqueTypes.add('Multiple Choice Questions (MCQs)');
+            } else if (q.question_type === 'text') {
+              uniqueTypes.add('Text Questions');
+            }
+          });
+          
+          const typesArray = Array.from(uniqueTypes);
+          setQuestionTypes(typesArray.length > 0 ? typesArray : ['Multiple Choice Questions (MCQs)', 'Text Questions']); // Fallback
+          console.log('📋 Determined question types:', typesArray);
+        } catch (questionError) {
+          console.warn('⚠️ Failed to fetch questions early, using defaults:', questionError);
+          setQuestionTypes(['Multiple Choice Questions (MCQs)', 'Text Questions']); // Fallback
+        }
 
         // Skip instructions if exam is already in progress (handles page refresh)
         if (examSession.status === 'in_progress') {
@@ -414,48 +439,6 @@ export const CandidateExamPage: React.FC = () => {
     }
   }, [showInstructions, questions.length, examStarted, startExamTimer]);
 
-  // Manual save function for current question
-  const handleSaveResponse = useCallback(async () => {
-    if (!session || questions.length === 0) {
-      alert('No question to save. Please select an answer first.');
-      return;
-    }
-
-    const question = questions[currentQuestionIndex];
-    if (!question) {
-      alert('No question to save. Please select an answer first.');
-      return;
-    }
-
-    const answer = answers.get(question.id);
-    if (!answer || answer.trim() === '') {
-      alert('Please select an answer before saving.');
-      return;
-    }
-
-    try {
-      setAutoSaveStatus('saving');
-      console.log('💾 Manually saving response for question:', question.id);
-      
-      await examService.submitAnswer({
-        exam_session_id: session.id,
-        question_id: question.id,
-        answer_text: answer
-      });
-      
-      console.log('✅ Response manually saved successfully');
-      setAutoSaveStatus('saved');
-      
-      // Show success feedback
-      setTimeout(() => {
-        setAutoSaveStatus('saved');
-      }, 2000);
-    } catch (error) {
-      console.error('❌ Error manually saving response:', error);
-      setAutoSaveStatus('error');
-      alert(`Failed to save response: ${error instanceof Error ? error.message : 'Unknown error'}. Please try again.`);
-    }
-  }, [session, questions, currentQuestionIndex, answers]);
 
   // Handle answer selection
   const handleAnswerSelect = async (questionId: string, answer: string) => {
@@ -655,8 +638,7 @@ export const CandidateExamPage: React.FC = () => {
           title: session.job_description?.title || 'Technical Assessment',
           duration: session.duration_minutes,
           totalQuestions: session.total_questions,
-          questionTypes: ['Multiple Choice', 'Text Questions'],
-          passingScore: 60
+          questionTypes: questionTypes.length > 0 ? questionTypes : ['Multiple Choice Questions (MCQs)', 'Text Questions']
         }}
         candidate={session.candidate}
         jobDescription={session.job_description}
@@ -857,7 +839,7 @@ export const CandidateExamPage: React.FC = () => {
               </div>
             </div>
 
-            {/* Unanswered Questions Warning - Mobile Optimized */}
+            {/* Unanswered Questions Warning */}
             {answers.size < questions.length && (
               <div className="bg-yellow-50 border border-yellow-200 rounded-lg sm:rounded-xl p-3 sm:p-4 shadow-sm">
                 <div className="flex items-center space-x-2 sm:space-x-3">
@@ -866,7 +848,7 @@ export const CandidateExamPage: React.FC = () => {
                     <h3 className="text-xs sm:text-sm font-semibold text-yellow-800">
                       {questions.length - answers.size} Question{questions.length - answers.size > 1 ? 's' : ''} Remaining
                     </h3>
-                    <p className="text-xs text-yellow-700 mt-1 hidden sm:block">
+                    <p className="text-xs text-yellow-700 mt-1">
                       You have {questions.length - answers.size} unanswered question{questions.length - answers.size > 1 ? 's' : ''}. 
                       Make sure to answer all questions before submitting your exam.
                     </p>
@@ -927,39 +909,7 @@ export const CandidateExamPage: React.FC = () => {
                   />
                 )}
               </div>
-
-                {/* Save Response Button - Hidden on mobile, visible on desktop */}
-                {session?.status === 'in_progress' && (
-                  <div className="hidden xl:flex justify-start">
-                    <button
-                      onClick={handleSaveResponse}
-                      disabled={autoSaveStatus === 'saving' || !currentAnswer || !currentAnswer.trim()}
-                      className={`flex items-center justify-center space-x-2 px-6 py-3 rounded-lg font-semibold text-base transition-all duration-200 shadow-lg hover:shadow-xl ${
-                        autoSaveStatus === 'saving' || !currentAnswer || !currentAnswer.trim()
-                          ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                          : 'bg-gradient-to-r from-green-600 to-emerald-600 text-white hover:from-green-700 hover:to-emerald-700 active:scale-95'
-                      }`}
-                    >
-                      {autoSaveStatus === 'saving' ? (
-                        <>
-                          <Loader2 className="w-5 h-5 animate-spin" />
-                          <span>Saving...</span>
-                        </>
-                      ) : autoSaveStatus === 'saved' ? (
-                        <>
-                          <CheckCircle className="w-5 h-5" />
-                          <span>Response Saved ✓</span>
-                        </>
-                      ) : (
-                        <>
-                          <Save className="w-5 h-5" />
-                          <span>Save Response</span>
-                        </>
-                      )}
-                    </button>
-                </div>
-                )}
-              </div>
+            </div>
             ) : (
               <div className="bg-white/80 backdrop-blur-sm rounded-lg sm:rounded-xl border border-gray-200/50 shadow-sm p-4 sm:p-6 text-center">
                 <div className="text-gray-500 mb-4">

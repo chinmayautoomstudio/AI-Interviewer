@@ -99,7 +99,7 @@ export const MCQQuestion: React.FC<MCQQuestionProps> = ({
 
       {/* Topic and tags */}
       {(question.topic || question.tags.length > 0) && (
-        <div className="flex flex-wrap gap-2 sm:gap-3">
+        <div className="mt-4 sm:mt-6 flex flex-wrap gap-2 sm:gap-3">
           {question.topic && (
             <span className="bg-gradient-to-r from-purple-100 to-purple-200 text-purple-800 text-xs sm:text-sm font-semibold px-2 sm:px-3 py-1 sm:py-1.5 rounded-full shadow-sm">
               {question.topic.name}
