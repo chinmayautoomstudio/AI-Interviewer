@@ -43,6 +43,32 @@ export const ExamInstructions: React.FC<ExamInstructionsProps> = ({
 }) => {
   if (!isOpen) return null;
 
+  // Determine which question types exist in the exam
+  const hasMCQ = examDetails.questionTypes.some(type => 
+    type.includes('MCQ') || type.includes('Multiple Choice')
+  );
+  const hasText = examDetails.questionTypes.some(type => 
+    type.includes('Text')
+  );
+
+  // Build answering guidelines based on actual question types
+  const answeringGuidelines = [
+    "Read each question carefully before answering"
+  ];
+  
+  if (hasMCQ) {
+    answeringGuidelines.push("For MCQs, select the most appropriate option");
+  }
+  
+  if (hasText) {
+    answeringGuidelines.push("For text questions, provide clear and detailed answers");
+  }
+  
+  answeringGuidelines.push(
+    "You can navigate between questions using the question navigator",
+    "Answers are auto-saved every 30 seconds"
+  );
+
   const instructions = [
     {
       icon: <Clock className="w-5 h-5" />,
@@ -57,7 +83,7 @@ export const ExamInstructions: React.FC<ExamInstructionsProps> = ({
     {
       icon: <FileText className="w-5 h-5" />,
       title: "Question Types",
-      items: [
+      items: examDetails.questionTypes.length > 0 ? [
         ...examDetails.questionTypes.map(type => {
           if (type.includes('MCQ') || type.includes('Multiple Choice')) {
             return "Multiple Choice Questions (MCQs) - Select one correct answer";
@@ -68,18 +94,15 @@ export const ExamInstructions: React.FC<ExamInstructionsProps> = ({
         }),
         "Questions are randomly selected from the question bank",
         "Each question has a specific time limit"
+      ] : [
+        "Questions are selected from the question bank",
+        "Each question has a specific time limit"
       ]
     },
     {
       icon: <CheckCircle className="w-5 h-5" />,
       title: "Answering Guidelines",
-      items: [
-        "Read each question carefully before answering",
-        "For MCQs, select the most appropriate option",
-        "For text questions, provide clear and detailed answers",
-        "You can navigate between questions using the question navigator",
-        "Answers are auto-saved every 30 seconds"
-      ]
+      items: answeringGuidelines
     },
     {
       icon: <Shield className="w-5 h-5" />,
