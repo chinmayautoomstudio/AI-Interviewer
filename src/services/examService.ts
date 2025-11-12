@@ -305,7 +305,118 @@ export class ExamService {
   // ===== QUESTION SELECTION =====
 
   /**
+   * Get stored questions for an exam session from exam_session_questions table
+   * Public method for use in results page
+   */
+  async getStoredSessionQuestions(sessionId: string): Promise<ExamQuestion[]> {
+    try {
+      // First, try to get stored question IDs and their order
+      const { data: sessionQuestions, error: sessionError } = await supabase
+        .from('exam_session_questions')
+        .select('question_id, question_order')
+        .eq('exam_session_id', sessionId)
+        .order('question_order', { ascending: true });
+
+      if (sessionError) {
+        console.error('Error fetching stored session question IDs:', sessionError);
+        return [];
+      }
+
+      if (!sessionQuestions || sessionQuestions.length === 0) {
+        console.log('⚠️ No stored questions found in exam_session_questions table');
+        return [];
+      }
+
+      console.log('📋 Found', sessionQuestions.length, 'stored question IDs');
+
+      // Extract question IDs
+      const questionIds = sessionQuestions.map(sq => sq.question_id).filter(Boolean);
+
+      if (questionIds.length === 0) {
+        console.warn('⚠️ No valid question IDs found in stored questions');
+        return [];
+      }
+
+      // Fetch the actual questions using the question IDs
+      const { data: questions, error: questionsError } = await supabase
+        .from('exam_questions')
+        .select(`
+          *,
+          topic:question_topics(*)
+        `)
+        .in('id', questionIds);
+
+      if (questionsError) {
+        console.error('Error fetching questions by IDs:', questionsError);
+        return [];
+      }
+
+      if (!questions || questions.length === 0) {
+        console.warn('⚠️ No questions found for stored question IDs');
+        return [];
+      }
+
+      // Create a map of question ID to question for quick lookup
+      const questionMap = new Map(questions.map(q => [q.id, q]));
+
+      // Reorder questions according to question_order from session_questions
+      const orderedQuestions: ExamQuestion[] = [];
+      for (const sq of sessionQuestions) {
+        const question = questionMap.get(sq.question_id);
+        if (question) {
+          orderedQuestions.push(question);
+        } else {
+          console.warn('⚠️ Question not found for ID:', sq.question_id);
+        }
+      }
+
+      console.log('✅ Retrieved', orderedQuestions.length, 'stored questions in correct order');
+      return orderedQuestions;
+    } catch (error) {
+      console.error('Error in getStoredSessionQuestions:', error);
+      return [];
+    }
+  }
+
+  /**
+   * Store questions for an exam session in exam_session_questions table
+   */
+  private async storeSessionQuestions(sessionId: string, questions: ExamQuestion[]): Promise<void> {
+    try {
+      // Check if questions are already stored
+      const existing = await this.getStoredSessionQuestions(sessionId);
+      if (existing.length > 0) {
+        console.log('⚠️ Questions already stored for this session, skipping storage');
+        return;
+      }
+
+      // Prepare data for insertion
+      const sessionQuestions = questions.map((question, index) => ({
+        exam_session_id: sessionId,
+        question_id: question.id,
+        question_order: index + 1
+      }));
+
+      const { error } = await supabase
+        .from('exam_session_questions')
+        .insert(sessionQuestions);
+
+      if (error) {
+        console.error('Error storing session questions:', error);
+        throw new Error(`Failed to store session questions: ${error.message}`);
+      }
+
+      console.log('✅ Stored', questions.length, 'questions for session:', sessionId);
+    } catch (error) {
+      console.error('Error in storeSessionQuestions:', error);
+      // Don't throw error - allow exam to continue even if storage fails
+      // This ensures backward compatibility
+    }
+  }
+
+  /**
    * Get questions for an exam session based on job description and difficulty distribution
+   * First checks if questions are already stored, if not generates and stores them
    */
   async getExamQuestions(sessionId: string): Promise<ExamQuestion[]> {
     // Get session details
@@ -317,6 +428,25 @@ export class ExamService {
     console.log('🔍 Getting questions for session:', sessionId);
     console.log('📋 Job description ID:', session.job_description_id);
     console.log('📊 Total questions needed:', session.total_questions);
+
+    // Check if questions are already stored for this session
+    const storedQuestions = await this.getStoredSessionQuestions(sessionId);
+    if (storedQuestions.length > 0) {
+      console.log('✅ Using stored questions for session:', sessionId);
+      // Verify we have the correct number of questions
+      if (storedQuestions.length === session.total_questions) {
+        return storedQuestions;
+      } else {
+        console.warn('⚠️ Stored questions count mismatch:', {
+          stored: storedQuestions.length,
+          expected: session.total_questions
+        });
+        // If count doesn't match, regenerate (shouldn't happen, but handle it)
+      }
+    }
+
+    // No stored questions found, generate new ones
+    console.log('🔄 No stored questions found, generating new questions...');
 
     // Check if job_description_id is valid
     if (!session.job_description_id) {
@@ -418,14 +548,22 @@ export class ExamService {
     }
 
     // Shuffle the final selection to randomize order
-    const finalQuestions = selectedQuestions.sort(() => Math.random() - 0.5);
+    const shuffledQuestions = selectedQuestions.sort(() => Math.random() - 0.5);
+    
+    // Strictly limit to totalQuestions to ensure we never return more than configured
+    const finalQuestions = shuffledQuestions.slice(0, totalQuestions);
 
     console.log('🎉 Final question selection:', {
-      total: finalQuestions.length,
+      requested: totalQuestions,
+      selected: shuffledQuestions.length,
+      returned: finalQuestions.length,
       easy: finalQuestions.filter(q => q.difficulty_level === 'easy').length,
       medium: finalQuestions.filter(q => q.difficulty_level === 'medium').length,
       hard: finalQuestions.filter(q => q.difficulty_level === 'hard').length
     });
+
+    // Store the generated questions for future use
+    await this.storeSessionQuestions(sessionId, finalQuestions);
 
     return finalQuestions;
   }
@@ -1136,19 +1274,59 @@ export class ExamService {
     // Get all responses
     const responses = await this.getSessionResponses(sessionId);
     
-    // Get actual questions that were shown to the candidate
-    const actualQuestionsShown = await this.getExamQuestions(sessionId);
-    const actualQuestionsCount = actualQuestionsShown.length;
-    
-    // Get distinct question IDs that were answered
-    const distinctAnsweredQuestionIds = new Set(responses.map(r => r.question_id));
+    // Get distinct question IDs that were answered (filter out null/undefined)
+    const distinctAnsweredQuestionIds = new Set(
+      responses
+        .map(r => r.question_id)
+        .filter((id): id is string => !!id) // Filter out null/undefined
+    );
     const distinctAnsweredCount = distinctAnsweredQuestionIds.size;
     
+    console.log('📊 Response analysis:', {
+      totalResponses: responses.length,
+      distinctAnsweredQuestionIds: Array.from(distinctAnsweredQuestionIds),
+      distinctAnsweredCount
+    });
+    
+    // Get actual questions that were shown to the candidate
+    // Try stored questions first, fallback to session.total_questions if not available
+    let actualQuestionsShown: ExamQuestion[] = [];
+    let actualQuestionsCount = session.total_questions; // Default to configured total
+    
+    try {
+      const storedQuestions = await this.getStoredSessionQuestions(sessionId);
+      if (storedQuestions.length > 0) {
+        actualQuestionsShown = storedQuestions;
+        actualQuestionsCount = storedQuestions.length;
+        console.log('✅ Using stored questions for completion calculation:', actualQuestionsCount);
+      } else {
+        // No stored questions found - use session.total_questions as the source of truth
+        // This handles backward compatibility for exams completed before question storage was implemented
+        actualQuestionsCount = session.total_questions;
+        console.log('⚠️ No stored questions found, using session.total_questions:', actualQuestionsCount);
+      }
+    } catch (error) {
+      console.warn('⚠️ Error fetching stored questions, using session total_questions:', error);
+      // Use session.total_questions as fallback
+      actualQuestionsCount = session.total_questions;
+    }
+    
+    // Ensure actualQuestionsCount matches session.total_questions (safety check)
+    if (actualQuestionsCount !== session.total_questions && actualQuestionsShown.length > 0) {
+      console.warn('⚠️ Question count mismatch:', {
+        storedCount: actualQuestionsShown.length,
+        sessionTotal: session.total_questions,
+        using: 'session.total_questions'
+      });
+      actualQuestionsCount = session.total_questions;
+    }
+    
     // Calculate scores based on actual answered questions
-    const answeredQuestions = responses.length;
     const correct_answers = responses.filter(r => r.is_correct).length;
     const wrong_answers = responses.filter(r => !r.is_correct).length;
+    
     // Calculate skipped questions: actual questions shown - distinct answered questions
+    // Ensure we don't have negative skipped (shouldn't happen, but safety check)
     const skipped_questions = Math.max(0, actualQuestionsCount - distinctAnsweredCount);
     
     // Calculate points from answered questions
@@ -1159,12 +1337,15 @@ export class ExamService {
     const percentage = max_score > 0 ? Math.round((total_score / max_score) * 100) : 0;
     
     console.log('📊 Exam completion calculation:', {
+      sessionTotalQuestions: session.total_questions,
       actualQuestionsCount,
+      storedQuestionsCount: actualQuestionsShown.length,
       distinctAnsweredCount,
-      answeredQuestions,
+      totalResponses: responses.length,
       correct_answers,
       wrong_answers,
       skipped_questions,
+      calculation: `${actualQuestionsCount} - ${distinctAnsweredCount} = ${skipped_questions}`,
       total_score,
       max_score,
       percentage

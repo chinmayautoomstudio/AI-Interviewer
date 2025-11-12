@@ -33,83 +33,164 @@ const MCQExamResultsPage: React.FC<MCQExamResultsPageProps> = () => {
   const [allQuestions, setAllQuestions] = useState<ExamQuestion[]>([]);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [showQuestionReview, setShowQuestionReview] = useState(false);
+  const [gotoInputValue, setGotoInputValue] = useState<string>('');
 
   const loadExamResults = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
 
-      // Load exam result, responses, and all questions shown in the exam
-      const [result, responsesData, questionsData] = await Promise.all([
+      // Load exam result and responses first to check exam status
+      const [result, responsesData] = await Promise.all([
         examService.getExamResult(sessionId!),
-        examService.getSessionResponses(sessionId!),
-        examService.getExamQuestions(sessionId!)
+        examService.getSessionResponses(sessionId!)
       ]);
 
-      console.log('🔍 Exam Result Debug:', {
-        result,
-        responsesData,
-        questionsData,
-        examSession: result?.examSession,
-        totalQuestions: result?.examSession?.total_questions,
-        responsesLength: responsesData?.length,
-        questionsLength: questionsData?.length,
-        startedAt: result?.examSession?.started_at,
-        completedAt: result?.examSession?.completed_at,
-        timeTakenMinutes: result?.timeTakenMinutes
-      });
-
-      // Build a comprehensive question list:
-      // Strategy: Use RESPONSES as the primary source of truth (they tell us which questions were shown)
-      // Responses have question data joined, so we know exactly which questions were answered
-      // Then add questions from getExamQuestions() that weren't answered (skipped questions)
+      // Check if exam is completed
+      const isCompleted = result?.examSession?.status === 'completed' || result?.examSession?.status === 'expired';
       
-      // Step 1: Extract questions from responses (these were definitely shown and answered)
-      const answeredQuestionIds = new Set<string>();
-      const questionsFromResponses: ExamQuestion[] = [];
-      responsesData.forEach(r => {
-        if (r.question && r.question_id) {
-          answeredQuestionIds.add(r.question_id);
-          // Only add if not already added (avoid duplicates)
-          if (!questionsFromResponses.find(q => q.id === r.question_id)) {
-            questionsFromResponses.push(r.question);
+      // Always use session.total_questions as the source of truth
+      const expectedQuestionCount = result?.examSession?.total_questions;
+      
+      if (!expectedQuestionCount || expectedQuestionCount <= 0) {
+        console.error('❌ Missing or invalid total_questions in exam session:', {
+          sessionId: result?.examSession?.id,
+          total_questions: result?.examSession?.total_questions
+        });
+        setError('Invalid exam configuration: total questions not found');
+        setLoading(false);
+        return;
+      }
+
+      // Try to fetch stored questions first (for both completed and in-progress exams)
+      let storedQuestions: ExamQuestion[] = [];
+      try {
+        storedQuestions = await examService.getStoredSessionQuestions(sessionId!);
+        console.log('📚 Fetched stored questions:', storedQuestions.length, 'out of', expectedQuestionCount, 'expected');
+      } catch (error) {
+        console.warn('⚠️ Failed to fetch stored questions (backward compatibility):', error);
+      }
+
+      let finalQuestions: ExamQuestion[] = [];
+      let questionSource: string = '';
+
+      if (storedQuestions.length > 0) {
+        // Use stored questions as source of truth (includes all questions: answered + skipped)
+        if (storedQuestions.length === expectedQuestionCount) {
+          // Perfect match - use stored questions as-is
+          finalQuestions = storedQuestions;
+          questionSource = 'stored-complete';
+          console.log('✅ Using complete stored questions:', {
+            total: finalQuestions.length,
+            expected: expectedQuestionCount
+          });
+        } else if (storedQuestions.length < expectedQuestionCount) {
+          // Incomplete stored questions - try to get remaining from getExamQuestions
+          console.warn('⚠️ Stored questions incomplete, attempting to fetch remaining:', {
+            stored: storedQuestions.length,
+            expected: expectedQuestionCount,
+            missing: expectedQuestionCount - storedQuestions.length
+          });
+          
+          try {
+            // Try to get all questions (should return stored if they exist)
+            const allQuestions = await examService.getExamQuestions(sessionId!);
+            const storedQuestionIds = new Set(storedQuestions.map(q => q.id));
+            
+            // Add any missing questions
+            const missingQuestions = allQuestions.filter(q => !storedQuestionIds.has(q.id));
+            if (missingQuestions.length > 0) {
+              console.log('📝 Found', missingQuestions.length, 'additional questions to add');
+              finalQuestions = [...storedQuestions, ...missingQuestions].slice(0, expectedQuestionCount);
+              questionSource = 'stored-partial-fetched';
+            } else {
+              // No additional questions found, use what we have
+              finalQuestions = storedQuestions;
+              questionSource = 'stored-incomplete';
+            }
+          } catch (error) {
+            console.error('❌ Error fetching additional questions:', error);
+            // Use what we have
+            finalQuestions = storedQuestions;
+            questionSource = 'stored-incomplete';
+          }
+        } else {
+          // More stored questions than expected - limit to expected count
+          console.warn('⚠️ More stored questions than expected, limiting:', {
+            stored: storedQuestions.length,
+            expected: expectedQuestionCount
+          });
+          finalQuestions = storedQuestions.slice(0, expectedQuestionCount);
+          questionSource = 'stored-limited';
+        }
+      } else {
+        // Backward compatibility: No stored questions found, fallback to old method
+        console.warn('⚠️ No stored questions found - using backward compatibility mode');
+        questionSource = 'backward-compat';
+
+        // Extract questions from responses (answered questions only)
+        const answeredQuestionIds = new Set<string>();
+        const questionsFromResponses: ExamQuestion[] = [];
+        responsesData.forEach(r => {
+          if (r.question && r.question_id) {
+            answeredQuestionIds.add(r.question_id);
+            if (!questionsFromResponses.find(q => q.id === r.question_id)) {
+              questionsFromResponses.push(r.question);
+            }
+          }
+        });
+
+        if (isCompleted) {
+          // For completed exams without stored questions: only show answered questions
+          finalQuestions = questionsFromResponses;
+          console.warn('⚠️ Completed exam without stored questions - only showing answered questions:', {
+            answered: finalQuestions.length,
+            expected: expectedQuestionCount,
+            skipped: expectedQuestionCount - finalQuestions.length,
+            note: 'Skipped questions cannot be shown without stored question list'
+          });
+        } else {
+          // For in-progress exams: fetch questions from service and combine
+          try {
+            const questionsData = await examService.getExamQuestions(sessionId!);
+            const skippedQuestions = questionsData.filter(q => !answeredQuestionIds.has(q.id));
+            finalQuestions = [...questionsFromResponses, ...skippedQuestions].slice(0, expectedQuestionCount);
+            console.log('🔄 In-progress exam - combined answered and skipped questions:', {
+              answered: questionsFromResponses.length,
+              skipped: skippedQuestions.length,
+              total: finalQuestions.length
+            });
+          } catch (error) {
+            console.error('❌ Error fetching questions for in-progress exam:', error);
+            finalQuestions = questionsFromResponses; // Fallback to answered only
           }
         }
-      });
-      
-      // Step 2: Add questions from getExamQuestions() that weren't answered (skipped questions)
-      const skippedQuestions = questionsData.filter(q => !answeredQuestionIds.has(q.id));
-      
-      // Step 3: Combine - answered questions first (in response order), then skipped questions
-      // This ensures we show all questions that were shown during the exam
-      const finalQuestions = [...questionsFromResponses, ...skippedQuestions];
-      
-      // Step 4: If we have fewer questions than expected, use getExamQuestions() as fallback
-      // (This handles edge cases where responses might be missing question data)
-      const expectedQuestionCount = result?.examSession?.total_questions || questionsData.length;
-      const finalQuestionsList = finalQuestions.length >= expectedQuestionCount 
-        ? finalQuestions 
-        : questionsData;
+      }
 
-      // Debug: Log question IDs and response IDs to verify matching
-      console.log('🔍 Question-Response Matching Debug:', {
-        questionsFromGetExamQuestions: questionsData?.length,
-        responsesCount: responsesData?.length,
-        questionsFromResponses: questionsFromResponses.length,
-        skippedQuestions: skippedQuestions.length,
-        finalQuestionsCount: finalQuestionsList.length,
-        expectedQuestionCount,
-        answeredQuestionIds: Array.from(answeredQuestionIds),
-        questionIdsFromGetExam: questionsData?.map(q => q.id),
-        responseQuestionIds: responsesData?.map(r => r.question_id),
-        questionsWithResponses: finalQuestionsList.filter(q => 
-          answeredQuestionIds.has(q.id)
-        ).length
+      // Ensure we don't exceed expected count
+      if (finalQuestions.length > expectedQuestionCount) {
+        console.warn('⚠️ Question count exceeds configured total, limiting:', {
+          actual: finalQuestions.length,
+          expected: expectedQuestionCount
+        });
+        finalQuestions = finalQuestions.slice(0, expectedQuestionCount);
+      }
+
+      // Debug logging
+      console.log('🔍 Question Loading Summary:', {
+        examStatus: result?.examSession?.status,
+        isCompleted,
+        questionSource,
+        configuredTotal: expectedQuestionCount,
+        finalQuestionsCount: finalQuestions.length,
+        responsesCount: responsesData.length,
+        storedQuestionsCount: storedQuestions.length,
+        matchesConfigured: finalQuestions.length === expectedQuestionCount
       });
 
       setExamResult(result);
       setResponses(responsesData);
-      setAllQuestions(finalQuestionsList);
+      setAllQuestions(finalQuestions);
     } catch (err) {
       console.error('Error loading exam results:', err);
       setError('Failed to load exam results');
@@ -123,6 +204,11 @@ const MCQExamResultsPage: React.FC<MCQExamResultsPageProps> = () => {
       loadExamResults();
     }
   }, [sessionId, loadExamResults]);
+
+  // Clear goto input value when question index changes externally (e.g., via pagination)
+  useEffect(() => {
+    setGotoInputValue('');
+  }, [currentQuestionIndex]);
 
   const getScoreColor = (percentage: number) => {
     if (percentage >= 80) return 'text-green-600';
@@ -592,11 +678,23 @@ const MCQExamResultsPage: React.FC<MCQExamResultsPageProps> = () => {
                     type="number"
                     min="1"
                     max={allQuestions.length}
-                    value={currentQuestionIndex + 1}
+                    value={gotoInputValue || currentQuestionIndex + 1}
                     onChange={(e) => {
+                      const inputValue = e.target.value;
+                      setGotoInputValue(inputValue);
+                    }}
+                    onBlur={(e) => {
                       const value = parseInt(e.target.value);
-                      if (value >= 1 && value <= allQuestions.length) {
+                      if (!isNaN(value) && value >= 1 && value <= allQuestions.length) {
                         setCurrentQuestionIndex(value - 1);
+                        setGotoInputValue('');
+                      } else {
+                        setGotoInputValue('');
+                      }
+                    }}
+                    onKeyPress={(e) => {
+                      if (e.key === 'Enter') {
+                        e.currentTarget.blur();
                       }
                     }}
                     className="w-12 lg:w-16 px-2 py-1 text-center border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
