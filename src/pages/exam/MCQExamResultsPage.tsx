@@ -439,6 +439,16 @@ const MCQExamResultsPage: React.FC<MCQExamResultsPageProps> = () => {
                     </div>
                     <span className="text-blue-900 font-bold">{allQuestions.length || examResult.examSession?.total_questions || 0}</span>
                   </div>
+                  <div className="flex items-center justify-between p-3 bg-indigo-50 rounded-lg">
+                    <div className="flex items-center space-x-3">
+                      <Eye className="h-5 w-5 text-indigo-600" />
+                      <span className="text-indigo-800 font-medium">Responses Submitted</span>
+                    </div>
+                    <span className="text-indigo-900 font-bold">{responses.length || 0}</span>
+                  </div>
+                </div>
+
+                <div className="space-y-4">
                   <div className="flex items-center justify-between p-3 bg-purple-50 rounded-lg">
                     <div className="flex items-center space-x-3">
                       <Clock className="h-5 w-5 text-purple-600" />
@@ -465,16 +475,6 @@ const MCQExamResultsPage: React.FC<MCQExamResultsPageProps> = () => {
                     <span className="text-teal-900 font-bold">
                       {formatTime(examResult.examSession?.duration_minutes || 0)}
                     </span>
-                  </div>
-                </div>
-
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between p-3 bg-indigo-50 rounded-lg">
-                    <div className="flex items-center space-x-3">
-                      <Eye className="h-5 w-5 text-indigo-600" />
-                      <span className="text-indigo-800 font-medium">Responses Submitted</span>
-                    </div>
-                    <span className="text-indigo-900 font-bold">{responses.length || 0}</span>
                   </div>
                 </div>
               </div>
