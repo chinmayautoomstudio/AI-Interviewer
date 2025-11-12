@@ -839,9 +839,9 @@ export const CandidateExamPage: React.FC = () => {
               </div>
             </div>
 
-            {/* Unanswered Questions Warning */}
+            {/* Unanswered Questions Warning - Mobile Only */}
             {answers.size < questions.length && (
-              <div className="bg-yellow-50 border border-yellow-200 rounded-lg sm:rounded-xl p-3 sm:p-4 shadow-sm">
+              <div className="md:hidden bg-yellow-50 border border-yellow-200 rounded-lg sm:rounded-xl p-3 sm:p-4 shadow-sm">
                 <div className="flex items-center space-x-2 sm:space-x-3">
                   <AlertTriangle className="w-4 h-4 sm:w-5 sm:h-5 text-yellow-600 flex-shrink-0" />
                   <div className="min-w-0 flex-1">
