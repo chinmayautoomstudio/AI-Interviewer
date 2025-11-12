@@ -361,12 +361,12 @@ export class ExamService {
       hard: questionsByDifficulty.hard.length
     });
 
-    // Calculate difficulty distribution for Web Developer Intern position
-    // For intern level: 50% easy, 30% medium, 20% hard
+    // Calculate difficulty distribution: 50% easy, 30% medium, 20% hard
     const totalQuestions = session.total_questions;
-    const easyCount = Math.ceil(totalQuestions * 0.5); // 50% easy
-    const mediumCount = Math.ceil(totalQuestions * 0.3); // 30% medium
-    const hardCount = totalQuestions - easyCount - mediumCount; // Remaining for hard
+    // Use Math.round to get closest to exact percentages, then adjust hard to ensure total matches
+    const easyCount = Math.round(totalQuestions * 0.5); // 50% easy
+    const mediumCount = Math.round(totalQuestions * 0.3); // 30% medium
+    const hardCount = totalQuestions - easyCount - mediumCount; // Remaining for hard (20%)
 
     console.log('🎯 Target distribution:', {
       easy: easyCount,
@@ -1136,12 +1136,20 @@ export class ExamService {
     // Get all responses
     const responses = await this.getSessionResponses(sessionId);
     
+    // Get actual questions that were shown to the candidate
+    const actualQuestionsShown = await this.getExamQuestions(sessionId);
+    const actualQuestionsCount = actualQuestionsShown.length;
+    
+    // Get distinct question IDs that were answered
+    const distinctAnsweredQuestionIds = new Set(responses.map(r => r.question_id));
+    const distinctAnsweredCount = distinctAnsweredQuestionIds.size;
+    
     // Calculate scores based on actual answered questions
     const answeredQuestions = responses.length;
     const correct_answers = responses.filter(r => r.is_correct).length;
     const wrong_answers = responses.filter(r => !r.is_correct).length;
-    // Calculate skipped questions: total questions in session - answered questions
-    const skipped_questions = Math.max(0, (session.total_questions || 0) - answeredQuestions);
+    // Calculate skipped questions: actual questions shown - distinct answered questions
+    const skipped_questions = Math.max(0, actualQuestionsCount - distinctAnsweredCount);
     
     // Calculate points from answered questions
     const total_score = responses.reduce((sum, r) => sum + (r.points_earned || 0), 0);
@@ -1154,6 +1162,8 @@ export class ExamService {
     const percentage = max_score > 0 ? Math.round((total_score / max_score) * 100) : 0;
     
     console.log('📊 Exam completion calculation:', {
+      actualQuestionsCount,
+      distinctAnsweredCount,
       answeredQuestions,
       correct_answers,
       wrong_answers,

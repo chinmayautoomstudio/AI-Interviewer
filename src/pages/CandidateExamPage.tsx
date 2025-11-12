@@ -47,6 +47,7 @@ export const CandidateExamPage: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showInstructions, setShowInstructions] = useState(true);
+  const [examStatus, setExamStatus] = useState<'expired' | 'completed' | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [autoSaveStatus, setAutoSaveStatus] = useState<'saved' | 'saving' | 'error'>('saved');
   const [showSubmittingModal, setShowSubmittingModal] = useState(false);
@@ -175,14 +176,9 @@ export const CandidateExamPage: React.FC = () => {
           job_description_id: examSession.job_description_id
         });
 
-        if (examSession.status === 'expired') {
-          setError('This exam has expired');
+        if (examSession.status === 'expired' || examSession.status === 'completed') {
+          setExamStatus(examSession.status);
           setIsLoading(false);
-          return;
-        }
-
-        if (examSession.status === 'completed') {
-          navigate(`/exam/results/${examSession.id}`);
           return;
         }
 
@@ -606,6 +602,24 @@ export const CandidateExamPage: React.FC = () => {
         <div className="text-center">
           <Loader2 className="w-8 h-8 animate-spin text-blue-600 mx-auto mb-4" />
           <p className="text-gray-600">Loading exam...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Exam is over state (expired or completed)
+  if (examStatus === 'expired' || examStatus === 'completed') {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center max-w-md mx-auto p-8 bg-white rounded-lg shadow-lg">
+          <AlertTriangle className="w-16 h-16 text-orange-500 mx-auto mb-6" />
+          <h2 className="text-2xl font-bold text-gray-900 mb-4">Exam is Over</h2>
+          <p className="text-lg text-gray-700 mb-6">
+            This exam has already been completed or has expired. Please close this window.
+          </p>
+          <div className="text-sm text-gray-500">
+            <p>Thank you for your participation.</p>
+          </div>
         </div>
       </div>
     );
