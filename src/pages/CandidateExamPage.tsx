@@ -202,11 +202,11 @@ export const CandidateExamPage: React.FC = () => {
           });
           
           const typesArray = Array.from(uniqueTypes);
-          setQuestionTypes(typesArray.length > 0 ? typesArray : ['Multiple Choice Questions (MCQs)', 'Text Questions']); // Fallback
+          setQuestionTypes(typesArray); // Only show actual question types in exam
           console.log('📋 Determined question types:', typesArray);
         } catch (questionError) {
-          console.warn('⚠️ Failed to fetch questions early, using defaults:', questionError);
-          setQuestionTypes(['Multiple Choice Questions (MCQs)', 'Text Questions']); // Fallback
+          console.warn('⚠️ Failed to fetch questions early:', questionError);
+          setQuestionTypes([]); // Don't show fallback types
         }
 
         // Skip instructions if exam is already in progress (handles page refresh)
@@ -638,7 +638,7 @@ export const CandidateExamPage: React.FC = () => {
           title: session.job_description?.title || 'Technical Assessment',
           duration: session.duration_minutes,
           totalQuestions: session.total_questions,
-          questionTypes: questionTypes.length > 0 ? questionTypes : ['Multiple Choice Questions (MCQs)', 'Text Questions']
+          questionTypes: questionTypes // Only show actual question types
         }}
         candidate={session.candidate}
         jobDescription={session.job_description}
