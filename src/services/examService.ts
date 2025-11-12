@@ -15,6 +15,7 @@ import { SecurityViolation } from './examSecurityService';
 import { MCQEvaluationService, MCQEvaluationResult } from './mcqEvaluationService';
 import { TextEvaluationService } from './textEvaluationService';
 import { notificationService } from './notificationService';
+import { topicManagementService } from './topicManagementService';
 
 export class ExamService {
   /**
@@ -454,6 +455,26 @@ export class ExamService {
       throw new Error('Exam session has no associated job description');
     }
 
+    const totalQuestions = session.total_questions;
+
+    // Check if topic-based distribution is configured for this job
+    let topicDistribution: Array<{
+      topic_id: string;
+      topic_name: string;
+      question_count: number;
+      difficulty_breakdown: { easy: number; medium: number; hard: number };
+    }> = [];
+
+    try {
+      topicDistribution = await topicManagementService.getQuestionDistribution(
+        session.job_description_id,
+        totalQuestions
+      );
+      console.log('📋 Topic distribution found:', topicDistribution.length, 'topics');
+    } catch (error) {
+      console.warn('⚠️ Failed to get topic distribution, will use difficulty-only selection:', error);
+    }
+
     // Get all available MCQ questions for this job description
     const { data: allQuestions, error } = await supabase
       .from('exam_questions')
@@ -478,73 +499,161 @@ export class ExamService {
 
     console.log('📊 Total available questions:', allQuestions.length);
 
-    // Group questions by difficulty level
-    const questionsByDifficulty = {
-      easy: allQuestions.filter(q => q.difficulty_level === 'easy'),
-      medium: allQuestions.filter(q => q.difficulty_level === 'medium'),
-      hard: allQuestions.filter(q => q.difficulty_level === 'hard')
-    };
-
-    console.log('📈 Questions by difficulty:', {
-      easy: questionsByDifficulty.easy.length,
-      medium: questionsByDifficulty.medium.length,
-      hard: questionsByDifficulty.hard.length
-    });
-
-    // Calculate difficulty distribution: 50% easy, 30% medium, 20% hard
-    const totalQuestions = session.total_questions;
-    // Use Math.round to get closest to exact percentages, then adjust hard to ensure total matches
-    const easyCount = Math.round(totalQuestions * 0.5); // 50% easy
-    const mediumCount = Math.round(totalQuestions * 0.3); // 30% medium
-    const hardCount = totalQuestions - easyCount - mediumCount; // Remaining for hard (20%)
-
-    console.log('🎯 Target distribution:', {
-      easy: easyCount,
-      medium: mediumCount,
-      hard: hardCount,
-      total: easyCount + mediumCount + hardCount
-    });
-
-    // Select questions with proper distribution
-    const selectedQuestions: ExamQuestion[] = [];
-
     // Helper function to shuffle array and select random questions
     const shuffleAndSelect = (questions: ExamQuestion[], count: number): ExamQuestion[] => {
       const shuffled = [...questions].sort(() => Math.random() - 0.5);
       return shuffled.slice(0, Math.min(count, shuffled.length));
     };
 
-    // Add easy questions
-    if (questionsByDifficulty.easy.length > 0 && easyCount > 0) {
-      const selectedEasy = shuffleAndSelect(questionsByDifficulty.easy, easyCount);
-      selectedQuestions.push(...selectedEasy);
-      console.log('✅ Selected easy questions:', selectedEasy.length);
-    }
+    let selectedQuestions: ExamQuestion[] = [];
 
-    // Add medium questions
-    if (questionsByDifficulty.medium.length > 0 && mediumCount > 0) {
-      const selectedMedium = shuffleAndSelect(questionsByDifficulty.medium, mediumCount);
-      selectedQuestions.push(...selectedMedium);
-      console.log('✅ Selected medium questions:', selectedMedium.length);
-    }
-
-    // Add hard questions
-    if (questionsByDifficulty.hard.length > 0 && hardCount > 0) {
-      const selectedHard = shuffleAndSelect(questionsByDifficulty.hard, hardCount);
-      selectedQuestions.push(...selectedHard);
-      console.log('✅ Selected hard questions:', selectedHard.length);
-    }
-
-    // If we don't have enough questions with the ideal distribution, fill with available questions
-    if (selectedQuestions.length < totalQuestions) {
-      const remainingNeeded = totalQuestions - selectedQuestions.length;
-      const allRemainingQuestions = allQuestions.filter(q => 
-        !selectedQuestions.some(selected => selected.id === q.id)
-      );
+    // Use topic-based selection if distribution is configured
+    if (topicDistribution.length > 0) {
+      console.log('🎯 Using topic-based question selection');
       
-      const additionalQuestions = shuffleAndSelect(allRemainingQuestions, remainingNeeded);
-      selectedQuestions.push(...additionalQuestions);
-      console.log('📝 Added additional questions:', additionalQuestions.length);
+      // Select questions for each topic with difficulty distribution
+      for (const topicDist of topicDistribution) {
+        if (topicDist.question_count === 0) {
+          console.log(`⏭️ Skipping topic "${topicDist.topic_name}" (0 questions)`);
+          continue;
+        }
+
+        // Get questions for this topic
+        const topicQuestions = allQuestions.filter(q => q.topic_id === topicDist.topic_id);
+        
+        if (topicQuestions.length === 0) {
+          console.warn(`⚠️ No questions found for topic "${topicDist.topic_name}" (topic_id: ${topicDist.topic_id})`);
+          continue;
+        }
+
+        console.log(`📚 Topic "${topicDist.topic_name}":`, {
+          available: topicQuestions.length,
+          needed: topicDist.question_count,
+          breakdown: topicDist.difficulty_breakdown
+        });
+
+        // Group topic questions by difficulty
+        const topicQuestionsByDifficulty = {
+          easy: topicQuestions.filter(q => q.difficulty_level === 'easy'),
+          medium: topicQuestions.filter(q => q.difficulty_level === 'medium'),
+          hard: topicQuestions.filter(q => q.difficulty_level === 'hard')
+        };
+
+        // Apply difficulty distribution within this topic (50% easy, 30% medium, 20% hard)
+        // Override topic-specific difficulty percentages with global distribution
+        const topicEasyCount = Math.round(topicDist.question_count * 0.5); // 50% easy
+        const topicMediumCount = Math.round(topicDist.question_count * 0.3); // 30% medium
+        const topicHardCount = topicDist.question_count - topicEasyCount - topicMediumCount; // 20% hard
+
+        const topicSelected: ExamQuestion[] = [];
+
+        // Select easy questions for this topic
+        if (topicQuestionsByDifficulty.easy.length > 0 && topicEasyCount > 0) {
+          const selected = shuffleAndSelect(topicQuestionsByDifficulty.easy, topicEasyCount);
+          topicSelected.push(...selected);
+          console.log(`  ✅ Selected ${selected.length} easy questions`);
+        }
+
+        // Select medium questions for this topic
+        if (topicQuestionsByDifficulty.medium.length > 0 && topicMediumCount > 0) {
+          const selected = shuffleAndSelect(topicQuestionsByDifficulty.medium, topicMediumCount);
+          topicSelected.push(...selected);
+          console.log(`  ✅ Selected ${selected.length} medium questions`);
+        }
+
+        // Select hard questions for this topic
+        if (topicQuestionsByDifficulty.hard.length > 0 && topicHardCount > 0) {
+          const selected = shuffleAndSelect(topicQuestionsByDifficulty.hard, topicHardCount);
+          topicSelected.push(...selected);
+          console.log(`  ✅ Selected ${selected.length} hard questions`);
+        }
+
+        // If we don't have enough questions for this topic, fill with available questions from topic
+        if (topicSelected.length < topicDist.question_count) {
+          const remainingNeeded = topicDist.question_count - topicSelected.length;
+          const remainingTopicQuestions = topicQuestions.filter(q => 
+            !topicSelected.some(selected => selected.id === q.id)
+          );
+          const additional = shuffleAndSelect(remainingTopicQuestions, remainingNeeded);
+          topicSelected.push(...additional);
+          console.log(`  📝 Added ${additional.length} additional questions to reach target`);
+        }
+
+        selectedQuestions.push(...topicSelected);
+        console.log(`✅ Topic "${topicDist.topic_name}": Selected ${topicSelected.length}/${topicDist.question_count} questions`);
+      }
+
+      // If we don't have enough questions overall, fill with remaining questions
+      if (selectedQuestions.length < totalQuestions) {
+        const remainingNeeded = totalQuestions - selectedQuestions.length;
+        const remainingQuestions = allQuestions.filter(q => 
+          !selectedQuestions.some(selected => selected.id === q.id)
+        );
+        const additional = shuffleAndSelect(remainingQuestions, remainingNeeded);
+        selectedQuestions.push(...additional);
+        console.log(`📝 Added ${additional.length} additional questions to reach total target`);
+      }
+    } else {
+      // Fallback: Use difficulty-only selection (existing logic)
+      console.log('📊 Using difficulty-only question selection (no topic distribution configured)');
+
+      // Group questions by difficulty level
+      const questionsByDifficulty = {
+        easy: allQuestions.filter(q => q.difficulty_level === 'easy'),
+        medium: allQuestions.filter(q => q.difficulty_level === 'medium'),
+        hard: allQuestions.filter(q => q.difficulty_level === 'hard')
+      };
+
+      console.log('📈 Questions by difficulty:', {
+        easy: questionsByDifficulty.easy.length,
+        medium: questionsByDifficulty.medium.length,
+        hard: questionsByDifficulty.hard.length
+      });
+
+      // Calculate difficulty distribution: 50% easy, 30% medium, 20% hard
+      const easyCount = Math.round(totalQuestions * 0.5); // 50% easy
+      const mediumCount = Math.round(totalQuestions * 0.3); // 30% medium
+      const hardCount = totalQuestions - easyCount - mediumCount; // Remaining for hard (20%)
+
+      console.log('🎯 Target distribution:', {
+        easy: easyCount,
+        medium: mediumCount,
+        hard: hardCount,
+        total: easyCount + mediumCount + hardCount
+      });
+
+      // Add easy questions
+      if (questionsByDifficulty.easy.length > 0 && easyCount > 0) {
+        const selectedEasy = shuffleAndSelect(questionsByDifficulty.easy, easyCount);
+        selectedQuestions.push(...selectedEasy);
+        console.log('✅ Selected easy questions:', selectedEasy.length);
+      }
+
+      // Add medium questions
+      if (questionsByDifficulty.medium.length > 0 && mediumCount > 0) {
+        const selectedMedium = shuffleAndSelect(questionsByDifficulty.medium, mediumCount);
+        selectedQuestions.push(...selectedMedium);
+        console.log('✅ Selected medium questions:', selectedMedium.length);
+      }
+
+      // Add hard questions
+      if (questionsByDifficulty.hard.length > 0 && hardCount > 0) {
+        const selectedHard = shuffleAndSelect(questionsByDifficulty.hard, hardCount);
+        selectedQuestions.push(...selectedHard);
+        console.log('✅ Selected hard questions:', selectedHard.length);
+      }
+
+      // If we don't have enough questions with the ideal distribution, fill with available questions
+      if (selectedQuestions.length < totalQuestions) {
+        const remainingNeeded = totalQuestions - selectedQuestions.length;
+        const allRemainingQuestions = allQuestions.filter(q => 
+          !selectedQuestions.some(selected => selected.id === q.id)
+        );
+        
+        const additionalQuestions = shuffleAndSelect(allRemainingQuestions, remainingNeeded);
+        selectedQuestions.push(...additionalQuestions);
+        console.log('📝 Added additional questions:', additionalQuestions.length);
+      }
     }
 
     // Shuffle the final selection to randomize order
@@ -553,13 +662,23 @@ export class ExamService {
     // Strictly limit to totalQuestions to ensure we never return more than configured
     const finalQuestions = shuffledQuestions.slice(0, totalQuestions);
 
+    // Log final composition by topic and difficulty
+    const topicComposition = new Map<string, number>();
+    finalQuestions.forEach(q => {
+      const topicName = q.topic?.name || 'Unknown';
+      topicComposition.set(topicName, (topicComposition.get(topicName) || 0) + 1);
+    });
+
     console.log('🎉 Final question selection:', {
       requested: totalQuestions,
       selected: shuffledQuestions.length,
       returned: finalQuestions.length,
-      easy: finalQuestions.filter(q => q.difficulty_level === 'easy').length,
-      medium: finalQuestions.filter(q => q.difficulty_level === 'medium').length,
-      hard: finalQuestions.filter(q => q.difficulty_level === 'hard').length
+      byDifficulty: {
+        easy: finalQuestions.filter(q => q.difficulty_level === 'easy').length,
+        medium: finalQuestions.filter(q => q.difficulty_level === 'medium').length,
+        hard: finalQuestions.filter(q => q.difficulty_level === 'hard').length
+      },
+      byTopic: Object.fromEntries(topicComposition)
     });
 
     // Store the generated questions for future use
