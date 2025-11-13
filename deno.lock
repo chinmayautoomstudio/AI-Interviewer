@@ -20,15 +20,20 @@
         "npm:@testing-library/react@^16.3.0",
         "npm:@testing-library/user-event@^13.5.0",
         "npm:@types/bcryptjs@^2.4.6",
+        "npm:@types/html2canvas@~0.5.35",
         "npm:@types/jest@^27.5.2",
+        "npm:@types/jspdf@^1.3.3",
         "npm:@types/node@^16.18.126",
         "npm:@types/react-dom@^19.1.9",
         "npm:@types/react-router-dom@^5.3.3",
         "npm:@types/react@^19.1.12",
+        "npm:@types/xlsx@^0.0.35",
         "npm:autoprefixer@^10.4.21",
         "npm:aws-sdk@^2.1692.0",
         "npm:bcryptjs@^3.0.2",
         "npm:dotenv@^17.2.3",
+        "npm:html2canvas@^1.4.1",
+        "npm:jspdf@^2.5.2",
         "npm:lucide-react@0.542",
         "npm:postcss@^8.5.6",
         "npm:react-dom@^19.1.1",
@@ -38,7 +43,8 @@
         "npm:resend@^3.2.0",
         "npm:tailwindcss@^3.4.17",
         "npm:typescript@^4.9.5",
-        "npm:web-vitals@^2.1.4"
+        "npm:web-vitals@^2.1.4",
+        "npm:xlsx@~0.18.5"
       ]
     }
   }
