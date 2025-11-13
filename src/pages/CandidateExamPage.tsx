@@ -1,7 +1,7 @@
 // Candidate Exam Page
 // Main exam interface for candidates taking online exams
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { 
   MCQQuestion, 
@@ -52,6 +52,24 @@ export const CandidateExamPage: React.FC = () => {
   const [autoSaveStatus, setAutoSaveStatus] = useState<'saved' | 'saving' | 'error'>('saved');
   const [showSubmittingModal, setShowSubmittingModal] = useState(false);
   const [questionTypes, setQuestionTypes] = useState<string[]>([]);
+
+  // Refs for race condition prevention
+  const isSubmittingRef = useRef(false);
+  const examEndTimeRef = useRef<number | null>(null);
+
+  // Helper function to calculate remaining time from timestamp (source of truth)
+  const calculateRemainingTime = useCallback((session: ExamSession | null): number => {
+    if (!session || !session.started_at) {
+      return session?.duration_minutes || 0;
+    }
+    
+    const startTime = new Date(session.started_at).getTime();
+    const now = Date.now();
+    const elapsedMinutes = (now - startTime) / (1000 * 60);
+    const remaining = Math.max(0, session.duration_minutes - elapsedMinutes);
+    
+    return remaining;
+  }, []);
 
   // Security violation handler
   const handleSecurityViolation = useCallback((violation: SecurityViolation) => {
@@ -307,24 +325,14 @@ export const CandidateExamPage: React.FC = () => {
           console.warn('⚠️ Failed to restore progress:', restoreErr);
         }
 
-        // Calculate time remaining
-        if (examSession.started_at) {
-          const startTime = new Date(examSession.started_at);
-          const now = new Date();
-          const elapsedMinutes = (now.getTime() - startTime.getTime()) / (1000 * 60);
-          const remaining = Math.max(0, examSession.duration_minutes - elapsedMinutes);
-          console.log('⏰ Time calculation:', {
-            duration_minutes: examSession.duration_minutes,
-            elapsedMinutes: elapsedMinutes,
-            remaining: remaining,
-            started_at: examSession.started_at
-          });
-          setTimeRemaining(remaining);
-        } else {
-          console.log('⏰ Initial time remaining:', examSession.duration_minutes);
-          setTimeRemaining(examSession.duration_minutes);
-          // Don't start timer yet - wait for exam to actually begin
-        }
+        // Calculate time remaining using timestamp-based helper
+        const remaining = calculateRemainingTime(examSession);
+        console.log('⏰ Time calculation:', {
+          duration_minutes: examSession.duration_minutes,
+          started_at: examSession.started_at,
+          remaining: remaining
+        });
+        setTimeRemaining(remaining);
 
         setIsLoading(false);
       } catch (err) {
@@ -335,7 +343,7 @@ export const CandidateExamPage: React.FC = () => {
     };
 
     loadExam();
-  }, [token, navigate]);
+  }, [token, navigate, calculateRemainingTime]);
 
   // Auto-save every 30 seconds
   useEffect(() => {
@@ -365,57 +373,137 @@ export const CandidateExamPage: React.FC = () => {
       console.log('🎯 Starting exam timer - exam has begun');
       setExamStarted(true);
       
-      // If exam was already started, calculate remaining time
-      if (session.started_at) {
-        const now = new Date();
-        const startTime = new Date(session.started_at);
-        const elapsedMinutes = (now.getTime() - startTime.getTime()) / (1000 * 60);
-        const remaining = Math.max(0, session.duration_minutes - elapsedMinutes);
-        setTimeRemaining(remaining);
-      } else {
-        // Fresh start
-        setTimeRemaining(session.duration_minutes);
-      }
+      // Calculate remaining time using timestamp-based helper
+      const remaining = calculateRemainingTime(session);
+      setTimeRemaining(remaining);
+      console.log('⏰ Timer started with remaining time:', remaining, 'minutes');
     }
-  }, [examStarted, session]);
+  }, [examStarted, session, calculateRemainingTime]);
 
-  // Handle time up
+  // Handle time up - with guard to prevent multiple calls
   const handleTimeUp = useCallback(async () => {
-    if (!session) return;
+    // Guard: Prevent multiple calls
+    if (isSubmittingRef.current) {
+      console.log('⏸️ handleTimeUp already in progress, skipping duplicate call');
+      return;
+    }
+
+    if (!session || session.status !== 'in_progress') {
+      console.log('⏸️ handleTimeUp skipped - session not in progress:', session?.status);
+      return;
+    }
+
+    // Set guard immediately to prevent race conditions
+    isSubmittingRef.current = true;
     
     try {
+      console.log('⏰ Time expired - starting exam submission');
       setIsSubmitting(true);
       setShowSubmittingModal(true);
       
       // Stop security monitoring when time is up
       await handleExamSubmission();
       
+      // Complete exam
       await examService.completeExam(session.id);
+      
+      // Navigate to results page
+      console.log('✅ Exam completed successfully, navigating to results');
       navigate(`/exam/mcq-results/${session.id}`);
+      
+      // Set timeout fallback in case navigation fails
+      setTimeout(() => {
+        if (window.location.pathname.includes('/exam/')) {
+          console.warn('⚠️ Navigation may have failed, forcing redirect');
+          window.location.href = `/exam/mcq-results/${session.id}`;
+        }
+      }, 2000);
     } catch (err) {
-      console.error('Error completing exam:', err);
+      console.error('❌ Error completing exam:', err);
       setError('Failed to submit exam. Please contact support.');
       setShowSubmittingModal(false);
+      // Clear guard on error so user can retry if needed
+      isSubmittingRef.current = false;
+      setIsSubmitting(false);
     }
   }, [session, navigate, handleExamSubmission]);
 
-  // Timer countdown - only run when exam has started
+  // Layer 1: Timestamp-based interval timer - robust and accurate
   useEffect(() => {
-    if (!session || session.status !== 'in_progress' || timeRemaining <= 0 || !examStarted) return;
+    // Only run if exam is in progress and started
+    if (!session || session.status !== 'in_progress' || !examStarted || !session.started_at) {
+      return;
+    }
+
+    // Guard: Don't start timer if already submitting
+    if (isSubmittingRef.current) {
+      console.log('⏸️ Timer skipped - exam submission in progress');
+      return;
+    }
+
+    console.log('⏰ Starting timestamp-based timer for session:', session.id);
 
     const interval = setInterval(() => {
-      setTimeRemaining(prev => {
-        const newTime = prev - (1/60); // Decrease by 1 second (1/60 minute)
-        if (newTime <= 0) {
-          handleTimeUp();
-          return 0;
-        }
-        return newTime;
-      });
-    }, 1000);
+      // Guard: Stop if submission started
+      if (isSubmittingRef.current) {
+        console.log('⏸️ Timer stopped - submission in progress');
+        return;
+      }
 
-    return () => clearInterval(interval);
-  }, [session, timeRemaining, handleTimeUp, examStarted]);
+      // Calculate remaining time from timestamp (source of truth)
+      const remaining = calculateRemainingTime(session);
+      
+      // Update UI state for display
+      setTimeRemaining(remaining);
+
+      // Check if time has expired
+      if (remaining <= 0) {
+        console.log('⏰ Time expired - triggering handleTimeUp');
+        handleTimeUp();
+        // Don't clear interval here - let it continue until exam is submitted
+        // This ensures handleTimeUp completes even if it takes time
+      }
+    }, 1000); // Check every second
+
+    return () => {
+      console.log('🧹 Clearing timer interval');
+      clearInterval(interval);
+    };
+  }, [session, examStarted, calculateRemainingTime, handleTimeUp]);
+
+  // Layer 3: Render-based fallback check - acts as backup if interval timer fails
+  useEffect(() => {
+    // Only check if exam is in progress and started
+    if (!session || session.status !== 'in_progress' || !examStarted || !session.started_at) {
+      return;
+    }
+
+    // Guard: Don't check if already submitting
+    if (isSubmittingRef.current) {
+      return;
+    }
+
+    // Calculate remaining time from timestamp
+    const remaining = calculateRemainingTime(session);
+    
+    // Update UI state
+    setTimeRemaining(remaining);
+
+    // If time has expired and exam is still in progress, trigger submission
+    if (remaining <= 0) {
+      console.log('⏰ Fallback check: Time expired, triggering handleTimeUp');
+      handleTimeUp();
+    }
+  }, [session, examStarted, calculateRemainingTime, handleTimeUp]);
+
+  // Cleanup: Reset submission guard when exam status changes
+  useEffect(() => {
+    if (session && (session.status === 'completed' || session.status === 'expired')) {
+      console.log('🧹 Exam ended, resetting submission guard');
+      isSubmittingRef.current = false;
+      examEndTimeRef.current = null;
+    }
+  }, [session]);
 
   // Start timer when exam begins - ONLY after user consent is given
   useEffect(() => {

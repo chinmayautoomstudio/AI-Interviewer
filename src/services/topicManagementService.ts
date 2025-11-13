@@ -269,7 +269,63 @@ export class TopicManagementService {
   // ===== QUESTION DISTRIBUTION CALCULATION =====
 
   /**
+   * Distribute items proportionally using Largest Remainder Method (Hare-Niemeyer)
+   * Guarantees the sum of returned counts equals total exactly
+   * 
+   * @param items Array of items with percentage values
+   * @param total Total count to distribute
+   * @returns Array of items with exact integer counts summing to total
+   */
+  private distributeProportionally<T extends { percentage: number }>(
+    items: T[],
+    total: number
+  ): Array<T & { count: number }> {
+    if (total <= 0 || items.length === 0) {
+      return items.map(item => ({ ...item, count: 0 }));
+    }
+
+    // Calculate exact fractional allocations
+    const allocations = items.map((item, index) => {
+      const exactValue = (item.percentage / 100) * total;
+      const floorValue = Math.floor(exactValue);
+      const remainder = exactValue - floorValue;
+      
+      return {
+        item,
+        index,
+        floorValue,
+        remainder,
+        exactValue
+      };
+    });
+
+    // Assign floor values first
+    let distributed = allocations.reduce((sum, alloc) => sum + alloc.floorValue, 0);
+    const remaining = total - distributed;
+
+    // Sort by remainder (largest first) to distribute remaining items
+    // Create indices sorted by remainder
+    const indicesByRemainder = allocations
+      .map((_, index) => index)
+      .sort((a, b) => allocations[b].remainder - allocations[a].remainder);
+
+    // Distribute remaining items to items with largest remainders
+    for (let i = 0; i < remaining && i < indicesByRemainder.length; i++) {
+      const index = indicesByRemainder[i];
+      allocations[index].floorValue += 1;
+      distributed += 1;
+    }
+
+    // Return items with their assigned counts
+    return allocations.map(alloc => ({
+      ...alloc.item,
+      count: alloc.floorValue
+    }));
+  }
+
+  /**
    * Calculate question distribution for a job description
+   * Uses Largest Remainder Method to ensure sum equals totalQuestions exactly
    */
   async getQuestionDistribution(
     jobDescriptionId: string, 
@@ -280,25 +336,124 @@ export class TopicManagementService {
     question_count: number;
     difficulty_breakdown: { easy: number; medium: number; hard: number };
   }[]> {
+    // Input validation
+    if (totalQuestions <= 0) {
+      console.warn('⚠️ Invalid totalQuestions:', totalQuestions);
+      return [];
+    }
+
     const categories = await this.getJobQuestionCategories(jobDescriptionId);
     
-    return categories.map(cat => {
-      const questionCount = Math.round((cat.weight_percentage / 100) * totalQuestions);
-      const easyCount = Math.round((cat.easy_percentage / 100) * questionCount);
-      const mediumCount = Math.round((cat.medium_percentage / 100) * questionCount);
-      const hardCount = questionCount - easyCount - mediumCount;
+    if (categories.length === 0) {
+      console.log('ℹ️ No categories configured for job description');
+      return [];
+    }
 
+    // Validate percentages sum to 100%
+    const totalWeight = categories.reduce((sum, cat) => sum + cat.weight_percentage, 0);
+    if (Math.abs(totalWeight - 100) > 0.01) {
+      console.warn(`⚠️ Total weight percentage is ${totalWeight}%, expected 100%. Using normalized distribution.`);
+    }
+
+    // Distribute questions across topics using Largest Remainder Method
+    const topicDistribution = this.distributeProportionally(
+      categories.map(cat => ({ percentage: cat.weight_percentage })),
+      totalQuestions
+    );
+
+    // Validate distribution sum
+    const distributedSum = topicDistribution.reduce((sum, dist) => sum + dist.count, 0);
+    if (distributedSum !== totalQuestions) {
+      console.error(`❌ Distribution validation failed: sum=${distributedSum}, expected=${totalQuestions}`);
+      // Fallback: equal distribution
+      const equalCount = Math.floor(totalQuestions / categories.length);
+      const remainder = totalQuestions - (equalCount * categories.length);
+      return categories.map((cat, index) => {
+        const questionCount = equalCount + (index < remainder ? 1 : 0);
+        return this.calculateDifficultyBreakdown(cat, questionCount);
+      });
+    }
+
+    // Calculate difficulty breakdown for each topic
+    const result = categories.map((cat, index) => {
+      const questionCount = topicDistribution[index].count;
+      return this.calculateDifficultyBreakdown(cat, questionCount);
+    });
+
+    // Final validation
+    const finalSum = result.reduce((sum, r) => sum + r.question_count, 0);
+    if (finalSum !== totalQuestions) {
+      console.error(`❌ Final validation failed: sum=${finalSum}, expected=${totalQuestions}`);
+    } else {
+      console.log(`✅ Distribution validated: ${finalSum} questions across ${result.length} topics`);
+    }
+
+    return result;
+  }
+
+  /**
+   * Calculate difficulty breakdown for a topic using Largest Remainder Method
+   */
+  private calculateDifficultyBreakdown(
+    category: JobQuestionCategory,
+    questionCount: number
+  ): {
+    topic_id: string;
+    topic_name: string;
+    question_count: number;
+    difficulty_breakdown: { easy: number; medium: number; hard: number };
+  } {
+    if (questionCount === 0) {
       return {
-        topic_id: cat.topic_id,
-        topic_name: cat.topic?.name || 'Unknown Topic',
+        topic_id: category.topic_id,
+        topic_name: category.topic?.name || 'Unknown Topic',
+        question_count: 0,
+        difficulty_breakdown: { easy: 0, medium: 0, hard: 0 }
+      };
+    }
+
+    // Distribute difficulty levels proportionally
+    const difficultyDistribution = this.distributeProportionally(
+      [
+        { percentage: category.easy_percentage },
+        { percentage: category.medium_percentage },
+        { percentage: 100 - category.easy_percentage - category.medium_percentage }
+      ],
+      questionCount
+    );
+
+    const easyCount = difficultyDistribution[0].count;
+    const mediumCount = difficultyDistribution[1].count;
+    const hardCount = difficultyDistribution[2].count;
+
+    // Validate difficulty breakdown
+    const difficultySum = easyCount + mediumCount + hardCount;
+    if (difficultySum !== questionCount) {
+      console.warn(`⚠️ Difficulty breakdown mismatch for topic ${category.topic?.name}: sum=${difficultySum}, expected=${questionCount}`);
+      // Adjust hard count to match
+      const adjustedHard = questionCount - easyCount - mediumCount;
+      return {
+        topic_id: category.topic_id,
+        topic_name: category.topic?.name || 'Unknown Topic',
         question_count: questionCount,
         difficulty_breakdown: {
           easy: easyCount,
           medium: mediumCount,
-          hard: hardCount
+          hard: Math.max(0, adjustedHard)
         }
       };
-    });
+    }
+
+    return {
+      topic_id: category.topic_id,
+      topic_name: category.topic?.name || 'Unknown Topic',
+      question_count: questionCount,
+      difficulty_breakdown: {
+        easy: easyCount,
+        medium: mediumCount,
+        hard: hardCount
+      }
+    };
   }
 
   /**

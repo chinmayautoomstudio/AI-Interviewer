@@ -499,10 +499,45 @@ export class ExamService {
 
     console.log('📊 Total available questions:', allQuestions.length);
 
+    // Input validation
+    if (totalQuestions <= 0) {
+      throw new Error(`Invalid totalQuestions: ${totalQuestions}`);
+    }
+
     // Helper function to shuffle array and select random questions
     const shuffleAndSelect = (questions: ExamQuestion[], count: number): ExamQuestion[] => {
       const shuffled = [...questions].sort(() => Math.random() - 0.5);
       return shuffled.slice(0, Math.min(count, shuffled.length));
+    };
+
+    // Helper function to distribute proportionally using Largest Remainder Method
+    const distributeProportionally = (percentages: number[], total: number): number[] => {
+      if (total <= 0 || percentages.length === 0) {
+        return percentages.map(() => 0);
+      }
+
+      const allocations = percentages.map((percentage, index) => {
+        const exactValue = (percentage / 100) * total;
+        const floorValue = Math.floor(exactValue);
+        const remainder = exactValue - floorValue;
+        return { index, floorValue, remainder };
+      });
+
+      let distributed = allocations.reduce((sum, alloc) => sum + alloc.floorValue, 0);
+      const remaining = total - distributed;
+
+      // Sort by remainder (largest first) and distribute remaining
+      const indicesByRemainder = allocations
+        .map((_, index) => index)
+        .sort((a, b) => allocations[b].remainder - allocations[a].remainder);
+
+      for (let i = 0; i < remaining && i < indicesByRemainder.length; i++) {
+        const index = indicesByRemainder[i];
+        allocations[index].floorValue += 1;
+        distributed += 1;
+      }
+
+      return allocations.map(alloc => alloc.floorValue);
     };
 
     let selectedQuestions: ExamQuestion[] = [];
@@ -511,8 +546,23 @@ export class ExamService {
     if (topicDistribution.length > 0) {
       console.log('🎯 Using topic-based question selection');
       
+      // Validate topic distribution sum
+      const topicDistributionSum = topicDistribution.reduce((sum, td) => sum + td.question_count, 0);
+      console.log(`📊 Topic distribution validation: sum=${topicDistributionSum}, expected=${totalQuestions}`);
+      
+      if (topicDistributionSum !== totalQuestions) {
+        console.warn(`⚠️ Topic distribution sum mismatch: ${topicDistributionSum} vs ${totalQuestions}`);
+      }
+      
       // Select questions for each topic with difficulty distribution
       for (const topicDist of topicDistribution) {
+        // Check remaining slots before processing topic
+        const remainingSlots = totalQuestions - selectedQuestions.length;
+        if (remainingSlots <= 0) {
+          console.warn(`⚠️ Reached totalQuestions limit (${totalQuestions}), skipping remaining topics`);
+          break;
+        }
+
         if (topicDist.question_count === 0) {
           console.log(`⏭️ Skipping topic "${topicDist.topic_name}" (0 questions)`);
           continue;
@@ -529,7 +579,8 @@ export class ExamService {
         console.log(`📚 Topic "${topicDist.topic_name}":`, {
           available: topicQuestions.length,
           needed: topicDist.question_count,
-          breakdown: topicDist.difficulty_breakdown
+          breakdown: topicDist.difficulty_breakdown,
+          remainingSlots
         });
 
         // Group topic questions by difficulty
@@ -539,59 +590,90 @@ export class ExamService {
           hard: topicQuestions.filter(q => q.difficulty_level === 'hard')
         };
 
-        // Apply difficulty distribution within this topic (50% easy, 30% medium, 20% hard)
-        // Override topic-specific difficulty percentages with global distribution
-        const topicEasyCount = Math.round(topicDist.question_count * 0.5); // 50% easy
-        const topicMediumCount = Math.round(topicDist.question_count * 0.3); // 30% medium
-        const topicHardCount = topicDist.question_count - topicEasyCount - topicMediumCount; // 20% hard
+        // Use the difficulty breakdown from distribution (already calculated using Largest Remainder Method)
+        const { easy: topicEasyCount, medium: topicMediumCount, hard: topicHardCount } = topicDist.difficulty_breakdown;
+
+        // Validate difficulty breakdown sum
+        const difficultySum = topicEasyCount + topicMediumCount + topicHardCount;
+        if (difficultySum !== topicDist.question_count) {
+          console.warn(`⚠️ Difficulty breakdown mismatch for topic "${topicDist.topic_name}": sum=${difficultySum}, expected=${topicDist.question_count}`);
+        }
 
         const topicSelected: ExamQuestion[] = [];
+        const maxForTopic = Math.min(topicDist.question_count, remainingSlots);
 
         // Select easy questions for this topic
         if (topicQuestionsByDifficulty.easy.length > 0 && topicEasyCount > 0) {
-          const selected = shuffleAndSelect(topicQuestionsByDifficulty.easy, topicEasyCount);
-          topicSelected.push(...selected);
-          console.log(`  ✅ Selected ${selected.length} easy questions`);
+          const maxEasy = Math.min(topicEasyCount, maxForTopic - topicSelected.length);
+          if (maxEasy > 0) {
+            const selected = shuffleAndSelect(topicQuestionsByDifficulty.easy, maxEasy);
+            topicSelected.push(...selected);
+            console.log(`  ✅ Selected ${selected.length} easy questions (requested: ${topicEasyCount})`);
+          }
         }
 
         // Select medium questions for this topic
         if (topicQuestionsByDifficulty.medium.length > 0 && topicMediumCount > 0) {
-          const selected = shuffleAndSelect(topicQuestionsByDifficulty.medium, topicMediumCount);
-          topicSelected.push(...selected);
-          console.log(`  ✅ Selected ${selected.length} medium questions`);
+          const maxMedium = Math.min(topicMediumCount, maxForTopic - topicSelected.length);
+          if (maxMedium > 0) {
+            const selected = shuffleAndSelect(topicQuestionsByDifficulty.medium, maxMedium);
+            topicSelected.push(...selected);
+            console.log(`  ✅ Selected ${selected.length} medium questions (requested: ${topicMediumCount})`);
+          }
         }
 
         // Select hard questions for this topic
         if (topicQuestionsByDifficulty.hard.length > 0 && topicHardCount > 0) {
-          const selected = shuffleAndSelect(topicQuestionsByDifficulty.hard, topicHardCount);
-          topicSelected.push(...selected);
-          console.log(`  ✅ Selected ${selected.length} hard questions`);
+          const maxHard = Math.min(topicHardCount, maxForTopic - topicSelected.length);
+          if (maxHard > 0) {
+            const selected = shuffleAndSelect(topicQuestionsByDifficulty.hard, maxHard);
+            topicSelected.push(...selected);
+            console.log(`  ✅ Selected ${selected.length} hard questions (requested: ${topicHardCount})`);
+          }
         }
 
         // If we don't have enough questions for this topic, fill with available questions from topic
-        if (topicSelected.length < topicDist.question_count) {
-          const remainingNeeded = topicDist.question_count - topicSelected.length;
+        const currentTopicCount = topicSelected.length;
+        const targetTopicCount = Math.min(topicDist.question_count, remainingSlots);
+        if (currentTopicCount < targetTopicCount) {
+          const remainingNeeded = targetTopicCount - currentTopicCount;
           const remainingTopicQuestions = topicQuestions.filter(q => 
             !topicSelected.some(selected => selected.id === q.id)
           );
           const additional = shuffleAndSelect(remainingTopicQuestions, remainingNeeded);
           topicSelected.push(...additional);
-          console.log(`  📝 Added ${additional.length} additional questions to reach target`);
+          console.log(`  📝 Added ${additional.length} additional questions to reach target (${topicSelected.length}/${targetTopicCount})`);
         }
 
-        selectedQuestions.push(...topicSelected);
-        console.log(`✅ Topic "${topicDist.topic_name}": Selected ${topicSelected.length}/${topicDist.question_count} questions`);
+        // Defensive limit: ensure we don't exceed totalQuestions
+        const beforeAdd = selectedQuestions.length;
+        const canAdd = Math.min(topicSelected.length, totalQuestions - beforeAdd);
+        if (canAdd > 0) {
+          selectedQuestions.push(...topicSelected.slice(0, canAdd));
+        }
+        
+        console.log(`✅ Topic "${topicDist.topic_name}": Selected ${canAdd}/${topicDist.question_count} questions (total so far: ${selectedQuestions.length}/${totalQuestions})`);
+        
+        // Validation after adding topic questions
+        if (selectedQuestions.length > totalQuestions) {
+          console.error(`❌ CRITICAL: Exceeded totalQuestions after topic "${topicDist.topic_name}": ${selectedQuestions.length} > ${totalQuestions}`);
+          selectedQuestions = selectedQuestions.slice(0, totalQuestions);
+        }
       }
 
       // If we don't have enough questions overall, fill with remaining questions
-      if (selectedQuestions.length < totalQuestions) {
-        const remainingNeeded = totalQuestions - selectedQuestions.length;
+      const currentTotal = selectedQuestions.length;
+      if (currentTotal < totalQuestions) {
+        const remainingNeeded = totalQuestions - currentTotal;
         const remainingQuestions = allQuestions.filter(q => 
           !selectedQuestions.some(selected => selected.id === q.id)
         );
         const additional = shuffleAndSelect(remainingQuestions, remainingNeeded);
         selectedQuestions.push(...additional);
-        console.log(`📝 Added ${additional.length} additional questions to reach total target`);
+        console.log(`📝 Added ${additional.length} additional questions to reach total target (${selectedQuestions.length}/${totalQuestions})`);
+      } else if (currentTotal > totalQuestions) {
+        console.warn(`⚠️ Selected ${currentTotal} questions, limiting to ${totalQuestions}`);
+        selectedQuestions = selectedQuestions.slice(0, totalQuestions);
       }
     } else {
       // Fallback: Use difficulty-only selection (existing logic)
@@ -610,57 +692,97 @@ export class ExamService {
         hard: questionsByDifficulty.hard.length
       });
 
-      // Calculate difficulty distribution: 50% easy, 30% medium, 20% hard
-      const easyCount = Math.round(totalQuestions * 0.5); // 50% easy
-      const mediumCount = Math.round(totalQuestions * 0.3); // 30% medium
-      const hardCount = totalQuestions - easyCount - mediumCount; // Remaining for hard (20%)
+      // Calculate difficulty distribution using Largest Remainder Method: 50% easy, 30% medium, 20% hard
+      const difficultyCounts = distributeProportionally([50, 30, 20], totalQuestions);
+      const easyCount = difficultyCounts[0];
+      const mediumCount = difficultyCounts[1];
+      const hardCount = difficultyCounts[2];
+
+      // Validate distribution sum
+      const distributionSum = easyCount + mediumCount + hardCount;
+      if (distributionSum !== totalQuestions) {
+        console.warn(`⚠️ Difficulty distribution sum mismatch: ${distributionSum} vs ${totalQuestions}`);
+      }
 
       console.log('🎯 Target distribution:', {
         easy: easyCount,
         medium: mediumCount,
         hard: hardCount,
-        total: easyCount + mediumCount + hardCount
+        total: distributionSum,
+        validated: distributionSum === totalQuestions
       });
 
-      // Add easy questions
+      // Add easy questions with defensive limit
       if (questionsByDifficulty.easy.length > 0 && easyCount > 0) {
-        const selectedEasy = shuffleAndSelect(questionsByDifficulty.easy, easyCount);
-        selectedQuestions.push(...selectedEasy);
-        console.log('✅ Selected easy questions:', selectedEasy.length);
+        const maxEasy = Math.min(easyCount, totalQuestions - selectedQuestions.length);
+        if (maxEasy > 0) {
+          const selectedEasy = shuffleAndSelect(questionsByDifficulty.easy, maxEasy);
+          selectedQuestions.push(...selectedEasy);
+          console.log(`✅ Selected ${selectedEasy.length} easy questions (requested: ${easyCount}, added: ${selectedEasy.length})`);
+        }
       }
 
-      // Add medium questions
+      // Add medium questions with defensive limit
       if (questionsByDifficulty.medium.length > 0 && mediumCount > 0) {
-        const selectedMedium = shuffleAndSelect(questionsByDifficulty.medium, mediumCount);
-        selectedQuestions.push(...selectedMedium);
-        console.log('✅ Selected medium questions:', selectedMedium.length);
+        const maxMedium = Math.min(mediumCount, totalQuestions - selectedQuestions.length);
+        if (maxMedium > 0) {
+          const selectedMedium = shuffleAndSelect(questionsByDifficulty.medium, maxMedium);
+          selectedQuestions.push(...selectedMedium);
+          console.log(`✅ Selected ${selectedMedium.length} medium questions (requested: ${mediumCount}, added: ${selectedMedium.length})`);
+        }
       }
 
-      // Add hard questions
+      // Add hard questions with defensive limit
       if (questionsByDifficulty.hard.length > 0 && hardCount > 0) {
-        const selectedHard = shuffleAndSelect(questionsByDifficulty.hard, hardCount);
-        selectedQuestions.push(...selectedHard);
-        console.log('✅ Selected hard questions:', selectedHard.length);
+        const maxHard = Math.min(hardCount, totalQuestions - selectedQuestions.length);
+        if (maxHard > 0) {
+          const selectedHard = shuffleAndSelect(questionsByDifficulty.hard, maxHard);
+          selectedQuestions.push(...selectedHard);
+          console.log(`✅ Selected ${selectedHard.length} hard questions (requested: ${hardCount}, added: ${selectedHard.length})`);
+        }
+      }
+
+      // Validation after difficulty selection
+      if (selectedQuestions.length > totalQuestions) {
+        console.error(`❌ CRITICAL: Exceeded totalQuestions after difficulty selection: ${selectedQuestions.length} > ${totalQuestions}`);
+        selectedQuestions = selectedQuestions.slice(0, totalQuestions);
       }
 
       // If we don't have enough questions with the ideal distribution, fill with available questions
-      if (selectedQuestions.length < totalQuestions) {
-        const remainingNeeded = totalQuestions - selectedQuestions.length;
+      const currentTotal = selectedQuestions.length;
+      if (currentTotal < totalQuestions) {
+        const remainingNeeded = totalQuestions - currentTotal;
         const allRemainingQuestions = allQuestions.filter(q => 
           !selectedQuestions.some(selected => selected.id === q.id)
         );
         
         const additionalQuestions = shuffleAndSelect(allRemainingQuestions, remainingNeeded);
         selectedQuestions.push(...additionalQuestions);
-        console.log('📝 Added additional questions:', additionalQuestions.length);
+        console.log(`📝 Added ${additionalQuestions.length} additional questions (${selectedQuestions.length}/${totalQuestions})`);
+      } else if (currentTotal > totalQuestions) {
+        console.warn(`⚠️ Selected ${currentTotal} questions, limiting to ${totalQuestions}`);
+        selectedQuestions = selectedQuestions.slice(0, totalQuestions);
       }
     }
+
+    // Final validation before shuffling
+    if (selectedQuestions.length > totalQuestions) {
+      console.error(`❌ CRITICAL: Before shuffling, selectedQuestions.length (${selectedQuestions.length}) > totalQuestions (${totalQuestions})`);
+      selectedQuestions = selectedQuestions.slice(0, totalQuestions);
+    }
+
+    console.log(`📊 Pre-shuffle validation: ${selectedQuestions.length}/${totalQuestions} questions`);
 
     // Shuffle the final selection to randomize order
     const shuffledQuestions = selectedQuestions.sort(() => Math.random() - 0.5);
     
     // Strictly limit to totalQuestions to ensure we never return more than configured
     const finalQuestions = shuffledQuestions.slice(0, totalQuestions);
+
+    // Final validation before storage
+    if (finalQuestions.length !== totalQuestions) {
+      console.warn(`⚠️ Final question count mismatch: ${finalQuestions.length} vs ${totalQuestions}`);
+    }
 
     // Log final composition by topic and difficulty
     const topicComposition = new Map<string, number>();
@@ -669,20 +791,32 @@ export class ExamService {
       topicComposition.set(topicName, (topicComposition.get(topicName) || 0) + 1);
     });
 
+    const difficultyBreakdown = {
+      easy: finalQuestions.filter(q => q.difficulty_level === 'easy').length,
+      medium: finalQuestions.filter(q => q.difficulty_level === 'medium').length,
+      hard: finalQuestions.filter(q => q.difficulty_level === 'hard').length
+    };
+
     console.log('🎉 Final question selection:', {
       requested: totalQuestions,
       selected: shuffledQuestions.length,
       returned: finalQuestions.length,
-      byDifficulty: {
-        easy: finalQuestions.filter(q => q.difficulty_level === 'easy').length,
-        medium: finalQuestions.filter(q => q.difficulty_level === 'medium').length,
-        hard: finalQuestions.filter(q => q.difficulty_level === 'hard').length
-      },
+      validated: finalQuestions.length === totalQuestions,
+      byDifficulty: difficultyBreakdown,
+      difficultySum: difficultyBreakdown.easy + difficultyBreakdown.medium + difficultyBreakdown.hard,
       byTopic: Object.fromEntries(topicComposition)
     });
 
     // Store the generated questions for future use
     await this.storeSessionQuestions(sessionId, finalQuestions);
+
+    // Post-storage validation: verify stored count matches expected
+    const storedQuestionsAfterSave = await this.getStoredSessionQuestions(sessionId);
+    if (storedQuestionsAfterSave.length !== finalQuestions.length) {
+      console.error(`❌ Post-storage validation failed: stored ${storedQuestionsAfterSave.length}, expected ${finalQuestions.length}`);
+    } else {
+      console.log(`✅ Post-storage validation passed: ${storedQuestionsAfterSave.length} questions stored`);
+    }
 
     return finalQuestions;
   }
@@ -1694,7 +1828,179 @@ export class ExamService {
 
     return data || [];
   }
+
+  /**
+   * Delete an exam session and all related records
+   * Due to CASCADE DELETE constraints, this will automatically delete:
+   * - exam_responses
+   * - exam_results
+   * - exam_session_questions
+   * - exam_security_violations
+   */
+  async deleteExamSession(sessionId: string): Promise<{ success: boolean; error?: string }> {
+    try {
+      console.log('🗑️ Deleting exam session:', sessionId);
+
+      // Verify session exists and is not in progress
+      const session = await this.getSessionById(sessionId);
+      if (!session) {
+        return { success: false, error: 'Exam session not found' };
+      }
+
+      // Prevent deletion of active sessions
+      if (session.status === 'in_progress') {
+        return { success: false, error: 'Cannot delete an exam session that is currently in progress' };
+      }
+
+      // Delete the exam session (CASCADE will handle related records)
+      const { error } = await supabase
+        .from('exam_sessions')
+        .delete()
+        .eq('id', sessionId);
+
+      if (error) {
+        console.error('❌ Error deleting exam session:', error);
+        return { success: false, error: `Failed to delete exam session: ${error.message}` };
+      }
+
+      console.log('✅ Exam session deleted successfully:', sessionId);
+      return { success: true };
+    } catch (error) {
+      console.error('❌ Error in deleteExamSession:', error);
+      return { 
+        success: false, 
+        error: error instanceof Error ? error.message : 'Unknown error occurred while deleting exam session' 
+      };
+    }
+  }
+
+  /**
+   * Bulk delete exam sessions based on filter criteria
+   * Due to CASCADE DELETE constraints, related records will be automatically deleted
+   */
+  async bulkDeleteExamSessions(criteria: {
+    sessionIds?: string[];
+    status?: 'completed' | 'expired' | 'terminated';
+    olderThanDays?: number;
+    dateRange?: { start: string; end: string };
+  }): Promise<{ 
+    success: boolean; 
+    deletedCount: number; 
+    failedCount: number;
+    errors: string[];
+  }> {
+    try {
+      console.log('🗑️ Bulk deleting exam sessions with criteria:', criteria);
+
+      let query = supabase
+        .from('exam_sessions')
+        .select('id, status, created_at');
+
+      // Apply filters
+      if (criteria.sessionIds && criteria.sessionIds.length > 0) {
+        query = query.in('id', criteria.sessionIds);
+      }
+
+      if (criteria.status) {
+        query = query.eq('status', criteria.status);
+      }
+
+      if (criteria.olderThanDays) {
+        const cutoffDate = new Date();
+        cutoffDate.setDate(cutoffDate.getDate() - criteria.olderThanDays);
+        query = query.lt('created_at', cutoffDate.toISOString());
+      }
+
+      if (criteria.dateRange) {
+        query = query
+          .gte('created_at', criteria.dateRange.start)
+          .lte('created_at', criteria.dateRange.end);
+      }
+
+      // Only allow deletion of completed/expired/terminated sessions
+      query = query.in('status', ['completed', 'expired', 'terminated']);
+
+      // Get sessions to delete
+      const { data: sessionsToDelete, error: fetchError } = await query;
+
+      if (fetchError) {
+        console.error('❌ Error fetching sessions for bulk delete:', fetchError);
+        return {
+          success: false,
+          deletedCount: 0,
+          failedCount: 0,
+          errors: [`Failed to fetch sessions: ${fetchError.message}`]
+        };
+      }
+
+      if (!sessionsToDelete || sessionsToDelete.length === 0) {
+        console.log('ℹ️ No sessions found matching criteria');
+        return {
+          success: true,
+          deletedCount: 0,
+          failedCount: 0,
+          errors: []
+        };
+      }
+
+      // Verify no in_progress sessions are included
+      const inProgressSessions = sessionsToDelete.filter(s => s.status === 'in_progress');
+      if (inProgressSessions.length > 0) {
+        return {
+          success: false,
+          deletedCount: 0,
+          failedCount: 0,
+          errors: ['Cannot delete sessions that are in progress']
+        };
+      }
+
+      const sessionIds = sessionsToDelete.map(s => s.id);
+      console.log(`🗑️ Deleting ${sessionIds.length} exam sessions`);
+
+      // Delete sessions in batches to avoid overwhelming the database
+      const batchSize = 50;
+      let deletedCount = 0;
+      let failedCount = 0;
+      const errors: string[] = [];
+
+      for (let i = 0; i < sessionIds.length; i += batchSize) {
+        const batch = sessionIds.slice(i, i + batchSize);
+        
+        const { error: deleteError } = await supabase
+          .from('exam_sessions')
+          .delete()
+          .in('id', batch);
+
+        if (deleteError) {
+          console.error(`❌ Error deleting batch ${i / batchSize + 1}:`, deleteError);
+          failedCount += batch.length;
+          errors.push(`Batch ${i / batchSize + 1}: ${deleteError.message}`);
+        } else {
+          deletedCount += batch.length;
+          console.log(`✅ Deleted batch ${i / batchSize + 1}: ${batch.length} sessions`);
+        }
+      }
+
+      console.log(`✅ Bulk delete completed: ${deletedCount} deleted, ${failedCount} failed`);
+
+      return {
+        success: failedCount === 0,
+        deletedCount,
+        failedCount,
+        errors
+      };
+    } catch (error) {
+      console.error('❌ Error in bulkDeleteExamSessions:', error);
+      return {
+        success: false,
+        deletedCount: 0,
+        failedCount: 0,
+        errors: [error instanceof Error ? error.message : 'Unknown error occurred']
+      };
+    }
+  }
 }
 
 // Export singleton instance
 export const examService = new ExamService();
+

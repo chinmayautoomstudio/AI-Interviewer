@@ -679,14 +679,14 @@ const QuestionBankPage: React.FC = () => {
           {/* Enhanced Pagination */}
           {totalPages > 1 && (
             <div className="bg-white px-3 sm:px-4 py-3 border-t border-gray-200 sm:px-6">
-              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-3 sm:space-y-0">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-3 sm:space-y-0 gap-4 sm:gap-6">
                 {/* Results Info */}
                 <div className="text-xs sm:text-sm text-gray-700">
                   Showing {((currentPage - 1) * (filters.limit || 20)) + 1} to {Math.min(currentPage * (filters.limit || 20), totalCount)} of {totalCount} questions
                 </div>
                 
                 {/* Page Size Selector */}
-                <div className="flex items-center space-x-2">
+                <div className="flex items-center gap-2">
                   <label className="text-xs sm:text-sm text-gray-700">Show:</label>
                   <select
                     value={filters.limit || 20}
@@ -695,7 +695,7 @@ const QuestionBankPage: React.FC = () => {
                       setFilters(prev => ({ ...prev, limit: newLimit }));
                       setCurrentPage(1);
                     }}
-                    className="text-xs sm:text-sm border border-gray-300 rounded px-2 py-1"
+                    className="text-xs sm:text-sm border border-gray-300 rounded px-2 py-1 min-w-[70px]"
                   >
                     <option value={10}>10</option>
                     <option value={20}>20</option>
@@ -706,7 +706,7 @@ const QuestionBankPage: React.FC = () => {
                 </div>
 
                 {/* Pagination Controls */}
-                <div className="flex items-center space-x-1 sm:space-x-2">
+                <div className="flex items-center gap-1 sm:gap-2 ml-2 sm:ml-4">
                   {/* First Page */}
                   <button
                     onClick={() => setCurrentPage(1)}

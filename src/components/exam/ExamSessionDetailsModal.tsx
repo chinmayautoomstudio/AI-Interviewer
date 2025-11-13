@@ -1,16 +1,25 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { X, Clock, User, Briefcase, CheckCircle, XCircle, AlertCircle, Calendar, BarChart3, ExternalLink, Copy } from 'lucide-react';
+import { X, Clock, User, Briefcase, CheckCircle, XCircle, AlertCircle, Calendar, BarChart3, ExternalLink, Copy, Trash2 } from 'lucide-react';
 import { supabase } from '../../services/supabase';
-import { ExamSession, ExamResponse } from '../../types';
+import { ExamSession, ExamResponse, ExamQuestion } from '../../types';
+import { examService } from '../../services/examService';
 
 interface ExamSessionDetailsModalProps {
   isOpen: boolean;
   onClose: () => void;
   sessionId: string;
+  onDelete?: (sessionId: string) => void;
+}
+
+interface SkippedQuestion {
+  question: ExamQuestion;
+  questionOrder: number;
 }
 
 interface SessionDetails extends ExamSession {
   responses?: ExamResponse[];
+  skippedQuestions?: SkippedQuestion[];
+  allQuestions?: Array<{ question: ExamQuestion; response?: ExamResponse; isSkipped: boolean; questionOrder: number }>;
   totalResponses?: number;
   correctAnswers?: number;
   timeSpent?: number;
@@ -19,11 +28,60 @@ interface SessionDetails extends ExamSession {
 const ExamSessionDetailsModal: React.FC<ExamSessionDetailsModalProps> = ({
   isOpen,
   onClose,
-  sessionId
+  sessionId,
+  onDelete
 }) => {
   const [session, setSession] = useState<SessionDetails | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
+
+  // Check if session can be deleted
+  const canDeleteSession = (session: SessionDetails | null): boolean => {
+    if (!session) return false;
+    return session.status === 'completed' || 
+           session.status === 'expired' || 
+           session.status === 'terminated';
+  };
+
+  const handleDeleteClick = () => {
+    setShowDeleteConfirm(true);
+    setDeleteError(null);
+  };
+
+  const handleDeleteCancel = () => {
+    setShowDeleteConfirm(false);
+    setDeleteError(null);
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!session) return;
+
+    try {
+      setIsDeleting(true);
+      setDeleteError(null);
+
+      const result = await examService.deleteExamSession(session.id);
+
+      if (result.success) {
+        // Call onDelete callback if provided
+        if (onDelete) {
+          onDelete(session.id);
+        }
+        // Close modal
+        onClose();
+      } else {
+        setDeleteError(result.error || 'Failed to delete exam session');
+      }
+    } catch (error) {
+      console.error('Error deleting session:', error);
+      setDeleteError(error instanceof Error ? error.message : 'An unexpected error occurred');
+    } finally {
+      setIsDeleting(false);
+    }
+  };
 
   const loadSessionDetails = useCallback(async () => {
     try {
@@ -61,6 +119,49 @@ const ExamSessionDetailsModal: React.FC<ExamSessionDetailsModalProps> = ({
         console.error('Error loading responses:', responsesError);
       }
 
+      // Fetch stored questions for the session
+      const storedQuestions = await examService.getStoredSessionQuestions(sessionId);
+      
+      // Create a map of answered question IDs for quick lookup
+      const answeredQuestionIds = new Set((responsesData || []).map(r => r.question_id));
+      const responseMap = new Map((responsesData || []).map(r => [r.question_id, r]));
+
+      // Identify skipped questions and combine with answered questions
+      const skippedQuestions: SkippedQuestion[] = [];
+      const allQuestions: Array<{ question: ExamQuestion; response?: ExamResponse; isSkipped: boolean; questionOrder: number }> = [];
+
+      if (storedQuestions.length > 0) {
+        // If we have stored questions, use them as the source of truth for order
+        storedQuestions.forEach((question, index) => {
+          const response = responseMap.get(question.id);
+          const isSkipped = !answeredQuestionIds.has(question.id);
+          
+          if (isSkipped) {
+            skippedQuestions.push({
+              question,
+              questionOrder: index + 1
+            });
+          }
+
+          allQuestions.push({
+            question,
+            response,
+            isSkipped,
+            questionOrder: index + 1
+          });
+        });
+      } else {
+        // Fallback: if no stored questions, only show answered questions (legacy sessions)
+        (responsesData || []).forEach((response, index) => {
+          allQuestions.push({
+            question: response.question || {} as ExamQuestion,
+            response,
+            isSkipped: false,
+            questionOrder: index + 1
+          });
+        });
+      }
+
       // Transform session data
       const transformedSession: SessionDetails = {
         id: sessionData.id,
@@ -86,6 +187,8 @@ const ExamSessionDetailsModal: React.FC<ExamSessionDetailsModalProps> = ({
         candidate: Array.isArray(sessionData.candidate) ? sessionData.candidate[0] : sessionData.candidate,
         job_description: Array.isArray(sessionData.job_description) ? sessionData.job_description[0] : sessionData.job_description,
         responses: responsesData || [],
+        skippedQuestions,
+        allQuestions,
         totalResponses: responsesData?.length || 0,
         correctAnswers: responsesData?.filter(r => r.is_correct).length || 0,
         timeSpent: sessionData.started_at && sessionData.completed_at 
@@ -248,7 +351,7 @@ const ExamSessionDetailsModal: React.FC<ExamSessionDetailsModalProps> = ({
               </div>
 
               {/* Performance Metrics */}
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
                 <div className="bg-white p-4 rounded-lg border">
                   <div className="flex items-center justify-between">
                     <div>
@@ -288,13 +391,25 @@ const ExamSessionDetailsModal: React.FC<ExamSessionDetailsModalProps> = ({
                 <div className="bg-white p-4 rounded-lg border">
                   <div className="flex items-center justify-between">
                     <div>
+                      <p className="text-sm font-medium text-gray-600">Skipped</p>
+                      <p className="text-2xl font-bold text-gray-900">{session.skippedQuestions?.length || 0}</p>
+                    </div>
+                    <div className="p-2 bg-yellow-100 rounded-lg">
+                      <AlertCircle className="h-5 w-5 text-yellow-600" />
+                    </div>
+                  </div>
+                </div>
+
+                <div className="bg-white p-4 rounded-lg border">
+                  <div className="flex items-center justify-between">
+                    <div>
                       <p className="text-sm font-medium text-gray-600">Score</p>
                       <p className="text-2xl font-bold text-gray-900">
                         {session.percentage ? `${session.percentage}%` : '-'}
                       </p>
                     </div>
-                    <div className="p-2 bg-yellow-100 rounded-lg">
-                      <BarChart3 className="h-5 w-5 text-yellow-600" />
+                    <div className="p-2 bg-indigo-100 rounded-lg">
+                      <BarChart3 className="h-5 w-5 text-indigo-600" />
                     </div>
                   </div>
                 </div>
@@ -362,36 +477,51 @@ const ExamSessionDetailsModal: React.FC<ExamSessionDetailsModalProps> = ({
                 </div>
               </div>
 
-              {/* Responses */}
-              {session.responses && session.responses.length > 0 && (
+              {/* Responses and Skipped Questions */}
+              {session.allQuestions && session.allQuestions.length > 0 && (
                 <div className="bg-white p-6 rounded-lg border">
                   <h3 className="text-lg font-semibold text-gray-900 mb-4">Question Responses</h3>
                   <div className="space-y-4">
-                    {session.responses.map((response, index) => (
-                      <div key={response.id} className="border border-gray-200 rounded-lg p-4">
+                    {session.allQuestions.map((item, index) => (
+                      <div key={item.question.id || `question-${index}`} className="border border-gray-200 rounded-lg p-4">
                         <div className="flex items-start justify-between mb-2">
                           <div className="flex items-center space-x-2">
-                            <span className="text-sm font-medium text-gray-600">Q{index + 1}</span>
-                            <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                              response.is_correct ? 'text-green-600 bg-green-100' : 'text-red-600 bg-red-100'
-                            }`}>
-                              {response.is_correct ? 'Correct' : 'Incorrect'}
-                            </span>
+                            <span className="text-sm font-medium text-gray-600">Q{item.questionOrder}</span>
+                            {item.isSkipped ? (
+                              <span className="inline-flex px-2 py-1 text-xs font-semibold rounded-full text-yellow-600 bg-yellow-100">
+                                Skipped
+                              </span>
+                            ) : item.response ? (
+                              <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                                item.response.is_correct ? 'text-green-600 bg-green-100' : 'text-red-600 bg-red-100'
+                              }`}>
+                                {item.response.is_correct ? 'Correct' : 'Incorrect'}
+                              </span>
+                            ) : null}
                           </div>
-                          <span className="text-xs text-gray-500">
-                            {formatDate(response.answered_at)}
-                          </span>
+                          {item.response?.answered_at && (
+                            <span className="text-xs text-gray-500">
+                              {formatDate(item.response.answered_at)}
+                            </span>
+                          )}
+                          {item.isSkipped && (
+                            <span className="text-xs text-gray-500">
+                              Not answered
+                            </span>
+                          )}
                         </div>
                         <div className="mb-2">
                           <p className="text-sm font-medium text-gray-900 mb-1">Question:</p>
                           <p className="text-sm text-gray-700">
-                            {response.question?.question_text || 'Question not available'}
+                            {item.question.question_text || 'Question not available'}
                           </p>
                         </div>
-                        <div>
-                          <p className="text-sm font-medium text-gray-900 mb-1">Answer:</p>
-                          <p className="text-sm text-gray-700">{response.answer_text}</p>
-                        </div>
+                        {!item.isSkipped && item.response && (
+                          <div>
+                            <p className="text-sm font-medium text-gray-900 mb-1">Answer:</p>
+                            <p className="text-sm text-gray-700">{item.response.answer_text}</p>
+                          </div>
+                        )}
                       </div>
                     ))}
                   </div>
@@ -463,7 +593,47 @@ const ExamSessionDetailsModal: React.FC<ExamSessionDetailsModalProps> = ({
         </div>
 
         {/* Footer */}
-        <div className="flex justify-end p-6 border-t border-gray-200">
+        <div className="flex justify-between items-center p-6 border-t border-gray-200">
+          <div>
+            {canDeleteSession(session) && onDelete && !showDeleteConfirm && (
+              <button
+                onClick={handleDeleteClick}
+                className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors flex items-center space-x-2"
+              >
+                <Trash2 className="h-4 w-4" />
+                <span>Delete Session</span>
+              </button>
+            )}
+            {showDeleteConfirm && (
+              <div className="flex items-center space-x-2">
+                <span className="text-sm text-gray-600">Delete this session?</span>
+                <button
+                  onClick={handleDeleteCancel}
+                  disabled={isDeleting}
+                  className="px-3 py-1 text-sm border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleDeleteConfirm}
+                  disabled={isDeleting}
+                  className="px-3 py-1 text-sm bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 flex items-center space-x-1"
+                >
+                  {isDeleting ? (
+                    <>
+                      <span className="animate-spin">⏳</span>
+                      <span>Deleting...</span>
+                    </>
+                  ) : (
+                    'Confirm Delete'
+                  )}
+                </button>
+              </div>
+            )}
+            {deleteError && (
+              <div className="mt-2 text-sm text-red-600">{deleteError}</div>
+            )}
+          </div>
           <button
             onClick={onClose}
             className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors"

@@ -14,11 +14,14 @@ import {
   Loader2,
   FileText,
   Shield,
-  Globe
+  Globe,
+  ChevronLeft,
+  ChevronRight
 } from 'lucide-react';
 import { examResultsService, ExamResultWithDetails, ExamResultsFilter, ExamResultsStats } from '../../services/examResultsService';
 import ExamResultDetailsModal from '../../components/exam/ExamResultDetailsModal';
 import { ExamReportWorkflowService } from '../../services/examReportWorkflowService';
+import * as XLSX from 'xlsx';
 
 const ExamResultsPage: React.FC = () => {
   const navigate = useNavigate();
@@ -28,20 +31,99 @@ const ExamResultsPage: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedStatus, setSelectedStatus] = useState<string>('all');
   const [selectedScoreRange, setSelectedScoreRange] = useState<string>('all');
+  const [dateRange, setDateRange] = useState<string>('all');
   const [sortBy, setSortBy] = useState<string>('date');
   const [selectedResultId, setSelectedResultId] = useState<string | null>(null);
   const [showDetailsModal, setShowDetailsModal] = useState(false);
   const [evaluatingSessions, setEvaluatingSessions] = useState<Set<string>>(new Set());
   const [generatingReports, setGeneratingReports] = useState<Set<string>>(new Set());
+  const [selectedCandidates, setSelectedCandidates] = useState<Set<string>>(new Set());
+  const [currentPage, setCurrentPage] = useState<number>(1);
+  const [itemsPerPage, setItemsPerPage] = useState<number>(20);
 
   const loadData = useCallback(async () => {
     try {
       setLoading(true);
       
+      // Calculate date range filter inline to avoid dependency warning
+      const now = new Date();
+      const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      let dateFrom: string | undefined;
+      let dateTo: string | undefined;
+      
+      switch (dateRange) {
+        case 'today': {
+          const startOfToday = new Date(today);
+          const endOfToday = new Date(today);
+          endOfToday.setHours(23, 59, 59, 999);
+          dateFrom = startOfToday.toISOString();
+          dateTo = endOfToday.toISOString();
+          break;
+        }
+        case 'thisWeek': {
+          const dayOfWeek = now.getDay();
+          const diff = now.getDate() - dayOfWeek + (dayOfWeek === 0 ? -6 : 1); // Adjust to Monday
+          const startOfWeek = new Date(now);
+          startOfWeek.setDate(diff);
+          startOfWeek.setHours(0, 0, 0, 0);
+          const endOfWeek = new Date(startOfWeek);
+          endOfWeek.setDate(startOfWeek.getDate() + 6);
+          endOfWeek.setHours(23, 59, 59, 999);
+          dateFrom = startOfWeek.toISOString();
+          dateTo = endOfWeek.toISOString();
+          break;
+        }
+        case 'thisMonth': {
+          const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+          startOfMonth.setHours(0, 0, 0, 0);
+          const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+          endOfMonth.setHours(23, 59, 59, 999);
+          dateFrom = startOfMonth.toISOString();
+          dateTo = endOfMonth.toISOString();
+          break;
+        }
+        case 'last7Days': {
+          const sevenDaysAgo = new Date(now);
+          sevenDaysAgo.setDate(now.getDate() - 7);
+          sevenDaysAgo.setHours(0, 0, 0, 0);
+          const endOfToday = new Date(now);
+          endOfToday.setHours(23, 59, 59, 999);
+          dateFrom = sevenDaysAgo.toISOString();
+          dateTo = endOfToday.toISOString();
+          break;
+        }
+        case 'last30Days': {
+          const thirtyDaysAgo = new Date(now);
+          thirtyDaysAgo.setDate(now.getDate() - 30);
+          thirtyDaysAgo.setHours(0, 0, 0, 0);
+          const endOfToday = new Date(now);
+          endOfToday.setHours(23, 59, 59, 999);
+          dateFrom = thirtyDaysAgo.toISOString();
+          dateTo = endOfToday.toISOString();
+          break;
+        }
+        case 'last90Days': {
+          const ninetyDaysAgo = new Date(now);
+          ninetyDaysAgo.setDate(now.getDate() - 90);
+          ninetyDaysAgo.setHours(0, 0, 0, 0);
+          const endOfToday = new Date(now);
+          endOfToday.setHours(23, 59, 59, 999);
+          dateFrom = ninetyDaysAgo.toISOString();
+          dateTo = endOfToday.toISOString();
+          break;
+        }
+        case 'all':
+        default:
+          // No date filter
+          break;
+      }
+      
       const filter: ExamResultsFilter = {
         search: searchTerm || undefined,
         status: selectedStatus === 'all' ? undefined : selectedStatus as any,
         scoreRange: selectedScoreRange === 'all' ? undefined : selectedScoreRange as any,
+        dateFrom,
+        dateTo,
         sortBy: sortBy as any,
         sortOrder: 'desc'
       };
@@ -64,10 +146,13 @@ const ExamResultsPage: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  }, [searchTerm, selectedStatus, selectedScoreRange, sortBy]);
+  }, [searchTerm, selectedStatus, selectedScoreRange, dateRange, sortBy]);
 
   useEffect(() => {
     loadData();
+    // Clear selection and reset page when filters change
+    setSelectedCandidates(new Set());
+    setCurrentPage(1);
   }, [loadData]);
 
   const handleViewDetails = (resultId: string) => {
@@ -141,26 +226,123 @@ const ExamResultsPage: React.FC = () => {
 
   const handleExportResults = async () => {
     try {
-      const filter: ExamResultsFilter = {
-        search: searchTerm || undefined,
-        status: selectedStatus === 'all' ? undefined : selectedStatus as any,
-        scoreRange: selectedScoreRange === 'all' ? undefined : selectedScoreRange as any,
-        sortBy: sortBy as any,
-        sortOrder: 'desc'
-      };
+      // Filter results based on selection
+      const resultsToExport = selectedCandidates.size > 0
+        ? results.filter(result => selectedCandidates.has(result.id))
+        : results;
 
-      const response = await examResultsService.exportExamResults(filter);
-      if (response.success && response.data) {
-        const blob = new Blob([response.data], { type: 'text/csv' });
-        const url = URL.createObjectURL(blob);
-        const link = document.createElement('a');
-        link.href = url;
-        link.download = `exam-results-${new Date().toISOString().split('T')[0]}.csv`;
-        link.click();
-        URL.revokeObjectURL(url);
+      if (resultsToExport.length === 0) {
+        alert('No results selected for export');
+        return;
       }
+
+      // Create CSV headers
+      const headers = [
+        'Candidate Name',
+        'Candidate Email',
+        'Job Title',
+        'Total Score',
+        'Max Score',
+        'Percentage',
+        'Correct Answers',
+        'Wrong Answers',
+        'Skipped Questions',
+        'Time Taken (minutes)',
+        'Evaluation Status',
+        'Completed At'
+      ];
+
+      // Create CSV rows
+      const rows = resultsToExport.map(result => [
+        result.candidate?.name || '',
+        result.candidate?.email || '',
+        result.jobDescription?.title || '',
+        result.totalScore.toString(),
+        result.maxScore.toString(),
+        result.percentage.toFixed(2),
+        result.correctAnswers.toString(),
+        result.wrongAnswers.toString(),
+        result.skippedQuestions.toString(),
+        (result.timeTakenMinutes || 0).toString(),
+        getStatusText(result.evaluationStatus),
+        formatDate(result.createdAt)
+      ]);
+
+      // Combine headers and rows
+      const csvContent = [
+        headers.join(','),
+        ...rows.map(row => row.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(','))
+      ].join('\n');
+
+      // Create and download CSV file
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `exam-results-${new Date().toISOString().split('T')[0]}.csv`;
+      link.click();
+      URL.revokeObjectURL(url);
     } catch (error) {
       console.error('Error exporting results:', error);
+      alert('Failed to export to CSV. Please try again.');
+    }
+  };
+
+  const exportToExcel = () => {
+    try {
+      // Filter results based on selection
+      const resultsToExport = selectedCandidates.size > 0
+        ? results.filter(result => selectedCandidates.has(result.id))
+        : results;
+
+      // Prepare data for Excel export using filtered results
+      const excelData = resultsToExport.map((result) => ({
+        'Candidate Name': result.candidate?.name || 'N/A',
+        'Email': result.candidate?.email || 'N/A',
+        'Phone': result.candidate?.phone || 'N/A',
+        'Position': result.jobDescription?.title || 'N/A',
+        'Department': result.jobDescription?.department || 'N/A',
+        'Overall Score (%)': result.percentage.toFixed(2),
+        'Points': `${result.totalScore}/${result.maxScore}`,
+        'Correct Answers': result.correctAnswers,
+        'Wrong Answers': result.wrongAnswers,
+        'Skipped Questions': result.skippedQuestions,
+        'Time Taken (minutes)': result.timeTakenMinutes || 0,
+        'Status': getStatusText(result.evaluationStatus),
+        'Completed At': formatDate(result.createdAt),
+        'Session ID': result.examSessionId || 'N/A'
+      }));
+
+      // Create workbook and worksheet
+      const worksheet = XLSX.utils.json_to_sheet(excelData);
+      const workbook = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(workbook, worksheet, 'Exam Results');
+
+      // Set column widths for better readability
+      const columnWidths = [
+        { wch: 20 }, // Candidate Name
+        { wch: 30 }, // Email
+        { wch: 15 }, // Phone
+        { wch: 25 }, // Position
+        { wch: 15 }, // Department
+        { wch: 15 }, // Overall Score (%)
+        { wch: 12 }, // Points
+        { wch: 15 }, // Correct Answers
+        { wch: 15 }, // Wrong Answers
+        { wch: 18 }, // Skipped Questions
+        { wch: 18 }, // Time Taken
+        { wch: 12 }, // Status
+        { wch: 20 }, // Completed At
+        { wch: 40 }  // Session ID
+      ];
+      worksheet['!cols'] = columnWidths;
+
+      // Generate Excel file and download
+      const fileName = `exam-results-${new Date().toISOString().split('T')[0]}.xlsx`;
+      XLSX.writeFile(workbook, fileName);
+    } catch (error) {
+      console.error('Error exporting to Excel:', error);
+      alert('Failed to export to Excel. Please try again.');
     }
   };
 
@@ -211,11 +393,50 @@ const ExamResultsPage: React.FC = () => {
     return new Date(dateString).toLocaleString();
   };
 
+  // Selection handlers
+  const handleSelectCandidate = (resultId: string) => {
+    setSelectedCandidates(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(resultId)) {
+        newSet.delete(resultId);
+      } else {
+        newSet.add(resultId);
+      }
+      return newSet;
+    });
+  };
+
+  const handleSelectAll = () => {
+    // Select all visible paginated results, not all filtered results
+    if (isAllSelected()) {
+      setSelectedCandidates(new Set());
+    } else {
+      const newSelection = new Set(selectedCandidates);
+      paginatedResults.forEach(r => newSelection.add(r.id));
+      setSelectedCandidates(newSelection);
+    }
+  };
+
+  const isAllSelected = () => {
+    return paginatedResults.length > 0 && paginatedResults.every(r => selectedCandidates.has(r.id));
+  };
+
+  const isIndeterminate = () => {
+    const selectedInPage = paginatedResults.filter(r => selectedCandidates.has(r.id)).length;
+    return selectedInPage > 0 && selectedInPage < paginatedResults.length;
+  };
+
   // Use real statistics from the service
   const totalResults = stats?.totalResults || 0;
   const passedResults = stats?.passedResults || 0;
   const failedResults = stats?.failedResults || 0;
   const averageScore = stats?.averageScore || 0;
+
+  // Calculate pagination values
+  const totalPages = Math.ceil(results.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const paginatedResults = results.slice(startIndex, endIndex);
 
   if (loading) {
     return (
@@ -252,23 +473,38 @@ const ExamResultsPage: React.FC = () => {
             <h1 className="text-lg sm:text-xl md:text-2xl font-bold text-gray-900">Exam Results</h1>
             <p className="text-sm sm:text-base text-gray-600 mt-1">View and analyze candidate exam performance</p>
           </div>
-          <div className="flex flex-wrap gap-2 sm:gap-3">
-            <button
-              onClick={loadData}
-              className="flex items-center justify-center space-x-1 sm:space-x-2 px-3 sm:px-4 py-2.5 sm:py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors text-sm min-h-[44px] sm:min-h-0"
-            >
-              <RefreshCw className="h-3 w-3 sm:h-4 sm:w-4" />
-              <span className="hidden sm:inline">Refresh</span>
-              <span className="sm:hidden">Refresh</span>
-            </button>
-            <button
-              onClick={handleExportResults}
-              className="bg-ai-teal text-white px-3 sm:px-4 py-2.5 sm:py-2 rounded-lg hover:bg-ai-teal/90 transition-colors flex items-center justify-center space-x-1 sm:space-x-2 text-sm min-h-[44px] sm:min-h-0"
-            >
-              <Download className="h-3 w-3 sm:h-4 sm:w-4" />
-              <span className="hidden sm:inline">Export Results</span>
-              <span className="sm:hidden">Export</span>
-            </button>
+          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-3">
+            {selectedCandidates.size > 0 && (
+              <div className="text-sm text-gray-600 bg-blue-50 px-3 py-2 rounded-lg border border-blue-200">
+                {selectedCandidates.size} candidate{selectedCandidates.size !== 1 ? 's' : ''} selected
+              </div>
+            )}
+            <div className="flex flex-wrap gap-2 sm:gap-3">
+              <button
+                onClick={loadData}
+                className="flex items-center justify-center space-x-1 sm:space-x-2 px-3 sm:px-4 py-2.5 sm:py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors text-sm min-h-[44px] sm:min-h-0"
+              >
+                <RefreshCw className="h-3 w-3 sm:h-4 sm:w-4" />
+                <span className="hidden sm:inline">Refresh</span>
+                <span className="sm:hidden">Refresh</span>
+              </button>
+              <button
+                onClick={exportToExcel}
+                className="bg-green-600 text-white px-3 sm:px-4 py-2.5 sm:py-2 rounded-lg hover:bg-green-700 transition-colors flex items-center justify-center space-x-1 sm:space-x-2 text-sm min-h-[44px] sm:min-h-0"
+              >
+                <FileText className="h-3 w-3 sm:h-4 sm:w-4" />
+                <span className="hidden sm:inline">Export to Excel</span>
+                <span className="sm:hidden">Excel</span>
+              </button>
+              <button
+                onClick={handleExportResults}
+                className="bg-ai-teal text-white px-3 sm:px-4 py-2.5 sm:py-2 rounded-lg hover:bg-ai-teal/90 transition-colors flex items-center justify-center space-x-1 sm:space-x-2 text-sm min-h-[44px] sm:min-h-0"
+              >
+                <Download className="h-3 w-3 sm:h-4 sm:w-4" />
+                <span className="hidden sm:inline">Export to CSV</span>
+                <span className="sm:hidden">CSV</span>
+              </button>
+            </div>
           </div>
         </div>
 
@@ -325,7 +561,7 @@ const ExamResultsPage: React.FC = () => {
 
       {/* Filters */}
       <div className="bg-white p-3 sm:p-4 lg:p-6 rounded-lg shadow-sm border mb-4 sm:mb-6">
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 sm:gap-4">
           <div>
             <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1 sm:mb-2">Search</label>
             <div className="relative">
@@ -344,7 +580,10 @@ const ExamResultsPage: React.FC = () => {
             <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1 sm:mb-2">Status</label>
             <select
               value={selectedStatus}
-              onChange={(e) => setSelectedStatus(e.target.value)}
+              onChange={(e) => {
+                setSelectedStatus(e.target.value);
+                setCurrentPage(1);
+              }}
               className="w-full px-2 sm:px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-ai-teal focus:border-transparent text-sm"
             >
               <option value="all">All Status</option>
@@ -358,7 +597,10 @@ const ExamResultsPage: React.FC = () => {
             <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1 sm:mb-2">Score Range</label>
             <select
               value={selectedScoreRange}
-              onChange={(e) => setSelectedScoreRange(e.target.value)}
+              onChange={(e) => {
+                setSelectedScoreRange(e.target.value);
+                setCurrentPage(1);
+              }}
               className="w-full px-2 sm:px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-ai-teal focus:border-transparent text-sm"
             >
               <option value="all">All Scores</option>
@@ -370,15 +612,39 @@ const ExamResultsPage: React.FC = () => {
           </div>
 
           <div>
+            <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1 sm:mb-2">Date Range</label>
+            <select
+              value={dateRange}
+              onChange={(e) => {
+                setDateRange(e.target.value);
+                setCurrentPage(1);
+              }}
+              className="w-full px-2 sm:px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-ai-teal focus:border-transparent text-sm"
+            >
+              <option value="all">All Time</option>
+              <option value="today">Today</option>
+              <option value="thisWeek">This Week</option>
+              <option value="thisMonth">This Month</option>
+              <option value="last7Days">Last 7 Days</option>
+              <option value="last30Days">Last 30 Days</option>
+              <option value="last90Days">Last 90 Days</option>
+            </select>
+          </div>
+
+          <div>
             <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1 sm:mb-2">Sort By</label>
             <select
               value={sortBy}
-              onChange={(e) => setSortBy(e.target.value)}
+              onChange={(e) => {
+                setSortBy(e.target.value);
+                setCurrentPage(1);
+              }}
               className="w-full px-2 sm:px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-ai-teal focus:border-transparent text-sm"
             >
-              <option value="date">Date</option>
-              <option value="score">Score</option>
-              <option value="name">Name</option>
+              <option value="date">Date (Newest First)</option>
+              <option value="score">Score (High to Low)</option>
+              <option value="name">Name (A-Z)</option>
+              <option value="time">Time Taken</option>
             </select>
           </div>
         </div>
@@ -386,15 +652,23 @@ const ExamResultsPage: React.FC = () => {
 
       {/* Results List */}
       <div className="bg-white rounded-lg shadow-sm border">
-        <div className="p-3 sm:p-4 lg:p-6 border-b border-gray-200">
-          <h2 className="text-base sm:text-lg font-semibold text-gray-900">Exam Results</h2>
-        </div>
-        
         <div className="overflow-x-auto -mx-3 sm:-mx-4 lg:-mx-8">
           <div className="inline-block min-w-full align-middle">
             <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-gray-50">
               <tr>
+                <th className="px-3 sm:px-6 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-12">
+                  <input
+                    type="checkbox"
+                    checked={isAllSelected()}
+                    ref={(input) => {
+                      if (input) input.indeterminate = isIndeterminate();
+                    }}
+                    onChange={handleSelectAll}
+                    className="h-4 w-4 text-ai-teal focus:ring-ai-teal border-gray-300 rounded cursor-pointer"
+                    title="Select all"
+                  />
+                </th>
                 <th className="px-3 sm:px-6 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Candidate
                 </th>
@@ -425,8 +699,16 @@ const ExamResultsPage: React.FC = () => {
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
-              {results.map((result) => (
+              {paginatedResults.map((result) => (
                 <tr key={result.id} className="hover:bg-gray-50">
+                  <td className="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap">
+                    <input
+                      type="checkbox"
+                      checked={selectedCandidates.has(result.id)}
+                      onChange={() => handleSelectCandidate(result.id)}
+                      className="h-4 w-4 text-ai-teal focus:ring-ai-teal border-gray-300 rounded cursor-pointer"
+                    />
+                  </td>
                   <td className="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap">
                     <div>
                       <div className="text-xs sm:text-sm font-medium text-gray-900">
@@ -576,6 +858,101 @@ const ExamResultsPage: React.FC = () => {
           </table>
           </div>
         </div>
+
+        {/* Pagination Controls */}
+        {results.length > 0 && (
+          <div className="bg-white px-3 sm:px-4 lg:px-6 py-3 sm:py-4 border-t border-gray-200">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-3 sm:space-y-0 gap-4 sm:gap-6">
+              {/* Results Info */}
+              <div className="text-xs sm:text-sm text-gray-700">
+                Showing {startIndex + 1} to {Math.min(endIndex, results.length)} of {results.length} result{results.length !== 1 ? 's' : ''}
+              </div>
+              
+              {/* Page Size Selector */}
+              <div className="flex items-center gap-2">
+                <label className="text-xs sm:text-sm text-gray-700">Show:</label>
+                <select
+                  value={itemsPerPage}
+                  onChange={(e) => {
+                    setItemsPerPage(Number(e.target.value));
+                    setCurrentPage(1);
+                  }}
+                  className="text-xs sm:text-sm border border-gray-300 rounded px-2 py-1 min-w-[70px] focus:ring-2 focus:ring-ai-teal focus:border-transparent"
+                >
+                  <option value={10}>10</option>
+                  <option value={20}>20</option>
+                  <option value={25}>25</option>
+                  <option value={50}>50</option>
+                  <option value={100}>100</option>
+                </select>
+                <span className="text-xs sm:text-sm text-gray-700">per page</span>
+              </div>
+
+              {/* Pagination Controls */}
+              {totalPages > 1 && (
+                <div className="flex items-center gap-1 sm:gap-2 ml-2 sm:ml-4">
+                  {/* Previous Page */}
+                  <button
+                    onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                    disabled={currentPage === 1}
+                    className={`px-2 sm:px-3 py-1 sm:py-2 text-xs sm:text-sm border border-gray-300 rounded-lg flex items-center justify-center ${
+                      currentPage === 1
+                        ? 'opacity-50 cursor-not-allowed bg-gray-100'
+                        : 'hover:bg-gray-50 bg-white'
+                    } transition-colors`}
+                    title="Previous page"
+                  >
+                    <ChevronLeft className="h-3 w-3 sm:h-4 sm:w-4" />
+                  </button>
+
+                  {/* Page Numbers */}
+                  <div className="flex items-center gap-1">
+                    {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                      let pageNum: number;
+                      if (totalPages <= 5) {
+                        pageNum = i + 1;
+                      } else if (currentPage <= 3) {
+                        pageNum = i + 1;
+                      } else if (currentPage >= totalPages - 2) {
+                        pageNum = totalPages - 4 + i;
+                      } else {
+                        pageNum = currentPage - 2 + i;
+                      }
+                      
+                      return (
+                        <button
+                          key={pageNum}
+                          onClick={() => setCurrentPage(pageNum)}
+                          className={`px-2 sm:px-3 py-1 sm:py-2 text-xs sm:text-sm border border-gray-300 rounded-lg min-w-[32px] sm:min-w-[40px] flex items-center justify-center ${
+                            currentPage === pageNum
+                              ? 'bg-ai-teal text-white border-ai-teal'
+                              : 'hover:bg-gray-50 bg-white'
+                          } transition-colors`}
+                        >
+                          {pageNum}
+                        </button>
+                      );
+                    })}
+                  </div>
+
+                  {/* Next Page */}
+                  <button
+                    onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                    disabled={currentPage === totalPages}
+                    className={`px-2 sm:px-3 py-1 sm:py-2 text-xs sm:text-sm border border-gray-300 rounded-lg flex items-center justify-center ${
+                      currentPage === totalPages
+                        ? 'opacity-50 cursor-not-allowed bg-gray-100'
+                        : 'hover:bg-gray-50 bg-white'
+                    } transition-colors`}
+                    title="Next page"
+                  >
+                    <ChevronRight className="h-3 w-3 sm:h-4 sm:w-4" />
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
       </div>
 
       {results.length === 0 && !loading && (
