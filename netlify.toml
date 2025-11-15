@@ -20,3 +20,10 @@
 # Ensure functions are deployed
 [functions]
   directory = "netlify/functions"
+
+# Development server configuration
+# This ensures netlify dev runs the React dev server with hot reloading
+[dev]
+  command = "npm start"
+  port = 3000
+  framework = "create-react-app"
