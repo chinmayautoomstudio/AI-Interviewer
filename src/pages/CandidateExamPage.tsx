@@ -28,6 +28,7 @@ import {
   AlertTriangle,
   Loader2,
   Clock,
+  Calendar,
   User,
   Mail
 } from 'lucide-react';
@@ -52,6 +53,8 @@ export const CandidateExamPage: React.FC = () => {
   const [autoSaveStatus, setAutoSaveStatus] = useState<'saved' | 'saving' | 'error'>('saved');
   const [showSubmittingModal, setShowSubmittingModal] = useState(false);
   const [questionTypes, setQuestionTypes] = useState<string[]>([]);
+  const [examAccessStatus, setExamAccessStatus] = useState<'before_date' | 'before_window' | 'accessible' | 'started' | null>(null);
+  const [timeUntilAccess, setTimeUntilAccess] = useState<number | null>(null); // minutes until access allowed
 
   // Refs for race condition prevention
   const isSubmittingRef = useRef(false);
@@ -80,17 +83,63 @@ export const CandidateExamPage: React.FC = () => {
     // Note: Violations are logged but not shown to candidates during exam
   }, [session]);
 
-  // Exam start handler
+  // Exam start handler - called when user accepts FullScreenExam consent
   const handleExamStart = useCallback(async () => {
+    if (!session) {
+      console.error('❌ Cannot start exam - no session');
+      return;
+    }
+
+    console.log('🎯 User accepted exam consent - starting exam session...');
+    
+    // Start the exam session if it's still pending
+    if (session.status === 'pending') {
+      try {
+        console.log('🔄 Starting exam session with IP detection...');
+        
+        // Get client information including IP address
+        const clientInfo = await getClientInfo();
+        console.log('📊 Client info:', {
+          ip: clientInfo.ip,
+          userAgent: clientInfo.userAgent.substring(0, 50) + '...',
+          detectionMethod: clientInfo.detectionMethod,
+          timestamp: clientInfo.timestamp
+        });
+
+        const startedSession = await examService.startExamSession(
+          session.id,
+          clientInfo.ip || undefined,
+          clientInfo.userAgent
+        );
+        
+        console.log('✅ Exam session started successfully with IP tracking');
+        setSession(startedSession);
+        
+        // Calculate and set initial time remaining
+        const remaining = calculateRemainingTime(startedSession);
+        setTimeRemaining(remaining);
+      } catch (startError) {
+        console.error('❌ Failed to start exam session:', startError);
+        setError('Failed to start exam session. Please refresh and try again.');
+        return;
+      }
+    } else if (session.status === 'in_progress') {
+      // Session already started (page refresh scenario)
+      console.log('✅ Session already in progress - restoring timer');
+      const remaining = calculateRemainingTime(session);
+      setTimeRemaining(remaining);
+    }
+    
+    // Mark exam as started (this triggers timer)
     setExamStarted(true);
-    console.log('🎯 Exam started with full security monitoring');
+    console.log('✅ Exam started - timer will begin now');
     
     // Ensure security monitoring is active
     if (!examSecurityService.isSecurityActive()) {
       console.log('⚠️ Security monitoring not active, starting it now...');
       examSecurityService.startMonitoring(handleSecurityViolation, session?.duration_minutes);
     }
-  }, [session, handleSecurityViolation]);
+  }, [session, handleSecurityViolation, calculateRemainingTime]);
 
   // Exam end handler
   const handleExamEnd = useCallback(() => {
@@ -98,7 +147,7 @@ export const CandidateExamPage: React.FC = () => {
     console.log('🏁 Exam ended');
   }, []);
 
-  // Auto-save functionality
+  // Auto-save functionality with timeout protection
   const autoSave = useCallback(async () => {
     if (!session || answers.size === 0) {
       console.log('⏭️ Auto-save skipped:', { 
@@ -120,16 +169,32 @@ export const CandidateExamPage: React.FC = () => {
 
       setAutoSaveStatus('saving');
       
-      // Submit all current answers
-      for (const [questionId, answer] of Array.from(answers.entries())) {
-        console.log('📤 Submitting answer for question:', questionId);
-        await examService.submitAnswer({
-          exam_session_id: session.id,
-          question_id: questionId,
-          answer_text: answer
-        });
-        console.log('✅ Answer submitted for question:', questionId);
-      }
+      // Submit all current answers with individual timeout protection
+      const savePromises = Array.from(answers.entries()).map(async ([questionId, answer]) => {
+        try {
+          console.log('📤 Submitting answer for question:', questionId);
+          
+          // Add timeout to each answer submission (5 seconds per answer)
+          const savePromise = examService.submitAnswer({
+            exam_session_id: session.id,
+            question_id: questionId,
+            answer_text: answer
+          });
+          
+          const timeoutPromise = new Promise((_, reject) => 
+            setTimeout(() => reject(new Error(`Timeout saving answer for question ${questionId}`)), 5000)
+          );
+          
+          await Promise.race([savePromise, timeoutPromise]);
+          console.log('✅ Answer submitted for question:', questionId);
+        } catch (err) {
+          console.error(`❌ Error saving answer for question ${questionId}:`, err);
+          // Continue with other answers even if one fails
+        }
+      });
+
+      // Wait for all answers to be saved (or timeout)
+      await Promise.allSettled(savePromises);
       
       setAutoSaveStatus('saved');
       console.log('✅ Auto-save completed successfully');
@@ -185,6 +250,7 @@ export const CandidateExamPage: React.FC = () => {
           status: examSession.status,
           started_at: examSession.started_at,
           completed_at: examSession.completed_at,
+          scheduled_start_at: examSession.scheduled_start_at,
           duration_minutes: examSession.duration_minutes,
           total_questions: examSession.total_questions,
           candidate_id: examSession.candidate_id,
@@ -223,43 +289,84 @@ export const CandidateExamPage: React.FC = () => {
           setQuestionTypes([]); // Don't show fallback types
         }
 
-        // Skip instructions if exam is already in progress (handles page refresh)
+        // Handle instructions display
         if (examSession.status === 'in_progress') {
-          console.log('✅ Exam already in progress - skipping instructions');
+          // Session is in progress (page refresh scenario)
+          console.log('✅ Exam already in progress - will restore timer after consent');
           setShowInstructions(false);
-          // Don't set examStarted to true here - let FullScreenExam handle it after security is confirmed active
-          // This ensures the security warning modal still shows
+          // Don't set examStarted yet - wait for user to accept FullScreenExam consent
+          // Timer will start after handleExamStart is called
+          setExamStarted(false);
         } else {
+          // New exam - show instructions
           setShowInstructions(true);
-          setExamStarted(false); // Ensure warning shows for new sessions
+          setExamStarted(false); // Timer will start only after user clicks "Start Exam"
         }
 
-        // Start exam if not already started
-        if (examSession.status === 'pending') {
-          try {
-            console.log('🔄 Starting exam session with IP detection...');
-            
-            // Get client information including IP address
-            const clientInfo = await getClientInfo();
-            console.log('📊 Client info:', {
-              ip: clientInfo.ip,
-              userAgent: clientInfo.userAgent.substring(0, 50) + '...',
-              detectionMethod: clientInfo.detectionMethod,
-              timestamp: clientInfo.timestamp
-            });
+        // Determine access status locally to avoid dependency issues
+        let currentAccessStatus: 'before_date' | 'before_window' | 'accessible' | 'started' | null = null;
+        
+        // Check scheduled exam access
+        if (examSession.scheduled_start_at) {
+          const now = new Date();
+          const scheduledStart = new Date(examSession.scheduled_start_at);
+          const accessWindowStart = new Date(scheduledStart);
+          accessWindowStart.setMinutes(accessWindowStart.getMinutes() - 30); // 30 minutes before scheduled start
 
-            const startedSession = await examService.startExamSession(
-              examSession.id,
-              clientInfo.ip || undefined, // Convert null to undefined
-              clientInfo.userAgent
-            );
-            
-            console.log('✅ Exam session started successfully with IP tracking');
-            setSession(startedSession);
-          } catch (startError) {
-            console.warn('Failed to start exam session, continuing with existing session:', startError);
-            // Continue with the existing session - it might already be started
+          // Check if we're before the scheduled date
+          const scheduledDate = new Date(scheduledStart.toDateString());
+          const currentDate = new Date(now.toDateString());
+          
+          if (currentDate < scheduledDate) {
+            // Before scheduled date
+            currentAccessStatus = 'before_date';
+            setExamAccessStatus('before_date');
+            setIsLoading(false);
+            setSession(examSession);
+            return;
           }
+
+          // Check if we're before the 30-minute access window
+          if (now < accessWindowStart) {
+            // Before 30-minute window
+            currentAccessStatus = 'before_window';
+            setExamAccessStatus('before_window');
+            const minutesUntilAccess = Math.ceil((accessWindowStart.getTime() - now.getTime()) / (1000 * 60));
+            setTimeUntilAccess(minutesUntilAccess);
+            setIsLoading(false);
+            setSession(examSession);
+            return;
+          }
+
+          // Within access window or after start time
+          if (now >= accessWindowStart && now < scheduledStart) {
+            // Within 30-minute window but before start time
+            currentAccessStatus = 'accessible';
+            setExamAccessStatus('accessible');
+            const minutesUntilStart = Math.ceil((scheduledStart.getTime() - now.getTime()) / (1000 * 60));
+            setTimeUntilAccess(minutesUntilStart);
+          } else if (now >= scheduledStart) {
+            // After scheduled start time
+            currentAccessStatus = 'started';
+            setExamAccessStatus('started');
+            setTimeUntilAccess(0);
+          }
+        } else {
+          // No scheduled time - exam can be accessed immediately
+          currentAccessStatus = 'accessible';
+          setExamAccessStatus('accessible');
+        }
+
+        // DO NOT auto-start exam session here
+        // Session will be started only when user clicks "Start Exam" and accepts FullScreenExam consent
+        // This ensures timer only starts when user explicitly begins the exam
+        console.log('📋 Exam session loaded - waiting for user to click "Start Exam"');
+
+        // Load questions only if exam is accessible
+        if (currentAccessStatus !== 'accessible' && currentAccessStatus !== 'started' && examSession.scheduled_start_at) {
+          // Don't load questions if exam is not accessible yet
+          setIsLoading(false);
+          return;
         }
 
         // Load questions
@@ -345,6 +452,28 @@ export const CandidateExamPage: React.FC = () => {
     loadExam();
   }, [token, navigate, calculateRemainingTime]);
 
+  // Save pending answers when session transitions to in_progress
+  useEffect(() => {
+    if (!session || session.status !== 'in_progress' || answers.size === 0) {
+      return;
+    }
+
+    // If session just transitioned to in_progress, save any pending answers
+    const savePendingAnswers = async () => {
+      console.log('💾 Session is now in_progress - saving any pending answers...');
+      try {
+        await autoSave();
+        console.log('✅ Pending answers saved successfully');
+      } catch (error) {
+        console.error('❌ Error saving pending answers:', error);
+      }
+    };
+
+    // Small delay to ensure session is fully updated
+    const timeout = setTimeout(savePendingAnswers, 500);
+    return () => clearTimeout(timeout);
+  }, [session, answers.size, autoSave]);
+
   // Auto-save every 30 seconds
   useEffect(() => {
     if (!session || session.status !== 'in_progress') {
@@ -367,20 +496,56 @@ export const CandidateExamPage: React.FC = () => {
     };
   }, [session, autoSave]);
 
-  // Start exam timer when exam actually begins
-  const startExamTimer = useCallback(() => {
-    if (!examStarted && session) {
-      console.log('🎯 Starting exam timer - exam has begun');
-      setExamStarted(true);
-      
-      // Calculate remaining time using timestamp-based helper
-      const remaining = calculateRemainingTime(session);
-      setTimeRemaining(remaining);
-      console.log('⏰ Timer started with remaining time:', remaining, 'minutes');
-    }
-  }, [examStarted, session, calculateRemainingTime]);
+  // Countdown timer for scheduled exams
+  useEffect(() => {
+    if (!session?.scheduled_start_at || examAccessStatus === null) return;
 
-  // Handle time up - with guard to prevent multiple calls
+    const interval = setInterval(() => {
+      const now = new Date();
+      const scheduledStart = new Date(session.scheduled_start_at!);
+      const accessWindowStart = new Date(scheduledStart);
+      accessWindowStart.setMinutes(accessWindowStart.getMinutes() - 30);
+
+      // Update access status based on current time
+      if (now < accessWindowStart) {
+        const minutesUntilAccess = Math.ceil((accessWindowStart.getTime() - now.getTime()) / (1000 * 60));
+        setTimeUntilAccess(minutesUntilAccess);
+        if (examAccessStatus !== 'before_window') {
+          setExamAccessStatus('before_window');
+        }
+      } else if (now >= accessWindowStart && now < scheduledStart) {
+        const minutesUntilStart = Math.ceil((scheduledStart.getTime() - now.getTime()) / (1000 * 60));
+        setTimeUntilAccess(minutesUntilStart);
+        if (examAccessStatus !== 'accessible') {
+          setExamAccessStatus('accessible');
+          // Reload page to allow exam start
+          window.location.reload();
+        }
+      } else if (now >= scheduledStart) {
+        if (examAccessStatus !== 'started') {
+          setExamAccessStatus('started');
+          setTimeUntilAccess(0);
+          // Reload page to allow exam start
+          window.location.reload();
+        }
+      }
+    }, 1000); // Update every second
+
+    return () => clearInterval(interval);
+  }, [session, examAccessStatus]);
+
+
+  // Helper function to add timeout to promises (used by both handleSubmitExam and handleTimeUp)
+  const withTimeout = useCallback(<T,>(promise: Promise<T>, timeoutMs: number, errorMessage: string): Promise<T> => {
+    return Promise.race([
+      promise,
+      new Promise<T>((_, reject) => 
+        setTimeout(() => reject(new Error(errorMessage)), timeoutMs)
+      )
+    ]);
+  }, []);
+
+  // Handle time up - with guard to prevent multiple calls and timeout protection
   const handleTimeUp = useCallback(async () => {
     // Guard: Prevent multiple calls
     if (isSubmittingRef.current) {
@@ -401,37 +566,104 @@ export const CandidateExamPage: React.FC = () => {
       setIsSubmitting(true);
       setShowSubmittingModal(true);
       
-      // Stop security monitoring when time is up
-      await handleExamSubmission();
-      
-      // Complete exam
-      await examService.completeExam(session.id);
-      
-      // Navigate to results page
-      console.log('✅ Exam completed successfully, navigating to results');
-      navigate(`/exam/mcq-results/${session.id}`);
-      
-      // Set timeout fallback in case navigation fails
-      setTimeout(() => {
-        if (window.location.pathname.includes('/exam/')) {
-          console.warn('⚠️ Navigation may have failed, forcing redirect');
-          window.location.href = `/exam/mcq-results/${session.id}`;
+      // Step 1: Stop security monitoring and save answers (with timeout)
+      try {
+        console.log('💾 Step 1: Saving answers and stopping security...');
+        await withTimeout(
+          handleExamSubmission(),
+          30000, // 30 second timeout
+          'Answer saving timed out. Continuing with submission...'
+        );
+        console.log('✅ Step 1 completed: Answers saved and security stopped');
+      } catch (saveError) {
+        console.warn('⚠️ Warning during answer save:', saveError);
+        // Continue even if save fails - answers might already be saved
+        // Stop security monitoring manually if needed
+        if (examSecurityService.isSecurityActive()) {
+          examSecurityService.stopSecurityForExamCompletion();
         }
-      }, 2000);
+      }
+      
+      // Step 2: Complete exam (with timeout - now non-blocking so should be fast)
+      try {
+        console.log('📝 Step 2: Completing exam...');
+        await withTimeout(
+          examService.completeExam(session.id),
+          15000, // 15 second timeout (reduced since completeExam is now non-blocking)
+          'Exam completion timed out. Results may be incomplete.'
+        );
+        console.log('✅ Step 2 completed: Exam marked as completed');
+      } catch (completeError) {
+        console.error('❌ Error completing exam:', completeError);
+        // Even if completeExam fails, try to navigate to results
+        console.log('⚠️ Attempting navigation despite completion error...');
+      }
+      
+      // Step 3: Navigate to results page (always attempt)
+      console.log('🧭 Step 3: Navigating to results page...');
+      
+      // Reset submission guard before navigation
+      isSubmittingRef.current = false;
+      
+      try {
+        navigate(`/exam/mcq-results/${session.id}`);
+        console.log('✅ Navigation initiated');
+        
+        // Fallback navigation with timeout in case React Router navigation fails
+        setTimeout(() => {
+          if (window.location.pathname.includes('/candidate/exam/') || window.location.pathname.includes('/exam/')) {
+            console.warn('⚠️ Navigation may have failed, forcing redirect');
+            window.location.href = `/exam/mcq-results/${session.id}`;
+          }
+        }, 2000);
+      } catch (navError) {
+        console.error('❌ Navigation error:', navError);
+        // Force navigation as last resort
+        window.location.href = `/exam/mcq-results/${session.id}`;
+      }
     } catch (err) {
-      console.error('❌ Error completing exam:', err);
+      console.error('❌ Critical error during time-up submission:', err);
       setError('Failed to submit exam. Please contact support.');
       setShowSubmittingModal(false);
-      // Clear guard on error so user can retry if needed
+      // Clear guard on error
       isSubmittingRef.current = false;
       setIsSubmitting(false);
+      
+      // Still try to navigate to results in case exam was completed
+      setTimeout(() => {
+        console.log('🔄 Attempting fallback navigation after error...');
+        window.location.href = `/exam/mcq-results/${session.id}`;
+      }, 3000);
     }
-  }, [session, navigate, handleExamSubmission]);
+  }, [session, navigate, handleExamSubmission, withTimeout]);
 
   // Layer 1: Timestamp-based interval timer - robust and accurate
+  // Timer ONLY starts when ALL conditions are met:
+  // 1. examStarted === true (user clicked "Start Exam" and accepted consent)
+  // 2. showInstructions === false (instructions are closed)
+  // 3. questions.length > 0 (questions are loaded)
+  // 4. session.status === 'in_progress' (session is actually started)
+  // 5. session.started_at exists (session has start timestamp)
   useEffect(() => {
-    // Only run if exam is in progress and started
-    if (!session || session.status !== 'in_progress' || !examStarted || !session.started_at) {
+    // Check all required conditions
+    if (!session || 
+        !examStarted || 
+        showInstructions || 
+        questions.length === 0 || 
+        session.status !== 'in_progress' || 
+        !session.started_at) {
+      // Timer should not run - log why
+      if (session && !examStarted) {
+        console.log('⏸️ Timer waiting: exam not started by user');
+      } else if (showInstructions) {
+        console.log('⏸️ Timer waiting: instructions still open');
+      } else if (questions.length === 0) {
+        console.log('⏸️ Timer waiting: questions not loaded');
+      } else if (session?.status !== 'in_progress') {
+        console.log('⏸️ Timer waiting: session not in progress:', session?.status);
+      } else if (!session?.started_at) {
+        console.log('⏸️ Timer waiting: session started_at not set');
+      }
       return;
     }
 
@@ -441,12 +673,27 @@ export const CandidateExamPage: React.FC = () => {
       return;
     }
 
-    console.log('⏰ Starting timestamp-based timer for session:', session.id);
+    console.log('⏰ Starting timestamp-based timer - all conditions met:', {
+      examStarted,
+      instructionsClosed: !showInstructions,
+      questionsLoaded: questions.length > 0,
+      sessionInProgress: session.status === 'in_progress',
+      hasStartedAt: !!session.started_at
+    });
+
+    // Initialize time remaining immediately
+    const initialRemaining = calculateRemainingTime(session);
+    setTimeRemaining(initialRemaining);
 
     const interval = setInterval(() => {
       // Guard: Stop if submission started
       if (isSubmittingRef.current) {
         console.log('⏸️ Timer stopped - submission in progress');
+        return;
+      }
+
+      // Re-check conditions (session might have changed)
+      if (!session || session.status !== 'in_progress' || !session.started_at || !examStarted) {
         return;
       }
 
@@ -469,12 +716,18 @@ export const CandidateExamPage: React.FC = () => {
       console.log('🧹 Clearing timer interval');
       clearInterval(interval);
     };
-  }, [session, examStarted, calculateRemainingTime, handleTimeUp]);
+  }, [session, examStarted, showInstructions, questions.length, calculateRemainingTime, handleTimeUp]);
 
   // Layer 3: Render-based fallback check - acts as backup if interval timer fails
+  // Only runs when all conditions are met (same as main timer)
   useEffect(() => {
-    // Only check if exam is in progress and started
-    if (!session || session.status !== 'in_progress' || !examStarted || !session.started_at) {
+    // Check all required conditions (same as main timer)
+    if (!session || 
+        !examStarted || 
+        showInstructions || 
+        questions.length === 0 || 
+        session.status !== 'in_progress' || 
+        !session.started_at) {
       return;
     }
 
@@ -494,7 +747,7 @@ export const CandidateExamPage: React.FC = () => {
       console.log('⏰ Fallback check: Time expired, triggering handleTimeUp');
       handleTimeUp();
     }
-  }, [session, examStarted, calculateRemainingTime, handleTimeUp]);
+  }, [session, examStarted, showInstructions, questions.length, calculateRemainingTime, handleTimeUp]);
 
   // Cleanup: Reset submission guard when exam status changes
   useEffect(() => {
@@ -505,23 +758,41 @@ export const CandidateExamPage: React.FC = () => {
     }
   }, [session]);
 
-  // Start timer when exam begins - ONLY after user consent is given
+  // Timer should ONLY start when:
+  // 1. examStarted === true (user clicked "Start Exam" and accepted consent)
+  // 2. showInstructions === false (instructions are closed)
+  // 3. questions.length > 0 (questions are loaded)
+  // 4. session.status === 'in_progress' (session is actually started)
   useEffect(() => {
-    // Only start timer if:
-    // 1. Instructions are closed
-    // 2. Questions are loaded
-    // 3. Exam hasn't started yet (timer-wise)
-    // 4. Security monitoring is active (meaning user gave consent)
-    if (!showInstructions && questions.length > 0 && !examStarted) {
-      // Check if security is active - this confirms user gave consent
-      if (examSecurityService.isSecurityActive()) {
-        console.log('✅ Security active - starting exam timer after user consent');
-        startExamTimer();
-      } else {
-        console.log('⏸️ Waiting for user consent before starting exam timer');
+    // Only start timer if all conditions are met
+    if (examStarted && !showInstructions && questions.length > 0 && session?.status === 'in_progress' && session?.started_at) {
+      // Calculate and set initial time remaining
+      const remaining = calculateRemainingTime(session);
+      if (Math.abs(timeRemaining - remaining) > 0.1) { // Only update if significantly different
+        setTimeRemaining(remaining);
+      }
+      console.log('✅ All conditions met - timer is active:', {
+        examStarted,
+        instructionsClosed: !showInstructions,
+        questionsLoaded: questions.length > 0,
+        sessionInProgress: session.status === 'in_progress',
+        timeRemaining: remaining
+      });
+    } else {
+      // Log why timer is not starting
+      if (!examStarted) {
+        console.log('⏸️ Timer waiting: exam not started by user');
+      } else if (showInstructions) {
+        console.log('⏸️ Timer waiting: instructions still open');
+      } else if (questions.length === 0) {
+        console.log('⏸️ Timer waiting: questions not loaded');
+      } else if (session?.status !== 'in_progress') {
+        console.log('⏸️ Timer waiting: session not in progress:', session?.status);
+      } else if (!session?.started_at) {
+        console.log('⏸️ Timer waiting: session started_at not set');
       }
     }
-  }, [showInstructions, questions.length, examStarted, startExamTimer]);
+  }, [examStarted, showInstructions, questions.length, session, calculateRemainingTime, timeRemaining]);
 
 
   // Handle answer selection
@@ -553,43 +824,50 @@ export const CandidateExamPage: React.FC = () => {
       console.log('✅ Question marked as answered:', questionIndex + 1);
     }
 
-    // Immediately submit the answer to database
-    if (session && session.status === 'in_progress') {
-      try {
-        console.log('🚀 Immediately submitting answer to database...');
-        setAutoSaveStatus('saving');
-        
-        const response = await examService.submitAnswer({
-          exam_session_id: session.id,
-          question_id: questionId,
-          answer_text: answer
-        });
-        
-        console.log('✅ Answer immediately saved to database:', response.id);
+    // Immediately submit the answer to database if session is in progress
+    // If session is pending, the answer is stored in state and will be saved when session starts
+    if (session) {
+      if (session.status === 'in_progress') {
+        try {
+          console.log('🚀 Immediately submitting answer to database...');
+          setAutoSaveStatus('saving');
+          
+          const response = await examService.submitAnswer({
+            exam_session_id: session.id,
+            question_id: questionId,
+            answer_text: answer
+          });
+          
+          console.log('✅ Answer immediately saved to database:', response.id);
+          setAutoSaveStatus('saved');
+          
+          // Show success feedback briefly
+          setTimeout(() => {
+            setAutoSaveStatus('saved');
+          }, 2000);
+          
+        } catch (error) {
+          console.error('❌ Error immediately saving answer:', error);
+          setAutoSaveStatus('error');
+          
+          // Show error feedback
+          alert(`Failed to save answer: ${error instanceof Error ? error.message : 'Unknown error'}. Please try again.`);
+          
+          // Reset status after showing error
+          setTimeout(() => {
+            setAutoSaveStatus('saved');
+          }, 3000);
+        }
+      } else if (session.status === 'pending') {
+        // Session is pending - answer is stored in state, will be saved when session starts
+        console.log('📝 Answer stored in state (session pending, will save when session starts)');
         setAutoSaveStatus('saved');
-        
-        // Show success feedback briefly
-        setTimeout(() => {
-          setAutoSaveStatus('saved');
-        }, 2000);
-        
-      } catch (error) {
-        console.error('❌ Error immediately saving answer:', error);
+      } else {
+        console.log('⚠️ Cannot save answer - session status:', session.status);
         setAutoSaveStatus('error');
-        
-        // Show error feedback
-        alert(`Failed to save answer: ${error instanceof Error ? error.message : 'Unknown error'}. Please try again.`);
-        
-        // Reset status after showing error
-        setTimeout(() => {
-          setAutoSaveStatus('saved');
-        }, 3000);
       }
     } else {
-      console.log('⚠️ Cannot save answer immediately - session not in progress:', {
-        hasSession: !!session,
-        sessionStatus: session?.status
-      });
+      console.log('⚠️ Cannot save answer - no session');
       setAutoSaveStatus('error');
     }
   };
@@ -612,6 +890,12 @@ export const CandidateExamPage: React.FC = () => {
   const handleSubmitExam = async () => {
     if (!session) return;
 
+    // Guard: Prevent multiple submissions
+    if (isSubmittingRef.current) {
+      console.log('⏸️ Submission already in progress, skipping duplicate call');
+      return;
+    }
+
     // Check if all questions are answered
     const unansweredQuestions = questions.length - answers.size;
     if (unansweredQuestions > 0) {
@@ -628,20 +912,85 @@ export const CandidateExamPage: React.FC = () => {
       if (!confirmed) return;
     }
 
+    // Set guard immediately to prevent duplicate calls
+    isSubmittingRef.current = true;
+    setIsSubmitting(true);
+    setShowSubmittingModal(true);
+
     try {
-      setIsSubmitting(true);
-      setShowSubmittingModal(true);
+      console.log('🚀 Starting exam submission process...');
+
+      // Step 1: Stop security monitoring and save answers (with timeout)
+      try {
+        console.log('💾 Step 1: Saving answers and stopping security...');
+        await withTimeout(
+          handleExamSubmission(),
+          30000, // 30 second timeout
+          'Answer saving timed out. Continuing with submission...'
+        );
+        console.log('✅ Step 1 completed: Answers saved and security stopped');
+      } catch (saveError) {
+        console.warn('⚠️ Warning during answer save:', saveError);
+        // Continue even if save fails - answers might already be saved
+        // Stop security monitoring manually if needed
+        if (examSecurityService.isSecurityActive()) {
+          examSecurityService.stopSecurityForExamCompletion();
+        }
+      }
+
+      // Step 2: Complete exam (with timeout - now non-blocking so should be fast)
+      try {
+        console.log('📝 Step 2: Completing exam...');
+        await withTimeout(
+          examService.completeExam(session.id),
+          15000, // 15 second timeout (reduced since completeExam is now non-blocking)
+          'Exam completion timed out. Results may be incomplete.'
+        );
+        console.log('✅ Step 2 completed: Exam marked as completed');
+      } catch (completeError) {
+        console.error('❌ Error completing exam:', completeError);
+        // Even if completeExam fails, try to navigate to results
+        // The exam might still be marked as completed in the database
+        console.log('⚠️ Attempting navigation despite completion error...');
+      }
+
+      // Step 3: Navigate to results (always attempt, even if previous steps had issues)
+      console.log('🧭 Step 3: Navigating to results page...');
       
-      // Stop security monitoring before submitting exam
-      await handleExamSubmission();
+      // Reset submission guard before navigation
+      isSubmittingRef.current = false;
       
-      await examService.completeExam(session.id);
-      navigate(`/exam/mcq-results/${session.id}`);
+      try {
+        navigate(`/exam/mcq-results/${session.id}`);
+        console.log('✅ Navigation initiated');
+        
+        // Fallback navigation with timeout in case React Router navigation fails
+        setTimeout(() => {
+          if (window.location.pathname.includes('/candidate/exam/')) {
+            console.warn('⚠️ Navigation may have failed, forcing redirect');
+            window.location.href = `/exam/mcq-results/${session.id}`;
+          }
+        }, 2000);
+      } catch (navError) {
+        console.error('❌ Navigation error:', navError);
+        // Force navigation as last resort
+        window.location.href = `/exam/mcq-results/${session.id}`;
+      }
+
     } catch (err) {
-      console.error('Error submitting exam:', err);
-      setError('Failed to submit exam. Please try again.');
+      console.error('❌ Critical error during exam submission:', err);
+      setError('Failed to submit exam. Please contact support if this persists.');
+      
+      // Reset UI state and guard
       setIsSubmitting(false);
       setShowSubmittingModal(false);
+      isSubmittingRef.current = false;
+      
+      // Still try to navigate to results in case exam was completed
+      setTimeout(() => {
+        console.log('🔄 Attempting fallback navigation after error...');
+        window.location.href = `/exam/mcq-results/${session.id}`;
+      }, 3000);
     }
   };
 
@@ -662,6 +1011,15 @@ export const CandidateExamPage: React.FC = () => {
     }
   };
 
+  // Format time for display
+  const formatTimeUntilAccess = (minutes: number | null): string => {
+    if (minutes === null) return '';
+    if (minutes < 60) return `${minutes} minute${minutes !== 1 ? 's' : ''}`;
+    const hours = Math.floor(minutes / 60);
+    const mins = minutes % 60;
+    return `${hours} hour${hours !== 1 ? 's' : ''}${mins > 0 ? ` and ${mins} minute${mins !== 1 ? 's' : ''}` : ''}`;
+  };
+
   // Loading state
   if (isLoading) {
     return (
@@ -669,6 +1027,62 @@ export const CandidateExamPage: React.FC = () => {
         <div className="text-center">
           <Loader2 className="w-8 h-8 animate-spin text-blue-600 mx-auto mb-4" />
           <p className="text-gray-600">Loading exam...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Scheduled exam access control - Before scheduled date
+  if (examAccessStatus === 'before_date' && session) {
+    const scheduledStart = new Date(session.scheduled_start_at!);
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+        <div className="text-center max-w-md mx-auto bg-white rounded-lg shadow-lg p-6 sm:p-8">
+          <Calendar className="w-16 h-16 text-blue-600 mx-auto mb-4" />
+          <h2 className="text-2xl font-bold text-gray-900 mb-4">Exam Not Available Yet</h2>
+          <p className="text-lg text-gray-700 mb-4">
+            This exam is scheduled for <strong>{scheduledStart.toLocaleDateString()}</strong> at{' '}
+            <strong>{scheduledStart.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</strong>.
+          </p>
+          <p className="text-sm text-gray-600 mb-6">
+            Please check back on the scheduled date. You can access the exam 30 minutes before the start time.
+          </p>
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+            <p className="text-sm text-blue-800">
+              <strong>Scheduled Start:</strong> {scheduledStart.toLocaleString()}
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Scheduled exam access control - Before 30-minute window
+  if (examAccessStatus === 'before_window' && session) {
+    const scheduledStart = new Date(session.scheduled_start_at!);
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+        <div className="text-center max-w-md mx-auto bg-white rounded-lg shadow-lg p-6 sm:p-8">
+          <Clock className="w-16 h-16 text-orange-600 mx-auto mb-4 animate-pulse" />
+          <h2 className="text-2xl font-bold text-gray-900 mb-4">Exam Will Start Soon</h2>
+          <p className="text-lg text-gray-700 mb-4">
+            The exam will start at <strong>{scheduledStart.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</strong>.
+          </p>
+          <p className="text-sm text-gray-600 mb-6">
+            You can access the exam 30 minutes before the start time. Please wait.
+          </p>
+          {timeUntilAccess !== null && (
+            <div className="bg-orange-50 border border-orange-200 rounded-lg p-4 mb-4">
+              <p className="text-lg font-semibold text-orange-900">
+                Access will be available in: <strong>{formatTimeUntilAccess(timeUntilAccess)}</strong>
+              </p>
+            </div>
+          )}
+          <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+            <p className="text-sm text-gray-700">
+              <strong>Scheduled Start:</strong> {scheduledStart.toLocaleString()}
+            </p>
+          </div>
         </div>
       </div>
     );
@@ -711,21 +1125,40 @@ export const CandidateExamPage: React.FC = () => {
     );
   }
 
-  // Instructions modal
-  if (showInstructions && session) {
+  // Instructions modal - only show if exam is accessible
+  if (showInstructions && session && (examAccessStatus === 'accessible' || examAccessStatus === 'started' || !session.scheduled_start_at)) {
+    // Show countdown if within 30-minute window but before start time
+    const showCountdown = session.scheduled_start_at && examAccessStatus === 'accessible' && timeUntilAccess !== null && timeUntilAccess > 0;
+    
     return (
       <ExamInstructions
         isOpen={showInstructions}
-        onClose={() => setShowInstructions(false)}
-        onStartExam={() => setShowInstructions(false)}
+        onClose={() => {
+          // Only allow closing if exam can be started
+          if (examAccessStatus === 'accessible' || examAccessStatus === 'started' || !session.scheduled_start_at) {
+            setShowInstructions(false);
+          }
+        }}
+        onStartExam={async () => {
+          // Only allow starting if exam is accessible
+          if (examAccessStatus === 'accessible' || examAccessStatus === 'started' || !session.scheduled_start_at) {
+            console.log('✅ User clicked "Start Exam" in instructions - closing instructions');
+            setShowInstructions(false);
+            // Note: Actual exam start (session start + timer) happens in handleExamStart
+            // which is called when user accepts FullScreenExam consent modal
+          }
+        }}
         examDetails={{
           title: session.job_description?.title || 'Technical Assessment',
           duration: session.duration_minutes,
           totalQuestions: session.total_questions,
-          questionTypes: questionTypes // Only show actual question types
+          questionTypes: questionTypes, // Only show actual question types
+          scheduledStartAt: session.scheduled_start_at,
+          timeUntilStart: showCountdown ? timeUntilAccess : null
         }}
         candidate={session.candidate}
         jobDescription={session.job_description}
+        canStart={examAccessStatus === 'accessible' || examAccessStatus === 'started' || !session.scheduled_start_at}
       />
     );
   }
@@ -889,7 +1322,13 @@ export const CandidateExamPage: React.FC = () => {
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center justify-between mb-1 sm:mb-2">
                     <span className="text-lg sm:text-xl font-bold text-blue-600 font-mono">
-                      {Math.floor(timeRemaining)}:{(Math.round((timeRemaining % 1) * 60)).toString().padStart(2, '0')}
+                      {(() => {
+                        // Handle edge cases: NaN, undefined, or negative values
+                        const remaining = isNaN(timeRemaining) || timeRemaining < 0 ? 0 : timeRemaining;
+                        const minutes = Math.floor(remaining);
+                        const seconds = Math.round((remaining % 1) * 60);
+                        return `${minutes}:${seconds.toString().padStart(2, '0')}`;
+                      })()}
                     </span>
                     <span className="text-xs sm:text-sm text-gray-600 font-medium hidden sm:inline">
                       Time Remaining
@@ -981,14 +1420,15 @@ export const CandidateExamPage: React.FC = () => {
                     question={currentQuestion}
                     selectedAnswer={currentAnswer}
                     onAnswerSelect={(answer) => handleAnswerSelect(currentQuestion.id, answer)}
-                    disabled={session?.status !== 'in_progress'}
+                    disabled={!session || (session.status !== 'in_progress' && session.status !== 'pending')}
+                    showCorrectAnswer={false} // Never show correct answers during active exam
                   />
                 ) : (
                   <TextQuestion
                     question={currentQuestion}
                     answer={currentAnswer}
                     onAnswerChange={(answer) => handleAnswerSelect(currentQuestion.id, answer)}
-                    disabled={session?.status !== 'in_progress'}
+                    disabled={!session || (session.status !== 'in_progress' && session.status !== 'pending')}
                     maxLength={1000}
                   />
                 )}
@@ -1068,7 +1508,7 @@ export const CandidateExamPage: React.FC = () => {
                 currentQuestionIndex={currentQuestionIndex}
                 answeredQuestions={answeredQuestions}
                 onQuestionSelect={handleQuestionSelect}
-                disabled={session?.status !== 'in_progress'}
+                disabled={!session || (session.status !== 'in_progress' && session.status !== 'pending')}
               />
             </div>
           </div>

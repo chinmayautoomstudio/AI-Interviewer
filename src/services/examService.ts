@@ -59,7 +59,8 @@ export class ExamService {
       job_description_id,
       duration_minutes = 30,
       total_questions = 15,
-      expires_in_hours = 48
+      expires_in_hours = 48,
+      scheduled_start_at
     } = request;
 
     // Generate secure exam token
@@ -68,6 +69,20 @@ export class ExamService {
     // Calculate expiry time
     const expires_at = new Date();
     expires_at.setHours(expires_at.getHours() + expires_in_hours);
+    
+    // If scheduled_start_at is provided, ensure expires_at is after scheduled start + duration
+    if (scheduled_start_at) {
+      const scheduledStart = new Date(scheduled_start_at);
+      const scheduledEnd = new Date(scheduledStart);
+      scheduledEnd.setMinutes(scheduledEnd.getMinutes() + duration_minutes);
+      
+      // Set expires_at to be at least the scheduled end time
+      if (scheduledEnd > expires_at) {
+        expires_at.setTime(scheduledEnd.getTime());
+        // Add a buffer (e.g., 1 hour) after exam ends
+        expires_at.setHours(expires_at.getHours() + 1);
+      }
+    }
 
     // Check if we have enough MCQ questions for this job description
     const { data: availableQuestions, error: questionsError } = await supabase
@@ -103,6 +118,7 @@ export class ExamService {
         duration_minutes,
         initial_question_count: total_questions,
         expires_at: expires_at.toISOString(),
+        scheduled_start_at: scheduled_start_at || null,
         performance_metadata: {}
       }])
       .select(`
@@ -1647,45 +1663,51 @@ export class ExamService {
     // Update session status
     await this.updateSessionStatus(sessionId, 'completed');
 
-    // Trigger auto-evaluation of MCQ answers (MCQ-only for now)
-    try {
-      console.log('🤖 Triggering auto-evaluation for completed MCQ exam...');
-      const autoEvalResult = await this.autoEvaluateMCQAnswers(sessionId);
-      console.log('✅ Auto-evaluation completed:', {
-        success: autoEvalResult.success,
-        evaluatedCount: autoEvalResult.evaluatedCount,
-        totalMCQCount: autoEvalResult.totalMCQCount
+    // Return immediately - don't wait for evaluation or notifications
+    // These are non-critical operations that can run in the background
+    console.log('✅ Exam marked as completed - returning result immediately');
+
+    // Fire-and-forget: Trigger auto-evaluation of MCQ answers (non-blocking)
+    // This runs in the background and doesn't block the response
+    this.autoEvaluateMCQAnswers(sessionId)
+      .then((autoEvalResult) => {
+        console.log('✅ Auto-evaluation completed (background):', {
+          success: autoEvalResult.success,
+          evaluatedCount: autoEvalResult.evaluatedCount,
+          totalMCQCount: autoEvalResult.totalMCQCount
+        });
+      })
+      .catch((error) => {
+        console.error('❌ Auto-evaluation failed (background, non-critical):', error);
+        // Silently fail - this doesn't affect exam completion
       });
-    } catch (error) {
-      console.error('❌ Auto-evaluation failed (non-critical):', error);
-      // Don't throw error as this is not critical for exam completion
-    }
 
-    // Note: Text evaluation is disabled for now - will be implemented later
-    // Text-based exams will be added in future updates
-
-    // Send notification to admins about exam completion
-    try {
-      await notificationService.notifyExamCompleted({
-        examSessionId: sessionId,
-        candidateId: session.candidate_id,
-        candidateName: session.candidate?.name || 'Unknown Candidate',
-        candidateEmail: session.candidate?.email || 'unknown@example.com',
-        jobDescriptionId: session.job_description_id,
-        jobTitle: session.job_description?.title || 'Unknown Job',
-        examToken: session.exam_token,
-        durationMinutes: session.duration_minutes,
-        totalQuestions: session.total_questions,
-        startedAt: session.started_at,
-        completedAt: new Date().toISOString(),
-        score: total_score,
-        percentage: percentage
+    // Fire-and-forget: Send notification to admins (non-blocking)
+    // This runs in the background and doesn't block the response
+    notificationService.notifyExamCompleted({
+      examSessionId: sessionId,
+      candidateId: session.candidate_id,
+      candidateName: session.candidate?.name || 'Unknown Candidate',
+      candidateEmail: session.candidate?.email || 'unknown@example.com',
+      jobDescriptionId: session.job_description_id,
+      jobTitle: session.job_description?.title || 'Unknown Job',
+      examToken: session.exam_token,
+      durationMinutes: session.duration_minutes,
+      totalQuestions: session.total_questions,
+      startedAt: session.started_at,
+      completedAt: new Date().toISOString(),
+      score: total_score,
+      percentage: percentage
+    })
+      .then(() => {
+        console.log('✅ Exam completion notification sent (background)');
+      })
+      .catch((notificationError) => {
+        console.warn('⚠️ Failed to send exam completed notification (background, non-critical):', notificationError);
+        // Silently fail - this doesn't affect exam completion
       });
-    } catch (notificationError) {
-      console.warn('Failed to send exam completed notification:', notificationError);
-      // Don't fail the exam completion if notification fails
-    }
 
+    // Return immediately - evaluation and notifications run in background
     return data;
   }
 
