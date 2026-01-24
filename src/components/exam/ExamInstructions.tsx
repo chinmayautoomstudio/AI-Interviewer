@@ -28,9 +28,12 @@ interface ExamInstructionsProps {
     duration: number;
     totalQuestions: number;
     questionTypes: string[];
+    scheduledStartAt?: string;
+    timeUntilStart?: number | null;
   };
   candidate?: Candidate;
   jobDescription?: JobDescription;
+  canStart?: boolean; // Whether exam can be started (for scheduled exams)
 }
 
 export const ExamInstructions: React.FC<ExamInstructionsProps> = ({
@@ -39,9 +42,19 @@ export const ExamInstructions: React.FC<ExamInstructionsProps> = ({
   onStartExam,
   examDetails,
   candidate,
-  jobDescription
+  jobDescription,
+  canStart = true
 }) => {
   if (!isOpen) return null;
+
+  // Format time until start
+  const formatTimeUntilStart = (minutes: number | null | undefined): string => {
+    if (minutes === null || minutes === undefined || minutes <= 0) return '';
+    if (minutes < 60) return `${minutes} minute${minutes !== 1 ? 's' : ''}`;
+    const hours = Math.floor(minutes / 60);
+    const mins = minutes % 60;
+    return `${hours} hour${hours !== 1 ? 's' : ''}${mins > 0 ? ` and ${mins} minute${mins !== 1 ? 's' : ''}` : ''}`;
+  };
 
   // Determine which question types exist in the exam
   const hasMCQ = examDetails.questionTypes.some(type => 
@@ -314,6 +327,31 @@ export const ExamInstructions: React.FC<ExamInstructionsProps> = ({
           </div>
         </div>
 
+        {/* Scheduled Exam Notice */}
+        {examDetails.scheduledStartAt && (
+          <div className="p-6 bg-blue-50 border-t border-blue-200">
+            <div className="flex items-start space-x-3">
+              <Clock className="w-6 h-6 text-blue-600 flex-shrink-0 mt-0.5" />
+              <div>
+                <h4 className="font-semibold text-blue-900 mb-2">Scheduled Exam</h4>
+                <p className="text-blue-800 text-sm leading-relaxed mb-2">
+                  This exam is scheduled to start at <strong>{new Date(examDetails.scheduledStartAt).toLocaleString()}</strong>.
+                </p>
+                {examDetails.timeUntilStart !== null && examDetails.timeUntilStart !== undefined && examDetails.timeUntilStart > 0 && (
+                  <p className="text-blue-800 text-sm font-medium">
+                    Exam will start in: <strong>{formatTimeUntilStart(examDetails.timeUntilStart)}</strong>
+                  </p>
+                )}
+                {!canStart && (
+                  <p className="text-blue-800 text-sm font-medium mt-2">
+                    Please wait until the scheduled start time to begin the exam.
+                  </p>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Important Notice */}
         <div className="p-6 bg-yellow-50 border-t border-yellow-200">
           <div className="flex items-start space-x-3">
@@ -345,9 +383,16 @@ export const ExamInstructions: React.FC<ExamInstructionsProps> = ({
               </button>
               <button
                 onClick={onStartExam}
-                className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
+                disabled={!canStart}
+                className={`px-6 py-2 rounded-lg transition-colors font-medium ${
+                  canStart
+                    ? 'bg-blue-600 text-white hover:bg-blue-700'
+                    : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                }`}
               >
-                Start Exam
+                {examDetails.timeUntilStart !== null && examDetails.timeUntilStart !== undefined && examDetails.timeUntilStart > 0
+                  ? `Start Exam (in ${formatTimeUntilStart(examDetails.timeUntilStart)})`
+                  : 'Start Exam'}
               </button>
             </div>
           </div>

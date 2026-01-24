@@ -582,6 +582,7 @@ export interface ExamSession {
   started_at?: string;
   completed_at?: string;
   expires_at: string;
+  scheduled_start_at?: string; // When the exam is scheduled to start (optional)
   score?: number;
   percentage?: number;
   ip_address?: string;
@@ -642,6 +643,7 @@ export interface CreateExamSessionRequest {
   duration_minutes?: number;
   total_questions?: number;
   expires_in_hours?: number;
+  scheduled_start_at?: string; // ISO string of when exam is scheduled to start (optional)
 }
 
 export interface ExamInvitationRequest {
@@ -734,6 +736,7 @@ export interface MCQQuestionProps {
   selectedAnswer?: string;
   onAnswerSelect: (answer: string) => void;
   disabled?: boolean;
+  showCorrectAnswer?: boolean; // Only show correct answers after exam completion
 }
 
 export interface TextQuestionProps {

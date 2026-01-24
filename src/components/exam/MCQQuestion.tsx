@@ -10,7 +10,8 @@ export const MCQQuestion: React.FC<MCQQuestionProps> = ({
   question,
   selectedAnswer,
   onAnswerSelect,
-  disabled = false
+  disabled = false,
+  showCorrectAnswer = false // Never show correct answers during active exam
 }) => {
   const handleOptionSelect = (option: string) => {
     if (!disabled) {
@@ -41,6 +42,8 @@ export const MCQQuestion: React.FC<MCQQuestionProps> = ({
         {question.mcq_options?.map((option, index) => {
           const isSelected = selectedAnswer === option.option;
           const isCorrect = question.correct_answer === option.option;
+          // Only show correct answer styling if explicitly allowed (after exam completion)
+          const shouldShowCorrect = showCorrectAnswer && isCorrect;
           
           return (
             <div
@@ -55,7 +58,7 @@ export const MCQQuestion: React.FC<MCQQuestionProps> = ({
                   ? 'border-blue-500 bg-blue-50 shadow-md' 
                   : 'border-gray-200'
                 }
-                ${disabled && isCorrect 
+                ${shouldShowCorrect 
                   ? 'border-green-500 bg-green-50' 
                   : ''
                 }

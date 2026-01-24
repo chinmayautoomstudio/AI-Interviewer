@@ -39,6 +39,9 @@ interface ExamConfig {
   instructions?: string;
   sendEmailNotification?: boolean;
   customEmailMessage?: string;
+  scheduledDate?: string; // YYYY-MM-DD format
+  scheduledTime?: string; // HH:mm format
+  isScheduled?: boolean; // Whether exam is scheduled or can be accessed immediately
 }
 
 interface BulkExamResult {
@@ -80,7 +83,10 @@ const ExamCreationPage: React.FC = () => {
     examTitle: '',
     instructions: '',
     sendEmailNotification: true,
-    customEmailMessage: ''
+    customEmailMessage: '',
+    scheduledDate: '',
+    scheduledTime: '',
+    isScheduled: false
   });
   const [availableQuestionsCount, setAvailableQuestionsCount] = useState<number>(0);
 
@@ -160,7 +166,10 @@ const ExamCreationPage: React.FC = () => {
       examTitle: '',
       instructions: '',
       sendEmailNotification: true,
-      customEmailMessage: ''
+      customEmailMessage: '',
+      scheduledDate: '',
+      scheduledTime: '',
+      isScheduled: false
     });
     setError(null);
     setSuccess(null);
@@ -226,6 +235,22 @@ const ExamCreationPage: React.FC = () => {
       return;
     }
 
+    // Validate scheduled date/time if exam is scheduled
+    if (config.isScheduled) {
+      if (!config.scheduledDate || !config.scheduledTime) {
+        setError('Please provide both scheduled date and time for the exam.');
+        return;
+      }
+
+      const scheduledDateTime = new Date(`${config.scheduledDate}T${config.scheduledTime}`);
+      const now = new Date();
+      
+      if (scheduledDateTime <= now) {
+        setError('Scheduled date and time must be in the future.');
+        return;
+      }
+    }
+
     const selectedJob = jobDescriptions.find(j => j.id === config.jobDescriptionId);
     if (!selectedJob) {
       setError('Selected job description not found');
@@ -264,13 +289,22 @@ const ExamCreationPage: React.FC = () => {
         };
 
         try {
+          // Prepare scheduled_start_at if exam is scheduled
+          let scheduledStartAt: string | undefined;
+          if (config.isScheduled && config.scheduledDate && config.scheduledTime) {
+            // Combine date and time, convert to ISO string
+            const scheduledDateTime = new Date(`${config.scheduledDate}T${config.scheduledTime}`);
+            scheduledStartAt = scheduledDateTime.toISOString();
+          }
+
           // Create exam session
           const examSession = await examService.createExamSession({
             candidate_id: candidate.id,
             job_description_id: config.jobDescriptionId,
             duration_minutes: config.durationMinutes,
             total_questions: config.totalQuestions,
-            expires_in_hours: config.expiresInHours
+            expires_in_hours: config.expiresInHours,
+            scheduled_start_at: scheduledStartAt
           });
 
           result.success = true;
@@ -591,9 +625,8 @@ const ExamCreationPage: React.FC = () => {
                       </div>
                     )}
                   </div>
+                  </div>
                 </div>
-              </div>
-
                 {/* Right Column - Job Description and Info */}
                 <div className="space-y-4">
                   {/* Job Description Selection */}
@@ -731,6 +764,84 @@ const ExamCreationPage: React.FC = () => {
                     <option value={168}>1 week</option>
                   </select>
                 </div>
+              </div>
+
+              {/* Scheduled Exam Section */}
+              <div className="space-y-3 pt-2 border-t border-gray-200">
+                <div className="flex items-center justify-between">
+                  <label className="flex items-center space-x-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={config.isScheduled}
+                      onChange={(e) => {
+                        setConfig(prev => ({ 
+                          ...prev, 
+                          isScheduled: e.target.checked,
+                          scheduledDate: e.target.checked ? prev.scheduledDate || '' : '',
+                          scheduledTime: e.target.checked ? prev.scheduledTime || '' : ''
+                        }));
+                      }}
+                      className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 w-4 h-4"
+                    />
+                    <span className="text-sm font-medium text-gray-700">Schedule Exam for Specific Date & Time</span>
+                  </label>
+                </div>
+
+                {config.isScheduled && (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pl-6 bg-gray-50 p-4 rounded-lg border border-gray-200">
+                    {/* Scheduled Date */}
+                    <div className="space-y-2">
+                      <label className="block text-sm font-medium text-gray-700">
+                        <span className="flex items-center space-x-1.5">
+                          <Calendar className="w-4 h-4" />
+                          <span>Scheduled Date</span>
+                        </span>
+                      </label>
+                      <input
+                        type="date"
+                        value={config.scheduledDate || ''}
+                        min={new Date().toISOString().split('T')[0]}
+                        onChange={(e) => {
+                          const selectedDate = e.target.value;
+                          setConfig(prev => ({ ...prev, scheduledDate: selectedDate }));
+                        }}
+                        className="w-full px-3 py-2.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white"
+                        required={config.isScheduled}
+                      />
+                    </div>
+
+                    {/* Scheduled Time */}
+                    <div className="space-y-2">
+                      <label className="block text-sm font-medium text-gray-700">
+                        <span className="flex items-center space-x-1.5">
+                          <Clock className="w-4 h-4" />
+                          <span>Scheduled Time</span>
+                        </span>
+                      </label>
+                      <input
+                        type="time"
+                        value={config.scheduledTime || ''}
+                        onChange={(e) => {
+                          setConfig(prev => ({ ...prev, scheduledTime: e.target.value }));
+                        }}
+                        className="w-full px-3 py-2.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white"
+                        required={config.isScheduled}
+                      />
+                    </div>
+
+                    {/* Info Message */}
+                    {config.scheduledDate && config.scheduledTime && (
+                      <div className="sm:col-span-2">
+                        <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                          <p className="text-xs text-blue-800">
+                            <strong>Note:</strong> Candidates can access this exam 30 minutes before the scheduled start time. 
+                            The exam will start at <strong>{new Date(`${config.scheduledDate}T${config.scheduledTime}`).toLocaleString()}</strong>.
+                          </p>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
             </div>
 
