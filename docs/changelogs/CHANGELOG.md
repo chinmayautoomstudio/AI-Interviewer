@@ -226,10 +226,10 @@ This document tracks all major changes, improvements, and fixes made to the AI I
 - `src/components/modals/QuickScheduleModal.tsx` - Quick scheduling modal
 - `src/services/interviews.ts` - Interview management service
 - `src/services/aiAgents.ts` - AI agents service
-- `RESPONSIVE_CALENDAR_DOCUMENTATION.md` - Comprehensive responsive design documentation
-- `RESPONSIVE_LOGIN_DOCUMENTATION.md` - Responsive login page documentation
-- `RESPONSIVE_DASHBOARD_DOCUMENTATION.md` - Responsive dashboard page documentation
-- `JD_HANDLING.md` - Documentation for job description handling process
+- `../responsive-ui/RESPONSIVE_CALENDAR_DOCUMENTATION.md` - Comprehensive responsive design documentation
+- `../responsive-ui/RESPONSIVE_LOGIN_DOCUMENTATION.md` - Responsive login page documentation
+- `../responsive-ui/RESPONSIVE_DASHBOARD_DOCUMENTATION.md` - Responsive dashboard page documentation
+- `../features/JD_HANDLING.md` - Documentation for job description handling process
 - `CHANGELOG.md` - This changelog file
 
 ### Major File Modifications

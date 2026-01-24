@@ -162,13 +162,13 @@ ai-interviewer/
 ## 📚 **Documentation**
 
 - [Database Setup Guide](sql/README_DATABASE_SETUP.md)
-- [Voice Configuration Guide](VOICE_CONFIGURATION_GUIDE.md)
-- [n8n Integration Setup](VOICE_N8N_SETUP_GUIDE.md)
-- [Enhanced Resume Analyzer](docs/ENHANCED_RESUME_ANALYZER.md)
-- [Summary Fields Integration](docs/SUMMARY_FIELDS_INTEGRATION.md)
-- [Two-Factor Authentication Setup](TWO_FACTOR_AUTH_SETUP.md)
-- [Candidate Paid Reports Feature](CANDIDATE_PAID_REPORTS_FEATURE.md)
-- [Changelog Overview](CHANGELOG_OVERVIEW.md)
+- [Voice Configuration Guide](docs/features/VOICE_CONFIGURATION_GUIDE.md)
+- [n8n Integration Setup](docs/features/VOICE_N8N_SETUP_GUIDE.md)
+- [Enhanced Resume Analyzer](docs/guides/ENHANCED_RESUME_ANALYZER.md)
+- [Summary Fields Integration](docs/guides/SUMMARY_FIELDS_INTEGRATION.md)
+- [Two-Factor Authentication Setup](docs/setup/TWO_FACTOR_AUTH_SETUP.md)
+- [Candidate Paid Reports Feature](docs/features/CANDIDATE_PAID_REPORTS_FEATURE.md)
+- [Changelog Overview](docs/changelogs/CHANGELOG_OVERVIEW.md)
 
 ## 🎯 **Key Features Deep Dive**
 
