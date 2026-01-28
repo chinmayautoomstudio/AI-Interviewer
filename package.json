@@ -12,6 +12,9 @@
     "url": "git+https://github.com/chinmayautoomstudio/AI-Interviewer.git"
   },
   "license": "ISC",
+  "engines": {
+    "node": "18"
+  },
   "author": "",
   "type": "commonjs",
   "main": ".eslintrc.js",

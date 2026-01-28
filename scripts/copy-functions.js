@@ -20,8 +20,12 @@ function copyDir(src, dest) {
   }
 }
 
-// Copy netlify functions to build directory
+// Copy netlify functions to build directory (skip if netlify folder missing, e.g. Coolify)
 try {
+  if (!fs.existsSync('netlify')) {
+    console.log('No netlify folder found, skipping functions copy.');
+    process.exit(0);
+  }
   console.log('Copying netlify functions to build directory...');
   copyDir('netlify', 'build/netlify');
   console.log('✅ Functions copied successfully!');
