@@ -2,7 +2,6 @@
 // Service for sending exam invitations and managing exam-related email communications
 
 import { supabase } from './supabase';
-import { EMAIL_API_URL } from '../config/emailConfig';
 // import { ExamSession } from '../types'; // Removed unused import
 
 export interface ExamEmailData {
@@ -205,7 +204,7 @@ AI HR Saathi Team
 
       // Try to send email via Netlify function with fallback
       try {
-        const response = await fetch(EMAIL_API_URL, {
+        const response = await fetch('/.netlify/functions/send-email', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -225,7 +224,7 @@ AI HR Saathi Team
           // If it's a 404, the function is not deployed
           if (response.status === 404) {
             console.warn('⚠️ Netlify function not found (404) - storing email in database instead');
-            console.warn('💡 To fix this: Deploy the Netlify function, or set REACT_APP_EMAIL_API_URL for Coolify/other hosting');
+            console.warn('💡 To fix this: Deploy the Netlify function or configure email service');
             return await this.storeEmailInDatabase(data, htmlContent, textContent);
           }
           
