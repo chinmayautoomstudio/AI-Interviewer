@@ -1,4 +1,5 @@
 import { supabase } from './supabase';
+import { EMAIL_API_URL } from '../config/emailConfig';
 
 export interface TwoFactorAuthResponse {
   success: boolean;
@@ -82,7 +83,7 @@ export class TwoFactorAuthService {
       };
 
       // Try to send via Netlify function first
-      const response = await fetch('/.netlify/functions/send-email', {
+      const response = await fetch(EMAIL_API_URL, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

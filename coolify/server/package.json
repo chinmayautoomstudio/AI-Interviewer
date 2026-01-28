@@ -1,0 +1,17 @@
+{
+  "name": "aihrsaathi-email-api",
+  "version": "1.0.0",
+  "description": "Send-email API for Coolify (same contract as Netlify function)",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "express": "^4.18.2",
+    "resend": "^3.2.0"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
