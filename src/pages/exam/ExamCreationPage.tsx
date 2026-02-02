@@ -20,14 +20,27 @@ import {
   Search,
   Download,
   X,
-  Loader2
+  Loader2,
+  FileText,
+  Upload,
+  Sparkles,
+  User,
+  Briefcase,
+  GraduationCap,
+  Code,
+  ChevronDown,
+  ChevronUp
 } from 'lucide-react';
-import { Candidate, JobDescription } from '../../types';
+import { Candidate, JobDescription, GeneratedQuestion, CVBasedExamConfig } from '../../types';
 import { getCandidates } from '../../services/candidates';
 import { JobDescriptionsService } from '../../services/jobDescriptions';
 import { examService } from '../../services/examService';
 import { ExamEmailService, ExamEmailData } from '../../services/examEmailService';
+import { n8nExamWorkflows, buildCvQuestionGenerationRequest } from '../../services/n8nExamWorkflows';
+import { pdfTextExtractionService } from '../../services/pdfTextExtractionService';
 import * as XLSX from 'xlsx';
+
+type ExamCreationTab = 'job-based' | 'cv-based';
 
 interface ExamConfig {
   candidateId: string;
@@ -65,6 +78,9 @@ const ExamCreationPage: React.FC = () => {
   const [success, setSuccess] = useState<string | null>(null);
   const [createdExamToken, setCreatedExamToken] = useState<string | null>(null);
 
+  // Tab state
+  const [activeTab, setActiveTab] = useState<ExamCreationTab>('job-based');
+
   // Bulk creation state
   const [selectedCandidates, setSelectedCandidates] = useState<Set<string>>(new Set());
   const [candidateSearchTerm, setCandidateSearchTerm] = useState<string>('');
@@ -73,6 +89,29 @@ const ExamCreationPage: React.FC = () => {
   const [bulkResults, setBulkResults] = useState<BulkExamResult[]>([]);
   const [showBulkResults, setShowBulkResults] = useState(false);
   const [showBulkModal, setShowBulkModal] = useState(false);
+
+  // CV-based exam state
+  const [cvSelectedCandidateId, setCvSelectedCandidateId] = useState<string>('');
+  const [cvSource, setCvSource] = useState<'existing' | 'upload'>('existing');
+  const [cvUploadedFile, setCvUploadedFile] = useState<File | null>(null);
+  const [cvUploadedText, setCvUploadedText] = useState<string>('');
+  const [cvConfig, setCvConfig] = useState({
+    durationMinutes: 30,
+    totalQuestions: 15,
+    expiresInHours: 48,
+    technicalPercentage: 70,
+    aptitudePercentage: 30,
+    difficultyDistribution: { easy: 20, medium: 50, hard: 30 },
+    sendEmailNotification: true,
+    customEmailMessage: ''
+  });
+  const [cvFocusAreas, setCvFocusAreas] = useState<string[]>([]);
+  const [cvGenerating, setCvGenerating] = useState(false);
+  const [cvGeneratedQuestions, setCvGeneratedQuestions] = useState<GeneratedQuestion[]>([]);
+  const [cvShowQuestionReview, setCvShowQuestionReview] = useState(false);
+  const [cvCreating, setCvCreating] = useState(false);
+  const [cvCreatedExamToken, setCvCreatedExamToken] = useState<string | null>(null);
+  const [cvShowCandidateDetails, setCvShowCandidateDetails] = useState(true);
 
   const [config, setConfig] = useState<ExamConfig>({
     candidateId: '',
@@ -415,6 +454,232 @@ const ExamCreationPage: React.FC = () => {
     }
   };
 
+  // ===== CV-BASED EXAM HANDLERS =====
+
+  // Get selected candidate for CV-based exam
+  const cvSelectedCandidate = candidates.find(c => c.id === cvSelectedCandidateId);
+
+  // Get candidate skills as array
+  const getCandidateSkills = (candidate: Candidate): string[] => {
+    if (!candidate.skills) return [];
+    if (Array.isArray(candidate.skills)) {
+      return candidate.skills.map(s => typeof s === 'string' ? s : s.name || String(s));
+    }
+    if (typeof candidate.skills === 'object') {
+      const skills: string[] = [];
+      Object.values(candidate.skills).forEach((group: any) => {
+        if (Array.isArray(group)) {
+          skills.push(...group.map(s => typeof s === 'string' ? s : String(s)));
+        }
+      });
+      return skills;
+    }
+    return [];
+  };
+
+  // Handle CV file upload
+  const handleCvFileUpload = async (file: File) => {
+    setCvUploadedFile(file);
+    setError(null);
+    
+    try {
+      // Extract text from PDF
+      if (file.type === 'application/pdf') {
+        const result = await pdfTextExtractionService.extractText({ file });
+        if (result.success && result.extracted_text) {
+          setCvUploadedText(result.extracted_text);
+        } else {
+          throw new Error(result.error || 'Failed to extract text from PDF');
+        }
+      } else {
+        // For other file types, read as text
+        const text = await file.text();
+        setCvUploadedText(text);
+      }
+    } catch (err) {
+      console.error('Error reading CV file:', err);
+      setError(err instanceof Error ? err.message : 'Failed to read CV file');
+      setCvUploadedFile(null);
+      setCvUploadedText('');
+    }
+  };
+
+  // Handle CV file drop
+  const handleCvDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    const file = e.dataTransfer.files[0];
+    if (file && (file.type === 'application/pdf' || file.type.includes('document'))) {
+      handleCvFileUpload(file);
+    } else {
+      setError('Please upload a PDF or DOC file');
+    }
+  };
+
+  // Toggle focus area selection
+  const toggleFocusArea = (skill: string) => {
+    setCvFocusAreas(prev => 
+      prev.includes(skill) 
+        ? prev.filter(s => s !== skill)
+        : [...prev, skill]
+    );
+  };
+
+  // Generate questions from CV
+  const handleGenerateQuestionsFromCV = async () => {
+    if (!cvSelectedCandidate) {
+      setError('Please select a candidate');
+      return;
+    }
+
+    // Get CV data based on source
+    let candidateData = cvSelectedCandidate;
+    if (cvSource === 'upload' && cvUploadedText) {
+      // Use uploaded CV text
+      candidateData = {
+        ...cvSelectedCandidate,
+        resume_text: cvUploadedText
+      };
+    }
+
+    setCvGenerating(true);
+    setError(null);
+    setCvGeneratedQuestions([]);
+
+    try {
+      const request = buildCvQuestionGenerationRequest(
+        {
+          name: candidateData.name,
+          skills: candidateData.skills,
+          experience: candidateData.experience,
+          education: candidateData.education,
+          projects: candidateData.projects,
+          resume_summary: candidateData.resume_summary,
+          resume_text: candidateData.resume_text
+        },
+        {
+          total_questions: cvConfig.totalQuestions,
+          technical_percentage: cvConfig.technicalPercentage,
+          aptitude_percentage: cvConfig.aptitudePercentage,
+          difficulty_distribution: cvConfig.difficultyDistribution,
+          question_types: { mcq: 100, text: 0 }, // MCQ only for now
+          focus_areas: cvFocusAreas.length > 0 ? cvFocusAreas : undefined
+        }
+      );
+
+      const response = await n8nExamWorkflows.generateQuestionsFromCV(request);
+      
+      if (response.generated_questions && response.generated_questions.length > 0) {
+        setCvGeneratedQuestions(response.generated_questions);
+        setCvShowQuestionReview(true);
+        setSuccess(`Successfully generated ${response.generated_questions.length} questions based on candidate's CV!`);
+      } else {
+        throw new Error('No questions were generated');
+      }
+    } catch (err) {
+      console.error('Error generating questions from CV:', err);
+      setError(err instanceof Error ? err.message : 'Failed to generate questions from CV');
+    } finally {
+      setCvGenerating(false);
+    }
+  };
+
+  // Create CV-based exam
+  const handleCreateCVBasedExam = async () => {
+    if (!cvSelectedCandidate) {
+      setError('Please select a candidate');
+      return;
+    }
+
+    if (cvGeneratedQuestions.length === 0) {
+      setError('Please generate questions first');
+      return;
+    }
+
+    setCvCreating(true);
+    setError(null);
+
+    try {
+      const examSession = await examService.createCVBasedExamSession({
+        candidate_id: cvSelectedCandidateId,
+        duration_minutes: cvConfig.durationMinutes,
+        total_questions: Math.min(cvConfig.totalQuestions, cvGeneratedQuestions.length),
+        expires_in_hours: cvConfig.expiresInHours,
+        cv_based: true,
+        generated_questions: cvGeneratedQuestions,
+        cv_snapshot: {
+          skills: getCandidateSkills(cvSelectedCandidate),
+          experience: cvSelectedCandidate.experience || [],
+          education: cvSelectedCandidate.education || [],
+          projects: cvSelectedCandidate.projects ? 
+            (Array.isArray(cvSelectedCandidate.projects) ? cvSelectedCandidate.projects : [cvSelectedCandidate.projects]) 
+            : [],
+          resume_summary: cvSelectedCandidate.resume_summary
+        }
+      });
+
+      setCvCreatedExamToken(examSession.exam_token);
+      setSuccess('CV-based exam created successfully!');
+
+      // Send email notification if enabled
+      if (cvConfig.sendEmailNotification) {
+        try {
+          const emailData: ExamEmailData = {
+            candidateName: cvSelectedCandidate.name,
+            candidateEmail: cvSelectedCandidate.email,
+            jobTitle: 'CV-Based Assessment',
+            examDuration: cvConfig.durationMinutes,
+            examToken: examSession.exam_token,
+            expiresAt: examSession.expires_at,
+            examLink: `${window.location.origin}/candidate/exam/${examSession.exam_token}`,
+            customMessage: cvConfig.customEmailMessage || '',
+            companyName: 'AI HR Saathi'
+          };
+
+          await ExamEmailService.sendExamInvitation(emailData);
+        } catch (emailError) {
+          console.warn('Failed to send email notification:', emailError);
+        }
+      }
+
+    } catch (err) {
+      console.error('Error creating CV-based exam:', err);
+      setError(err instanceof Error ? err.message : 'Failed to create CV-based exam');
+    } finally {
+      setCvCreating(false);
+    }
+  };
+
+  // Reset CV-based exam form
+  const resetCVForm = () => {
+    setCvSelectedCandidateId('');
+    setCvSource('existing');
+    setCvUploadedFile(null);
+    setCvUploadedText('');
+    setCvFocusAreas([]);
+    setCvGeneratedQuestions([]);
+    setCvShowQuestionReview(false);
+    setCvCreatedExamToken(null);
+    setCvConfig({
+      durationMinutes: 30,
+      totalQuestions: 15,
+      expiresInHours: 48,
+      technicalPercentage: 70,
+      aptitudePercentage: 30,
+      difficultyDistribution: { easy: 20, medium: 50, hard: 30 },
+      sendEmailNotification: true,
+      customEmailMessage: ''
+    });
+  };
+
+  // Copy CV exam link
+  const copyCvExamLink = () => {
+    if (cvCreatedExamToken) {
+      const examUrl = `${window.location.origin}/candidate/exam/${cvCreatedExamToken}`;
+      navigator.clipboard.writeText(examUrl);
+      setSuccess('Exam link copied to clipboard!');
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -520,7 +785,41 @@ const ExamCreationPage: React.FC = () => {
           </div>
         )}
 
-        {/* Main Form */}
+        {/* Tab Navigation */}
+        <div className="mb-4 sm:mb-6">
+          <div className="bg-white rounded-lg shadow-sm border p-1">
+            <div className="flex">
+              <button
+                type="button"
+                onClick={() => setActiveTab('job-based')}
+                className={`flex-1 flex items-center justify-center space-x-2 px-4 py-3 rounded-lg text-sm font-medium transition-colors ${
+                  activeTab === 'job-based'
+                    ? 'bg-blue-600 text-white shadow-sm'
+                    : 'text-gray-600 hover:bg-gray-100'
+                }`}
+              >
+                <BookOpen className="w-4 h-4" />
+                <span>Job Description Based</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setActiveTab('cv-based')}
+                className={`flex-1 flex items-center justify-center space-x-2 px-4 py-3 rounded-lg text-sm font-medium transition-colors ${
+                  activeTab === 'cv-based'
+                    ? 'bg-purple-600 text-white shadow-sm'
+                    : 'text-gray-600 hover:bg-gray-100'
+                }`}
+              >
+                <FileText className="w-4 h-4" />
+                <span>CV-Based Exam</span>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* Job Description Based Form */}
+        {activeTab === 'job-based' && (
+          <>
         <div className="bg-white rounded-lg shadow-sm border">
           <form onSubmit={handleBulkSubmit} className="p-4 sm:p-6 md:p-8 space-y-6 md:space-y-8">
             {/* Error Message */}
@@ -1435,6 +1734,633 @@ const ExamCreationPage: React.FC = () => {
                 </div>
               )}
             </div>
+          </div>
+        )}
+          </>
+        )}
+
+        {/* CV-Based Exam Form */}
+        {activeTab === 'cv-based' && (
+          <div className="space-y-6">
+            {/* CV Exam Success Message */}
+            {cvCreatedExamToken && (
+              <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-3 sm:space-y-0">
+                  <div className="flex items-center space-x-3">
+                    <div className="p-2 bg-green-100 rounded-lg">
+                      <CheckCircle className="w-5 h-5 text-green-600" />
+                    </div>
+                    <div>
+                      <h3 className="font-semibold text-green-900">CV-Based Exam Created!</h3>
+                      <p className="text-sm text-green-700">Share this link with the candidate</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <button
+                      onClick={copyCvExamLink}
+                      className="flex items-center space-x-1.5 px-3 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm"
+                    >
+                      <Copy className="w-4 h-4" />
+                      <span>Copy Link</span>
+                    </button>
+                    <button
+                      onClick={resetCVForm}
+                      className="px-3 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors text-sm"
+                    >
+                      Create Another
+                    </button>
+                  </div>
+                </div>
+                <div className="mt-3 p-3 bg-white rounded-lg border">
+                  <code className="text-sm text-gray-800 break-all">
+                    {`${window.location.origin}/candidate/exam/${cvCreatedExamToken}`}
+                  </code>
+                </div>
+              </div>
+            )}
+
+            {/* Main CV Form */}
+            {!cvCreatedExamToken && (
+              <div className="bg-white rounded-lg shadow-sm border">
+                <div className="p-4 sm:p-6 space-y-6">
+                  {/* Section: Select Candidate */}
+                  <div className="space-y-4">
+                    <div className="flex items-center space-x-2.5">
+                      <div className="p-2 bg-purple-100 rounded-lg">
+                        <User className="w-4 h-4 text-purple-600" />
+                      </div>
+                      <h2 className="text-base font-semibold text-gray-900">Select Candidate</h2>
+                    </div>
+
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                      {/* Candidate Dropdown */}
+                      <div className="space-y-2">
+                        <label className="block text-sm font-medium text-gray-700">Candidate</label>
+                        <select
+                          value={cvSelectedCandidateId}
+                          onChange={(e) => {
+                            setCvSelectedCandidateId(e.target.value);
+                            setCvFocusAreas([]);
+                            setCvGeneratedQuestions([]);
+                            setCvShowQuestionReview(false);
+                          }}
+                          className="w-full px-3 py-2.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent bg-white"
+                        >
+                          <option value="">Select a candidate...</option>
+                          {candidates.map((candidate) => (
+                            <option key={candidate.id} value={candidate.id}>
+                              {candidate.name} - {candidate.email}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+
+                      {/* CV Source Selection */}
+                      <div className="space-y-2">
+                        <label className="block text-sm font-medium text-gray-700">CV Source</label>
+                        <div className="flex space-x-3">
+                          <button
+                            type="button"
+                            onClick={() => setCvSource('existing')}
+                            className={`flex-1 flex items-center justify-center space-x-2 px-3 py-2.5 rounded-lg border text-sm font-medium transition-colors ${
+                              cvSource === 'existing'
+                                ? 'bg-purple-50 border-purple-500 text-purple-700'
+                                : 'border-gray-300 text-gray-600 hover:bg-gray-50'
+                            }`}
+                          >
+                            <FileText className="w-4 h-4" />
+                            <span>Use Existing CV</span>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setCvSource('upload')}
+                            className={`flex-1 flex items-center justify-center space-x-2 px-3 py-2.5 rounded-lg border text-sm font-medium transition-colors ${
+                              cvSource === 'upload'
+                                ? 'bg-purple-50 border-purple-500 text-purple-700'
+                                : 'border-gray-300 text-gray-600 hover:bg-gray-50'
+                            }`}
+                          >
+                            <Upload className="w-4 h-4" />
+                            <span>Upload New CV</span>
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* CV Upload Area */}
+                    {cvSource === 'upload' && (
+                      <div
+                        className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-purple-400 transition-colors cursor-pointer"
+                        onDrop={handleCvDrop}
+                        onDragOver={(e) => e.preventDefault()}
+                        onClick={() => document.getElementById('cv-file-input')?.click()}
+                      >
+                        <input
+                          id="cv-file-input"
+                          type="file"
+                          accept=".pdf,.doc,.docx"
+                          className="hidden"
+                          onChange={(e) => {
+                            const file = e.target.files?.[0];
+                            if (file) handleCvFileUpload(file);
+                          }}
+                        />
+                        {cvUploadedFile ? (
+                          <div className="space-y-2">
+                            <FileText className="w-10 h-10 text-purple-500 mx-auto" />
+                            <p className="text-sm font-medium text-gray-900">{cvUploadedFile.name}</p>
+                            <p className="text-xs text-green-600">File uploaded successfully</p>
+                          </div>
+                        ) : (
+                          <div className="space-y-2">
+                            <Upload className="w-10 h-10 text-gray-400 mx-auto" />
+                            <p className="text-sm text-gray-600">
+                              Drag and drop a CV file, or click to browse
+                            </p>
+                            <p className="text-xs text-gray-400">Supports PDF, DOC, DOCX (max 5MB)</p>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Candidate CV Preview */}
+                  {cvSelectedCandidate && cvSource === 'existing' && (
+                    <div className="space-y-4">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center space-x-2.5">
+                          <div className="p-2 bg-blue-100 rounded-lg">
+                            <FileText className="w-4 h-4 text-blue-600" />
+                          </div>
+                          <h2 className="text-base font-semibold text-gray-900">Candidate CV Data</h2>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => setCvShowCandidateDetails(!cvShowCandidateDetails)}
+                          className="text-sm text-gray-500 hover:text-gray-700 flex items-center space-x-1"
+                        >
+                          <span>{cvShowCandidateDetails ? 'Hide' : 'Show'} Details</span>
+                          {cvShowCandidateDetails ? (
+                            <ChevronUp className="w-4 h-4" />
+                          ) : (
+                            <ChevronDown className="w-4 h-4" />
+                          )}
+                        </button>
+                      </div>
+
+                      {cvShowCandidateDetails && (
+                        <div className="bg-gray-50 rounded-lg p-4 space-y-4">
+                          {/* Skills */}
+                          {getCandidateSkills(cvSelectedCandidate).length > 0 && (
+                            <div>
+                              <div className="flex items-center space-x-2 mb-2">
+                                <Code className="w-4 h-4 text-gray-500" />
+                                <span className="text-sm font-medium text-gray-700">Skills</span>
+                              </div>
+                              <div className="flex flex-wrap gap-2">
+                                {getCandidateSkills(cvSelectedCandidate).slice(0, 20).map((skill, idx) => (
+                                  <span
+                                    key={idx}
+                                    className="px-2 py-1 bg-blue-100 text-blue-700 text-xs rounded-full"
+                                  >
+                                    {skill}
+                                  </span>
+                                ))}
+                                {getCandidateSkills(cvSelectedCandidate).length > 20 && (
+                                  <span className="px-2 py-1 bg-gray-200 text-gray-600 text-xs rounded-full">
+                                    +{getCandidateSkills(cvSelectedCandidate).length - 20} more
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Experience */}
+                          {Array.isArray(cvSelectedCandidate.experience) && cvSelectedCandidate.experience.length > 0 && (
+                            <div>
+                              <div className="flex items-center space-x-2 mb-2">
+                                <Briefcase className="w-4 h-4 text-gray-500" />
+                                <span className="text-sm font-medium text-gray-700">Experience</span>
+                              </div>
+                              <div className="space-y-2">
+                                {cvSelectedCandidate.experience.slice(0, 3).map((exp: any, idx: number) => (
+                                  <div key={idx} className="text-sm text-gray-600">
+                                    <span className="font-medium">{exp.title || exp.position}</span>
+                                    {exp.company && <span> at {exp.company}</span>}
+                                    {exp.duration && <span className="text-gray-400"> ({exp.duration})</span>}
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Education */}
+                          {Array.isArray(cvSelectedCandidate.education) && cvSelectedCandidate.education.length > 0 && (
+                            <div>
+                              <div className="flex items-center space-x-2 mb-2">
+                                <GraduationCap className="w-4 h-4 text-gray-500" />
+                                <span className="text-sm font-medium text-gray-700">Education</span>
+                              </div>
+                              <div className="space-y-1">
+                                {cvSelectedCandidate.education.slice(0, 2).map((edu: any, idx: number) => (
+                                  <div key={idx} className="text-sm text-gray-600">
+                                    <span className="font-medium">{edu.degree}</span>
+                                    {edu.institution && <span> - {edu.institution}</span>}
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Resume Summary */}
+                          {cvSelectedCandidate.resume_summary && (
+                            <div>
+                              <span className="text-sm font-medium text-gray-700">Summary</span>
+                              <p className="text-sm text-gray-600 mt-1 line-clamp-3">
+                                {cvSelectedCandidate.resume_summary}
+                              </p>
+                            </div>
+                          )}
+
+                          {/* No CV Data Warning */}
+                          {!getCandidateSkills(cvSelectedCandidate).length && 
+                           !cvSelectedCandidate.experience?.length && 
+                           !cvSelectedCandidate.resume_summary && (
+                            <div className="text-center py-4">
+                              <AlertCircle className="w-8 h-8 text-yellow-500 mx-auto mb-2" />
+                              <p className="text-sm text-gray-600">
+                                No CV data found for this candidate.
+                              </p>
+                              <p className="text-xs text-gray-400 mt-1">
+                                Try uploading a new CV or select a different candidate.
+                              </p>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Focus Areas Selection */}
+                  {cvSelectedCandidate && getCandidateSkills(cvSelectedCandidate).length > 0 && (
+                    <div className="space-y-4">
+                      <div className="flex items-center space-x-2.5">
+                        <div className="p-2 bg-orange-100 rounded-lg">
+                          <Sparkles className="w-4 h-4 text-orange-600" />
+                        </div>
+                        <h2 className="text-base font-semibold text-gray-900">Focus Areas (Optional)</h2>
+                      </div>
+                      <p className="text-sm text-gray-600">
+                        Select specific skills to focus the questions on, or leave empty to cover all skills.
+                      </p>
+                      <div className="flex flex-wrap gap-2">
+                        {getCandidateSkills(cvSelectedCandidate).slice(0, 15).map((skill, idx) => (
+                          <button
+                            key={idx}
+                            type="button"
+                            onClick={() => toggleFocusArea(skill)}
+                            className={`px-3 py-1.5 text-sm rounded-full transition-colors ${
+                              cvFocusAreas.includes(skill)
+                                ? 'bg-purple-600 text-white'
+                                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                            }`}
+                          >
+                            {skill}
+                          </button>
+                        ))}
+                      </div>
+                      {cvFocusAreas.length > 0 && (
+                        <p className="text-xs text-purple-600">
+                          {cvFocusAreas.length} focus area{cvFocusAreas.length !== 1 ? 's' : ''} selected
+                        </p>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Exam Configuration */}
+                  <div className="space-y-4">
+                    <div className="flex items-center space-x-2.5">
+                      <div className="p-2 bg-green-100 rounded-lg">
+                        <Settings className="w-4 h-4 text-green-600" />
+                      </div>
+                      <h2 className="text-base font-semibold text-gray-900">Exam Configuration</h2>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                      <div className="space-y-2">
+                        <label className="block text-sm font-medium text-gray-700">
+                          <span className="flex items-center space-x-1.5">
+                            <Clock className="w-4 h-4" />
+                            <span>Duration (minutes)</span>
+                          </span>
+                        </label>
+                        <input
+                          type="number"
+                          min="5"
+                          max="180"
+                          value={cvConfig.durationMinutes}
+                          onChange={(e) => setCvConfig(prev => ({ ...prev, durationMinutes: parseInt(e.target.value) || 30 }))}
+                          className="w-full px-3 py-2.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                        />
+                      </div>
+
+                      <div className="space-y-2">
+                        <label className="block text-sm font-medium text-gray-700">Total Questions</label>
+                        <input
+                          type="number"
+                          min="5"
+                          max="50"
+                          value={cvConfig.totalQuestions}
+                          onChange={(e) => setCvConfig(prev => ({ ...prev, totalQuestions: parseInt(e.target.value) || 15 }))}
+                          className="w-full px-3 py-2.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                        />
+                      </div>
+
+                      <div className="space-y-2">
+                        <label className="block text-sm font-medium text-gray-700">Expires In</label>
+                        <select
+                          value={cvConfig.expiresInHours}
+                          onChange={(e) => setCvConfig(prev => ({ ...prev, expiresInHours: parseInt(e.target.value) }))}
+                          className="w-full px-3 py-2.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                        >
+                          <option value={24}>24 hours</option>
+                          <option value={48}>48 hours</option>
+                          <option value={72}>72 hours</option>
+                          <option value={168}>1 week</option>
+                        </select>
+                      </div>
+                    </div>
+
+                    {/* Technical/Aptitude Split */}
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <label className="block text-sm font-medium text-gray-700">
+                          Technical Questions (%)
+                        </label>
+                        <input
+                          type="number"
+                          min="0"
+                          max="100"
+                          value={cvConfig.technicalPercentage}
+                          onChange={(e) => {
+                            const tech = parseInt(e.target.value) || 0;
+                            setCvConfig(prev => ({
+                              ...prev,
+                              technicalPercentage: Math.min(100, Math.max(0, tech)),
+                              aptitudePercentage: 100 - Math.min(100, Math.max(0, tech))
+                            }));
+                          }}
+                          className="w-full px-3 py-2.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <label className="block text-sm font-medium text-gray-700">
+                          Aptitude Questions (%)
+                        </label>
+                        <input
+                          type="number"
+                          min="0"
+                          max="100"
+                          value={cvConfig.aptitudePercentage}
+                          onChange={(e) => {
+                            const apt = parseInt(e.target.value) || 0;
+                            setCvConfig(prev => ({
+                              ...prev,
+                              aptitudePercentage: Math.min(100, Math.max(0, apt)),
+                              technicalPercentage: 100 - Math.min(100, Math.max(0, apt))
+                            }));
+                          }}
+                          className="w-full px-3 py-2.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                        />
+                      </div>
+                    </div>
+
+                    {/* Difficulty Distribution */}
+                    <div className="space-y-3">
+                      <label className="block text-sm font-medium text-gray-700">
+                        Difficulty Distribution (%)
+                      </label>
+                      <div className="grid grid-cols-3 gap-3">
+                        <div className="space-y-1.5">
+                          <label className="block text-xs font-medium text-green-600">Easy</label>
+                          <input
+                            type="number"
+                            min="0"
+                            max="100"
+                            value={cvConfig.difficultyDistribution.easy}
+                            onChange={(e) => {
+                              const easy = Math.min(100, Math.max(0, parseInt(e.target.value) || 0));
+                              const remaining = 100 - easy;
+                              const currentMediumHard = cvConfig.difficultyDistribution.medium + cvConfig.difficultyDistribution.hard;
+                              const ratio = currentMediumHard > 0 ? remaining / currentMediumHard : 0.5;
+                              setCvConfig(prev => ({
+                                ...prev,
+                                difficultyDistribution: {
+                                  easy,
+                                  medium: Math.round(prev.difficultyDistribution.medium * ratio),
+                                  hard: remaining - Math.round(prev.difficultyDistribution.medium * ratio)
+                                }
+                              }));
+                            }}
+                            className="w-full px-3 py-2 text-sm border border-green-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                          />
+                        </div>
+                        <div className="space-y-1.5">
+                          <label className="block text-xs font-medium text-yellow-600">Medium</label>
+                          <input
+                            type="number"
+                            min="0"
+                            max="100"
+                            value={cvConfig.difficultyDistribution.medium}
+                            onChange={(e) => {
+                              const medium = Math.min(100, Math.max(0, parseInt(e.target.value) || 0));
+                              const remaining = 100 - medium;
+                              const currentEasyHard = cvConfig.difficultyDistribution.easy + cvConfig.difficultyDistribution.hard;
+                              const ratio = currentEasyHard > 0 ? remaining / currentEasyHard : 0.5;
+                              setCvConfig(prev => ({
+                                ...prev,
+                                difficultyDistribution: {
+                                  easy: Math.round(prev.difficultyDistribution.easy * ratio),
+                                  medium,
+                                  hard: remaining - Math.round(prev.difficultyDistribution.easy * ratio)
+                                }
+                              }));
+                            }}
+                            className="w-full px-3 py-2 text-sm border border-yellow-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-transparent"
+                          />
+                        </div>
+                        <div className="space-y-1.5">
+                          <label className="block text-xs font-medium text-red-600">Hard</label>
+                          <input
+                            type="number"
+                            min="0"
+                            max="100"
+                            value={cvConfig.difficultyDistribution.hard}
+                            onChange={(e) => {
+                              const hard = Math.min(100, Math.max(0, parseInt(e.target.value) || 0));
+                              const remaining = 100 - hard;
+                              const currentEasyMedium = cvConfig.difficultyDistribution.easy + cvConfig.difficultyDistribution.medium;
+                              const ratio = currentEasyMedium > 0 ? remaining / currentEasyMedium : 0.5;
+                              setCvConfig(prev => ({
+                                ...prev,
+                                difficultyDistribution: {
+                                  easy: Math.round(prev.difficultyDistribution.easy * ratio),
+                                  medium: remaining - Math.round(prev.difficultyDistribution.easy * ratio),
+                                  hard
+                                }
+                              }));
+                            }}
+                            className="w-full px-3 py-2 text-sm border border-red-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                          />
+                        </div>
+                      </div>
+                      <p className="text-xs text-gray-500">
+                        Total: {cvConfig.difficultyDistribution.easy + cvConfig.difficultyDistribution.medium + cvConfig.difficultyDistribution.hard}%
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Email Notification */}
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg border border-gray-200">
+                      <div className="flex items-center space-x-3">
+                        <div className="p-2 bg-purple-100 rounded-lg">
+                          <Mail className="w-4 h-4 text-purple-600" />
+                        </div>
+                        <div>
+                          <h3 className="text-sm font-medium text-gray-900">Send Email Invitation</h3>
+                          <p className="text-xs text-gray-600">Automatically send exam invitation</p>
+                        </div>
+                      </div>
+                      <label className="relative inline-flex items-center cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={cvConfig.sendEmailNotification}
+                          onChange={(e) => setCvConfig(prev => ({ ...prev, sendEmailNotification: e.target.checked }))}
+                          className="sr-only peer"
+                        />
+                        <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-purple-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-purple-600"></div>
+                      </label>
+                    </div>
+                  </div>
+
+                  {/* Generate Questions Button */}
+                  {!cvShowQuestionReview && (
+                    <div className="flex justify-end pt-4 border-t">
+                      <button
+                        type="button"
+                        onClick={handleGenerateQuestionsFromCV}
+                        disabled={!cvSelectedCandidateId || cvGenerating || (cvSource === 'upload' && !cvUploadedText)}
+                        className="flex items-center space-x-2 px-6 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                      >
+                        {cvGenerating ? (
+                          <>
+                            <Loader2 className="w-5 h-5 animate-spin" />
+                            <span>Generating Questions...</span>
+                          </>
+                        ) : (
+                          <>
+                            <Sparkles className="w-5 h-5" />
+                            <span>Generate Questions from CV</span>
+                          </>
+                        )}
+                      </button>
+                    </div>
+                  )}
+
+                  {/* Question Review Section */}
+                  {cvShowQuestionReview && cvGeneratedQuestions.length > 0 && (
+                    <div className="space-y-4">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center space-x-2.5">
+                          <div className="p-2 bg-indigo-100 rounded-lg">
+                            <Eye className="w-4 h-4 text-indigo-600" />
+                          </div>
+                          <h2 className="text-base font-semibold text-gray-900">
+                            Generated Questions ({cvGeneratedQuestions.length})
+                          </h2>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setCvShowQuestionReview(false);
+                            setCvGeneratedQuestions([]);
+                          }}
+                          className="text-sm text-gray-500 hover:text-gray-700"
+                        >
+                          Regenerate
+                        </button>
+                      </div>
+
+                      <div className="max-h-96 overflow-y-auto space-y-3 border rounded-lg p-3">
+                        {cvGeneratedQuestions.map((question, idx) => (
+                          <div key={idx} className="p-3 bg-gray-50 rounded-lg">
+                            <div className="flex items-start justify-between mb-2">
+                              <span className="text-xs font-medium text-gray-500">Q{idx + 1}</span>
+                              <div className="flex space-x-1.5">
+                                <span className={`px-2 py-0.5 text-xs rounded-full ${
+                                  question.difficulty_level === 'easy' ? 'bg-green-100 text-green-700' :
+                                  question.difficulty_level === 'medium' ? 'bg-yellow-100 text-yellow-700' :
+                                  'bg-red-100 text-red-700'
+                                }`}>
+                                  {question.difficulty_level}
+                                </span>
+                                <span className="px-2 py-0.5 text-xs bg-blue-100 text-blue-700 rounded-full">
+                                  {question.question_category || question.category}
+                                </span>
+                              </div>
+                            </div>
+                            <p className="text-sm text-gray-800 mb-2">{question.question_text}</p>
+                            {question.mcq_options && (
+                              <div className="space-y-1 ml-3">
+                                {question.mcq_options.map((opt, optIdx) => (
+                                  <div key={optIdx} className={`text-xs ${
+                                    opt.option === question.correct_answer 
+                                      ? 'text-green-600 font-medium' 
+                                      : 'text-gray-500'
+                                  }`}>
+                                    {opt.option}. {opt.text}
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+
+                      {/* Create Exam Button */}
+                      <div className="flex justify-end space-x-3 pt-4 border-t">
+                        <button
+                          type="button"
+                          onClick={() => navigate('/exams')}
+                          className="px-5 py-2.5 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
+                        >
+                          Cancel
+                        </button>
+                        <button
+                          type="button"
+                          onClick={handleCreateCVBasedExam}
+                          disabled={cvCreating}
+                          className="flex items-center space-x-2 px-6 py-2.5 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                        >
+                          {cvCreating ? (
+                            <>
+                              <Loader2 className="w-4 h-4 animate-spin" />
+                              <span>Creating Exam...</span>
+                            </>
+                          ) : (
+                            <>
+                              <Plus className="w-4 h-4" />
+                              <span>Create CV-Based Exam</span>
+                            </>
+                          )}
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
           </div>
         )}
       </div>

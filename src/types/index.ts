@@ -646,6 +646,89 @@ export interface CreateExamSessionRequest {
   scheduled_start_at?: string; // ISO string of when exam is scheduled to start (optional)
 }
 
+// CV-Based Exam Types
+export interface CVBasedExamConfig {
+  candidateId: string;
+  cvSource: 'existing' | 'upload';
+  uploadedCvText?: string;
+  uploadedCvFile?: File;
+  durationMinutes: number;
+  totalQuestions: number;
+  expiresInHours: number;
+  sendEmailNotification?: boolean;
+  customEmailMessage?: string;
+  generationConfig: {
+    technicalPercentage: number;
+    aptitudePercentage: number;
+    difficultyDistribution: { easy: number; medium: number; hard: number };
+    focusAreas?: string[]; // Optional: specific skills to focus on
+  };
+}
+
+export interface CVQuestionGenerationRequest {
+  candidate_info: {
+    name: string;
+    skills: string[];
+    experience: any[];
+    education: any[];
+    projects: any[];
+    resume_summary?: string;
+    resume_text?: string;
+  };
+  generation_config: {
+    total_questions: number;
+    technical_percentage: number;
+    aptitude_percentage: number;
+    difficulty_distribution: {
+      easy: number;
+      medium: number;
+      hard: number;
+    };
+    question_types: {
+      mcq: number;
+      text: number;
+    };
+    focus_areas?: string[];
+  };
+  input_method: 'cv_based';
+}
+
+export interface CVQuestionGenerationResponse {
+  generated_questions: GeneratedQuestion[];
+  generation_metadata: {
+    total_generated: number;
+    technical_count: number;
+    aptitude_count: number;
+    mcq_count: number;
+    text_count: number;
+    difficulty_breakdown: {
+      easy: number;
+      medium: number;
+      hard: number;
+    };
+    skills_covered: string[];
+    generation_time: string;
+    ai_model_used: string;
+    confidence_score: number;
+  };
+}
+
+export interface CreateCVBasedExamSessionRequest {
+  candidate_id: string;
+  duration_minutes?: number;
+  total_questions?: number;
+  expires_in_hours?: number;
+  cv_based: true;
+  generated_questions: GeneratedQuestion[];
+  cv_snapshot?: {
+    skills: string[];
+    experience: any[];
+    education: any[];
+    projects: any[];
+    resume_summary?: string;
+  };
+}
+
 export interface ExamInvitationRequest {
   candidate_id: string;
   job_description_id: string;
@@ -686,7 +769,7 @@ export interface QuestionGenerationRequest {
     mcq: number;
     text: number;
   };
-  input_method: 'existing_jd' | 'upload_pdf' | 'manual_input' | 'custom_topic';
+  input_method: 'existing_jd' | 'upload_pdf' | 'manual_input' | 'custom_topic' | 'cv_based';
   custom_topic?: string;
   custom_insights?: string;
 }
@@ -695,7 +778,9 @@ export interface GeneratedQuestion {
   question_text: string;
   question_type: 'mcq' | 'text';
   difficulty_level: 'easy' | 'medium' | 'hard';
-  category: 'technical' | 'aptitude';
+  question_category: 'technical' | 'aptitude';
+  category?: 'technical' | 'aptitude'; // Alias for backward compatibility
+  topic?: string;
   mcq_options?: Array<{option: string; text: string}>;
   correct_answer?: string;
   answer_explanation?: string;

@@ -8,6 +8,8 @@ import {
   ExamResponse, 
   ExamResult,
   CreateExamSessionRequest,
+  CreateCVBasedExamSessionRequest,
+  GeneratedQuestion,
   SubmitAnswerRequest,
   ExamPerformanceMetrics
 } from '../types';
@@ -161,6 +163,183 @@ export class ExamService {
     }
 
     return data;
+  }
+
+  /**
+   * Create a new CV-based exam session for a candidate
+   * This creates an exam with AI-generated questions based on the candidate's CV
+   */
+  async createCVBasedExamSession(request: CreateCVBasedExamSessionRequest): Promise<ExamSession> {
+    const {
+      candidate_id,
+      duration_minutes = 30,
+      total_questions = 15,
+      expires_in_hours = 48,
+      generated_questions,
+      cv_snapshot
+    } = request;
+
+    console.log('📝 Creating CV-based exam session:', {
+      candidate_id,
+      duration_minutes,
+      total_questions,
+      generated_questions_count: generated_questions.length
+    });
+
+    // Validate that we have enough generated questions
+    if (!generated_questions || generated_questions.length === 0) {
+      throw new Error('No questions provided for CV-based exam');
+    }
+
+    if (generated_questions.length < total_questions) {
+      console.warn(`⚠️ Requested ${total_questions} questions but only ${generated_questions.length} were generated`);
+    }
+
+    // Generate secure exam token
+    const exam_token = this.generateExamToken();
+    
+    // Calculate expiry time
+    const expires_at = new Date();
+    expires_at.setHours(expires_at.getHours() + expires_in_hours);
+
+    // Create exam session (without job_description_id for CV-based exams)
+    const { data: examSession, error: sessionError } = await supabase
+      .from('exam_sessions')
+      .insert([{
+        candidate_id,
+        job_description_id: null, // CV-based exams don't have a job description
+        exam_token,
+        total_questions: Math.min(total_questions, generated_questions.length),
+        duration_minutes,
+        initial_question_count: Math.min(total_questions, generated_questions.length),
+        expires_at: expires_at.toISOString(),
+        performance_metadata: {
+          cv_based: true,
+          cv_snapshot: cv_snapshot || null,
+          generation_timestamp: new Date().toISOString()
+        }
+      }])
+      .select(`
+        *,
+        candidate:candidates(*)
+      `)
+      .single();
+
+    if (sessionError) {
+      console.error('Error creating CV-based exam session:', sessionError);
+      throw new Error(`Failed to create CV-based exam session: ${sessionError.message}`);
+    }
+
+    console.log('✅ CV-based exam session created:', examSession.id);
+
+    // Save generated questions to exam_questions table
+    const savedQuestions: ExamQuestion[] = [];
+    const questionsToSave = generated_questions.slice(0, total_questions);
+
+    for (const question of questionsToSave) {
+      try {
+        const { data: savedQuestion, error: questionError } = await supabase
+          .from('exam_questions')
+          .insert([{
+            job_description_id: null, // CV-based questions don't belong to a job description
+            question_text: question.question_text,
+            question_type: question.question_type || 'mcq',
+            question_category: question.question_category || question.category || 'technical',
+            difficulty_level: question.difficulty_level || 'medium',
+            mcq_options: question.mcq_options || null,
+            correct_answer: question.correct_answer || '',
+            answer_explanation: question.answer_explanation || '',
+            points: question.points || 1,
+            time_limit_seconds: question.time_limit_seconds || 60,
+            tags: question.tags || [],
+            subtopic: question.subtopic || null,
+            created_by: 'ai',
+            status: 'approved', // Auto-approve AI-generated questions for CV-based exams
+            is_active: true
+          }])
+          .select()
+          .single();
+
+        if (questionError) {
+          console.error('Error saving question:', questionError);
+          continue; // Skip failed questions but continue with others
+        }
+
+        savedQuestions.push(savedQuestion);
+      } catch (error) {
+        console.error('Error processing question:', error);
+        continue;
+      }
+    }
+
+    console.log(`✅ Saved ${savedQuestions.length}/${questionsToSave.length} questions`);
+
+    if (savedQuestions.length === 0) {
+      // Rollback: delete the exam session if no questions were saved
+      await supabase
+        .from('exam_sessions')
+        .delete()
+        .eq('id', examSession.id);
+      throw new Error('Failed to save any questions for CV-based exam');
+    }
+
+    // Link questions to exam session via exam_session_questions
+    const sessionQuestions = savedQuestions.map((question, index) => ({
+      exam_session_id: examSession.id,
+      question_id: question.id,
+      question_order: index + 1
+    }));
+
+    const { error: linkError } = await supabase
+      .from('exam_session_questions')
+      .insert(sessionQuestions);
+
+    if (linkError) {
+      console.error('Error linking questions to session:', linkError);
+      // Don't fail completely, the questions are saved
+    } else {
+      console.log(`✅ Linked ${sessionQuestions.length} questions to session`);
+    }
+
+    // Update total_questions to match actual saved questions
+    if (savedQuestions.length !== examSession.total_questions) {
+      await supabase
+        .from('exam_sessions')
+        .update({
+          total_questions: savedQuestions.length,
+          initial_question_count: savedQuestions.length
+        })
+        .eq('id', examSession.id);
+      
+      examSession.total_questions = savedQuestions.length;
+      examSession.initial_question_count = savedQuestions.length;
+    }
+
+    // Send notification to admins about CV-based exam session creation
+    try {
+      const notificationResult = await notificationService.notifyExamStarted({
+        examSessionId: examSession.id,
+        candidateId: examSession.candidate_id,
+        candidateName: examSession.candidate?.name || 'Unknown Candidate',
+        candidateEmail: examSession.candidate?.email || 'unknown@example.com',
+        jobDescriptionId: '', // No job description for CV-based exams
+        jobTitle: 'CV-Based Assessment',
+        examToken: examSession.exam_token,
+        durationMinutes: examSession.duration_minutes,
+        totalQuestions: examSession.total_questions,
+        startedAt: examSession.created_at
+      });
+      
+      if (!notificationResult.success) {
+        console.warn('⚠️ CV-based exam notification failed:', notificationResult.error);
+      } else {
+        console.log('✅ CV-based exam notification sent successfully');
+      }
+    } catch (notificationError) {
+      console.warn('⚠️ Failed to send CV-based exam notification:', notificationError);
+    }
+
+    return examSession;
   }
 
   /**
@@ -466,7 +645,14 @@ export class ExamService {
     console.log('🔄 No stored questions found, generating new questions...');
 
     // Check if job_description_id is valid
+    // For CV-based exams, job_description_id is null and questions should already be stored
     if (!session.job_description_id) {
+      // Check if this is a CV-based exam
+      const isCVBased = session.performance_metadata?.cv_based === true;
+      if (isCVBased) {
+        console.error('❌ CV-based exam has no stored questions:', sessionId);
+        throw new Error('CV-based exam session has no stored questions. Questions should be pre-generated.');
+      }
       console.error('❌ No job description ID found for session:', sessionId);
       throw new Error('Exam session has no associated job description');
     }
@@ -1013,9 +1199,6 @@ export class ExamService {
         answer_saved: verification.answer_text === answer_text,
         points_saved: verification.points_earned === points_earned
       });
-
-      // Check if we should add adaptive questions
-      await this.checkAndAddAdaptiveQuestions(exam_session_id);
 
       return data;
     } catch (error) {

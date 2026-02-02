@@ -2,6 +2,7 @@
 const N8N_BASE_URL = process.env.REACT_APP_N8N_BASE_URL || 'http://localhost:5678';
 const N8N_API_KEY = process.env.REACT_APP_N8N_API_KEY || '';
 const N8N_QUESTION_GENERATOR_WEBHOOK = process.env.REACT_APP_N8N_QUESTION_GENERATOR || `${N8N_BASE_URL}/webhook/generate-questions`;
+const N8N_CV_QUESTION_GENERATOR_WEBHOOK = process.env.REACT_APP_N8N_CV_QUESTION_GENERATOR || `${N8N_BASE_URL}/webhook/generate-cv-questions`;
 const N8N_ANSWER_EVALUATOR_WEBHOOK = process.env.REACT_APP_N8N_ANSWER_EVALUATOR || `${N8N_BASE_URL}/webhook/evaluate-answer`;
 const N8N_QUALITY_ASSESSOR_WEBHOOK = process.env.REACT_APP_N8N_QUALITY_ASSESSOR || `${N8N_BASE_URL}/webhook/assess-quality`;
 
@@ -41,13 +42,62 @@ export interface QuestionGenerationRequest {
       max_questions: number;
     }>;
   };
-  input_method: 'existing_jd' | 'upload_pdf' | 'manual_input' | 'custom_topic';
+  input_method: 'existing_jd' | 'upload_pdf' | 'manual_input' | 'custom_topic' | 'cv_based';
   source_info: {
     job_description_id?: string;
     extracted_text?: string;
     manual_description?: string;
     custom_topic?: string;
     topic_insights?: string;
+  };
+}
+
+// CV-Based Question Generation Types
+export interface CVQuestionGenerationRequest {
+  candidate_info: {
+    name: string;
+    skills: string[];
+    experience: any[];
+    education: any[];
+    projects: any[];
+    resume_summary?: string;
+    resume_text?: string;
+  };
+  generation_config: {
+    total_questions: number;
+    technical_percentage: number;
+    aptitude_percentage: number;
+    difficulty_distribution: {
+      easy: number;
+      medium: number;
+      hard: number;
+    };
+    question_types: {
+      mcq: number;
+      text: number;
+    };
+    focus_areas?: string[];
+  };
+  input_method: 'cv_based';
+}
+
+export interface CVQuestionGenerationResponse {
+  generated_questions: GeneratedQuestion[];
+  generation_metadata: {
+    total_generated: number;
+    technical_count: number;
+    aptitude_count: number;
+    mcq_count: number;
+    text_count: number;
+    difficulty_breakdown: {
+      easy: number;
+      medium: number;
+      hard: number;
+    };
+    skills_covered: string[];
+    generation_time: string;
+    ai_model_used: string;
+    confidence_score: number;
   };
 }
 
@@ -255,6 +305,101 @@ export class N8NExamWorkflows {
   }
 
   /**
+   * Generate questions based on candidate's CV/Resume
+   */
+  async generateQuestionsFromCV(request: CVQuestionGenerationRequest): Promise<CVQuestionGenerationResponse> {
+    try {
+      console.log('🚀 Calling N8N CV question generation webhook:', N8N_CV_QUESTION_GENERATOR_WEBHOOK);
+      console.log('📋 CV Request payload:', JSON.stringify(request, null, 2));
+      
+      const response = await fetch(N8N_CV_QUESTION_GENERATOR_WEBHOOK, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${this.apiKey}`,
+        },
+        body: JSON.stringify(request),
+      });
+
+      console.log('📥 Response status:', response.status, response.statusText);
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('❌ N8N CV workflow failed:', errorText);
+        throw new Error(`N8N CV workflow failed: ${response.status} ${response.statusText} - ${errorText}`);
+      }
+
+      const result = await response.json();
+      console.log('📥 Raw N8N CV response:', result);
+
+      // Handle different response formats
+      let generatedQuestions: GeneratedQuestion[] = [];
+      let generationMetadata: any = {};
+
+      if (Array.isArray(result)) {
+        // Direct array response
+        console.log('📋 Processing direct array response with', result.length, 'CV-based questions');
+        generatedQuestions = result;
+        
+        // Extract skills covered from questions
+        const skillsCovered = new Set<string>();
+        result.forEach(q => {
+          if (q.tags) {
+            q.tags.forEach((tag: string) => skillsCovered.add(tag));
+          }
+          if (q.topic) {
+            skillsCovered.add(q.topic);
+          }
+        });
+
+        // Generate metadata from the questions
+        generationMetadata = {
+          total_generated: result.length,
+          technical_count: result.filter(q => q.question_category === 'technical').length,
+          aptitude_count: result.filter(q => q.question_category === 'aptitude').length,
+          mcq_count: result.filter(q => q.question_type === 'mcq').length,
+          text_count: result.filter(q => q.question_type === 'text').length,
+          difficulty_breakdown: {
+            easy: result.filter(q => q.difficulty_level === 'easy').length,
+            medium: result.filter(q => q.difficulty_level === 'medium').length,
+            hard: result.filter(q => q.difficulty_level === 'hard').length,
+          },
+          skills_covered: Array.from(skillsCovered),
+          generation_time: new Date().toISOString(),
+          ai_model_used: 'Multi-Agent System',
+          confidence_score: 0.9
+        };
+
+      } else if (result.generated_questions && Array.isArray(result.generated_questions)) {
+        // Expected format with generated_questions array
+        console.log('📋 Processing structured CV response with', result.generated_questions.length, 'questions');
+        generatedQuestions = result.generated_questions;
+        generationMetadata = result.generation_metadata || {};
+      } else {
+        console.error('❌ Unexpected CV response format:', result);
+        throw new Error('Unexpected response format from N8N CV workflow');
+      }
+
+      console.log('✅ Processed CV-based questions:', {
+        total: generatedQuestions.length,
+        technical: generationMetadata.technical_count,
+        aptitude: generationMetadata.aptitude_count,
+        mcq: generationMetadata.mcq_count,
+        text: generationMetadata.text_count,
+        skills_covered: generationMetadata.skills_covered
+      });
+
+      return {
+        generated_questions: generatedQuestions,
+        generation_metadata: generationMetadata
+      };
+    } catch (error) {
+      console.error('❌ Error calling N8N CV question generation workflow:', error);
+      throw new Error(`Failed to generate CV-based questions: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+  }
+
+  /**
    * Evaluate text answers using N8N workflow
    */
   async evaluateAnswer(request: AnswerEvaluationRequest): Promise<AnswerEvaluationResponse> {
@@ -445,5 +590,88 @@ export const buildQualityAssessmentRequest = (
     topic: question.topic || '',
     mcq_options: question.mcq_options,
     correct_answer: question.correct_answer,
+  };
+};
+
+/**
+ * Build CV-based question generation request from candidate data
+ */
+export const buildCvQuestionGenerationRequest = (
+  candidate: {
+    name: string;
+    skills?: any;
+    experience?: any[];
+    education?: any[];
+    projects?: any;
+    resume_summary?: string;
+    resume_text?: string;
+  },
+  config: {
+    total_questions?: number;
+    technical_percentage?: number;
+    aptitude_percentage?: number;
+    difficulty_distribution?: {
+      easy?: number;
+      medium?: number;
+      hard?: number;
+    };
+    question_types?: {
+      mcq?: number;
+      text?: number;
+    };
+    focus_areas?: string[];
+  }
+): CVQuestionGenerationRequest => {
+  // Normalize skills to array format
+  let skillsArray: string[] = [];
+  if (candidate.skills) {
+    if (Array.isArray(candidate.skills)) {
+      skillsArray = candidate.skills.map(s => typeof s === 'string' ? s : s.name || String(s));
+    } else if (typeof candidate.skills === 'object') {
+      // Handle object format like { technical: [...], soft: [...] }
+      Object.values(candidate.skills).forEach((group: any) => {
+        if (Array.isArray(group)) {
+          skillsArray.push(...group.map(s => typeof s === 'string' ? s : String(s)));
+        }
+      });
+    }
+  }
+
+  // Normalize projects to array format
+  let projectsArray: any[] = [];
+  if (candidate.projects) {
+    if (Array.isArray(candidate.projects)) {
+      projectsArray = candidate.projects;
+    } else if (typeof candidate.projects === 'object') {
+      projectsArray = [candidate.projects];
+    }
+  }
+
+  return {
+    candidate_info: {
+      name: candidate.name || 'Unknown',
+      skills: skillsArray,
+      experience: candidate.experience || [],
+      education: candidate.education || [],
+      projects: projectsArray,
+      resume_summary: candidate.resume_summary || '',
+      resume_text: candidate.resume_text || '',
+    },
+    generation_config: {
+      total_questions: config.total_questions || 15,
+      technical_percentage: config.technical_percentage || 70,
+      aptitude_percentage: config.aptitude_percentage || 30,
+      difficulty_distribution: {
+        easy: config.difficulty_distribution?.easy || 20,
+        medium: config.difficulty_distribution?.medium || 50,
+        hard: config.difficulty_distribution?.hard || 30,
+      },
+      question_types: {
+        mcq: config.question_types?.mcq || 100, // Default to 100% MCQ for CV-based exams
+        text: config.question_types?.text || 0,
+      },
+      focus_areas: config.focus_areas || [],
+    },
+    input_method: 'cv_based',
   };
 };
