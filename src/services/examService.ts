@@ -62,7 +62,8 @@ export class ExamService {
       duration_minutes = 30,
       total_questions = 15,
       expires_in_hours = 48,
-      scheduled_start_at
+      scheduled_start_at,
+      difficulty_distribution
     } = request;
 
     // Generate secure exam token
@@ -121,7 +122,9 @@ export class ExamService {
         initial_question_count: total_questions,
         expires_at: expires_at.toISOString(),
         scheduled_start_at: scheduled_start_at || null,
-        performance_metadata: {}
+        performance_metadata: {
+          difficulty_distribution: difficulty_distribution || { easy: 50, medium: 30, hard: 20 }
+        }
       }])
       .select(`
         *,
@@ -894,8 +897,12 @@ export class ExamService {
         hard: questionsByDifficulty.hard.length
       });
 
-      // Calculate difficulty distribution using Largest Remainder Method: 50% easy, 30% medium, 20% hard
-      const difficultyCounts = distributeProportionally([50, 30, 20], totalQuestions);
+      // Use session difficulty distribution from performance_metadata, or default 50/30/20
+      const dist = session.performance_metadata?.difficulty_distribution;
+      const easyPct = dist?.easy ?? 50;
+      const mediumPct = dist?.medium ?? 30;
+      const hardPct = dist?.hard ?? 20;
+      const difficultyCounts = distributeProportionally([easyPct, mediumPct, hardPct], totalQuestions);
       const easyCount = difficultyCounts[0];
       const mediumCount = difficultyCounts[1];
       const hardCount = difficultyCounts[2];

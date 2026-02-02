@@ -165,8 +165,9 @@ const FullScreenExam: React.FC<FullScreenExamProps> = ({
     alert('You must accept the exam terms to proceed. The exam cannot be started without fullscreen mode and security monitoring.');
   };
 
+  // Proctor (fullscreen + security monitoring) is required and must not be bypassed.
   // NEVER auto-start the exam - it must only start when user clicks "Accept & Start Exam"
-  // The consent modal must always be shown and cannot be bypassed
+  // The consent modal must always be shown and cannot be bypassed.
 
   if (showConsentModal && showWarning) {
     return (

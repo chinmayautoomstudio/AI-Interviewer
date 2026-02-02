@@ -48,6 +48,7 @@ interface ExamConfig {
   durationMinutes: number;
   totalQuestions: number;
   expiresInHours: number;
+  difficultyDistribution: { easy: number; medium: number; hard: number };
   examTitle?: string;
   instructions?: string;
   sendEmailNotification?: boolean;
@@ -119,6 +120,7 @@ const ExamCreationPage: React.FC = () => {
     durationMinutes: 30,
     totalQuestions: 15,
     expiresInHours: 48,
+    difficultyDistribution: { easy: 50, medium: 30, hard: 20 },
     examTitle: '',
     instructions: '',
     sendEmailNotification: true,
@@ -202,6 +204,7 @@ const ExamCreationPage: React.FC = () => {
       durationMinutes: 30,
       totalQuestions: 15,
       expiresInHours: 48,
+      difficultyDistribution: { easy: 50, medium: 30, hard: 20 },
       examTitle: '',
       instructions: '',
       sendEmailNotification: true,
@@ -260,6 +263,12 @@ const ExamCreationPage: React.FC = () => {
 
     if (!config.jobDescriptionId) {
       setError('Please select a job description');
+      return;
+    }
+
+    const difficultySum = config.difficultyDistribution.easy + config.difficultyDistribution.medium + config.difficultyDistribution.hard;
+    if (difficultySum !== 100) {
+      setError('Total must be 100%. Please increase or decrease Easy, Medium, or Hard so the three fields add up to 100%.');
       return;
     }
 
@@ -343,7 +352,8 @@ const ExamCreationPage: React.FC = () => {
             duration_minutes: config.durationMinutes,
             total_questions: config.totalQuestions,
             expires_in_hours: config.expiresInHours,
-            scheduled_start_at: scheduledStartAt
+            scheduled_start_at: scheduledStartAt,
+            difficulty_distribution: config.difficultyDistribution
           });
 
           result.success = true;
@@ -1065,6 +1075,74 @@ const ExamCreationPage: React.FC = () => {
                 </div>
               </div>
 
+              {/* Difficulty Distribution (Job-based) */}
+              <div className="space-y-3">
+                <label className="block text-sm font-medium text-gray-700">
+                  Difficulty Distribution (%)
+                </label>
+                <div className="grid grid-cols-3 gap-3">
+                  <div className="space-y-1.5">
+                    <label className="block text-xs font-medium text-green-600">Easy</label>
+                    <input
+                      type="number"
+                      min={0}
+                      max={100}
+                      value={config.difficultyDistribution.easy}
+                      onChange={(e) => {
+                        const v = Math.min(100, Math.max(0, parseInt(e.target.value) || 0));
+                        setConfig(prev => ({
+                          ...prev,
+                          difficultyDistribution: { ...prev.difficultyDistribution, easy: v }
+                        }));
+                      }}
+                      className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white"
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <label className="block text-xs font-medium text-yellow-600">Medium</label>
+                    <input
+                      type="number"
+                      min={0}
+                      max={100}
+                      value={config.difficultyDistribution.medium}
+                      onChange={(e) => {
+                        const v = Math.min(100, Math.max(0, parseInt(e.target.value) || 0));
+                        setConfig(prev => ({
+                          ...prev,
+                          difficultyDistribution: { ...prev.difficultyDistribution, medium: v }
+                        }));
+                      }}
+                      className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white"
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <label className="block text-xs font-medium text-red-600">Hard</label>
+                    <input
+                      type="number"
+                      min={0}
+                      max={100}
+                      value={config.difficultyDistribution.hard}
+                      onChange={(e) => {
+                        const v = Math.min(100, Math.max(0, parseInt(e.target.value) || 0));
+                        setConfig(prev => ({
+                          ...prev,
+                          difficultyDistribution: { ...prev.difficultyDistribution, hard: v }
+                        }));
+                      }}
+                      className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white"
+                    />
+                  </div>
+                </div>
+                <p className={`text-xs ${config.difficultyDistribution.easy + config.difficultyDistribution.medium + config.difficultyDistribution.hard === 100 ? 'text-gray-500' : 'text-red-600'}`}>
+                  Total: {config.difficultyDistribution.easy + config.difficultyDistribution.medium + config.difficultyDistribution.hard}%
+                </p>
+                {config.difficultyDistribution.easy + config.difficultyDistribution.medium + config.difficultyDistribution.hard !== 100 && (
+                  <p className="text-xs text-red-600">
+                    Total must be 100%. Please increase or decrease Easy, Medium, or Hard so the three fields add up to 100%.
+                  </p>
+                )}
+              </div>
+
               {/* Scheduled Exam Section */}
               <div className="space-y-3 pt-2 border-t border-gray-200">
                 <div className="flex items-center justify-between">
@@ -1240,7 +1318,12 @@ const ExamCreationPage: React.FC = () => {
               <button
                 type="submit"
                 onClick={handleBulkSubmit}
-                disabled={bulkCreating || selectedCandidates.size === 0 || !config.jobDescriptionId}
+                disabled={
+                  bulkCreating ||
+                  selectedCandidates.size === 0 ||
+                  !config.jobDescriptionId ||
+                  config.difficultyDistribution.easy + config.difficultyDistribution.medium + config.difficultyDistribution.hard !== 100
+                }
                 className="px-6 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center space-x-2 text-sm font-medium shadow-sm"
               >
                 {bulkCreating ? (
@@ -2145,21 +2228,14 @@ const ExamCreationPage: React.FC = () => {
                           <label className="block text-xs font-medium text-green-600">Easy</label>
                           <input
                             type="number"
-                            min="0"
-                            max="100"
+                            min={0}
+                            max={100}
                             value={cvConfig.difficultyDistribution.easy}
                             onChange={(e) => {
-                              const easy = Math.min(100, Math.max(0, parseInt(e.target.value) || 0));
-                              const remaining = 100 - easy;
-                              const currentMediumHard = cvConfig.difficultyDistribution.medium + cvConfig.difficultyDistribution.hard;
-                              const ratio = currentMediumHard > 0 ? remaining / currentMediumHard : 0.5;
+                              const v = Math.min(100, Math.max(0, parseInt(e.target.value) || 0));
                               setCvConfig(prev => ({
                                 ...prev,
-                                difficultyDistribution: {
-                                  easy,
-                                  medium: Math.round(prev.difficultyDistribution.medium * ratio),
-                                  hard: remaining - Math.round(prev.difficultyDistribution.medium * ratio)
-                                }
+                                difficultyDistribution: { ...prev.difficultyDistribution, easy: v }
                               }));
                             }}
                             className="w-full px-3 py-2 text-sm border border-green-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
@@ -2169,21 +2245,14 @@ const ExamCreationPage: React.FC = () => {
                           <label className="block text-xs font-medium text-yellow-600">Medium</label>
                           <input
                             type="number"
-                            min="0"
-                            max="100"
+                            min={0}
+                            max={100}
                             value={cvConfig.difficultyDistribution.medium}
                             onChange={(e) => {
-                              const medium = Math.min(100, Math.max(0, parseInt(e.target.value) || 0));
-                              const remaining = 100 - medium;
-                              const currentEasyHard = cvConfig.difficultyDistribution.easy + cvConfig.difficultyDistribution.hard;
-                              const ratio = currentEasyHard > 0 ? remaining / currentEasyHard : 0.5;
+                              const v = Math.min(100, Math.max(0, parseInt(e.target.value) || 0));
                               setCvConfig(prev => ({
                                 ...prev,
-                                difficultyDistribution: {
-                                  easy: Math.round(prev.difficultyDistribution.easy * ratio),
-                                  medium,
-                                  hard: remaining - Math.round(prev.difficultyDistribution.easy * ratio)
-                                }
+                                difficultyDistribution: { ...prev.difficultyDistribution, medium: v }
                               }));
                             }}
                             className="w-full px-3 py-2 text-sm border border-yellow-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-transparent"
@@ -2193,30 +2262,28 @@ const ExamCreationPage: React.FC = () => {
                           <label className="block text-xs font-medium text-red-600">Hard</label>
                           <input
                             type="number"
-                            min="0"
-                            max="100"
+                            min={0}
+                            max={100}
                             value={cvConfig.difficultyDistribution.hard}
                             onChange={(e) => {
-                              const hard = Math.min(100, Math.max(0, parseInt(e.target.value) || 0));
-                              const remaining = 100 - hard;
-                              const currentEasyMedium = cvConfig.difficultyDistribution.easy + cvConfig.difficultyDistribution.medium;
-                              const ratio = currentEasyMedium > 0 ? remaining / currentEasyMedium : 0.5;
+                              const v = Math.min(100, Math.max(0, parseInt(e.target.value) || 0));
                               setCvConfig(prev => ({
                                 ...prev,
-                                difficultyDistribution: {
-                                  easy: Math.round(prev.difficultyDistribution.easy * ratio),
-                                  medium: remaining - Math.round(prev.difficultyDistribution.easy * ratio),
-                                  hard
-                                }
+                                difficultyDistribution: { ...prev.difficultyDistribution, hard: v }
                               }));
                             }}
                             className="w-full px-3 py-2 text-sm border border-red-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
                           />
                         </div>
                       </div>
-                      <p className="text-xs text-gray-500">
+                      <p className={`text-xs ${cvConfig.difficultyDistribution.easy + cvConfig.difficultyDistribution.medium + cvConfig.difficultyDistribution.hard === 100 ? 'text-gray-500' : 'text-red-600'}`}>
                         Total: {cvConfig.difficultyDistribution.easy + cvConfig.difficultyDistribution.medium + cvConfig.difficultyDistribution.hard}%
                       </p>
+                      {cvConfig.difficultyDistribution.easy + cvConfig.difficultyDistribution.medium + cvConfig.difficultyDistribution.hard !== 100 && (
+                        <p className="text-xs text-red-600">
+                          Total must be 100%. Please increase or decrease Easy, Medium, or Hard so the three fields add up to 100%.
+                        </p>
+                      )}
                     </div>
                   </div>
 
@@ -2250,7 +2317,12 @@ const ExamCreationPage: React.FC = () => {
                       <button
                         type="button"
                         onClick={handleGenerateQuestionsFromCV}
-                        disabled={!cvSelectedCandidateId || cvGenerating || (cvSource === 'upload' && !cvUploadedText)}
+                        disabled={
+                          !cvSelectedCandidateId ||
+                          cvGenerating ||
+                          (cvSource === 'upload' && !cvUploadedText) ||
+                          cvConfig.difficultyDistribution.easy + cvConfig.difficultyDistribution.medium + cvConfig.difficultyDistribution.hard !== 100
+                        }
                         className="flex items-center space-x-2 px-6 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                       >
                         {cvGenerating ? (

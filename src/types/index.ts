@@ -644,6 +644,7 @@ export interface CreateExamSessionRequest {
   total_questions?: number;
   expires_in_hours?: number;
   scheduled_start_at?: string; // ISO string of when exam is scheduled to start (optional)
+  difficulty_distribution?: { easy: number; medium: number; hard: number };
 }
 
 // CV-Based Exam Types
